@@ -1,0 +1,103 @@
+# Publica la imagen CE propia de Chatwoot (sin `enterprise/`) en GHCR.
+#
+# Difiere del flujo upstream `publish_foss_docker.yml` en:
+#   - registry ghcr.io/<owner>/chatwoot en vez de Docker Hub;
+#   - tags inmutables `sha-<7hex>` y, en tags git `v*-isp.*`, el nombre del tag;
+#     nunca `latest`;
+#   - solo linux/amd64 (el clúster es amd64; arm64 duplica el tiempo sin uso);
+#   - el digest queda en el resumen del job para copiarlo al PR de GitOps.
+# No hace bump automático en ISP-K8s-Platform: la imagen de Chatwoot se cambia
+# a mano en platform/apps/chatwoot*/values.yaml y producción exige autorización.
+
+name: Publish ISP Chatwoot CE image
+
+on:
+  push:
+    branches:
+      - 'codex/**'
+      - 'isp/**'
+    tags:
+      - 'v*-isp.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/chatwoot
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Strip enterprise code
+        run: |
+          rm -rf enterprise
+          rm -rf spec/enterprise
+
+      - name: Set Chatwoot edition
+        run: |
+          echo -en '\nENV CW_EDITION="ce"' >> docker/Dockerfile
+
+      - name: Compute tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          IMAGE="${REGISTRY}/${IMAGE_NAME}"
+          TAGS="${IMAGE}:sha-${SHORT_SHA}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAGS="${TAGS},${IMAGE}:${GITHUB_REF_NAME}"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.description=Chatwoot CE (ISP build, sin enterprise/)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        run: |
+          {
+            echo "## Imagen publicada"
+            echo
+            echo '```'
+            echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n'
+            echo "digest: ${{ steps.build.outputs.digest }}"
+            echo '```'
+            echo
+            echo "Para GitOps (platform/apps/chatwoot*/values.yaml):"
+            echo
+            echo '```yaml'
+            echo "image:"
+            echo "  repository: ${REGISTRY}/${IMAGE_NAME}"
+            echo "  tag: sha-${{ steps.tags.outputs.short_sha }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
