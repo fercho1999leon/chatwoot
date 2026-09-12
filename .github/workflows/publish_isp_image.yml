@@ -7,7 +7,15 @@
 #   - solo linux/amd64 (el clúster es amd64; arm64 duplica el tiempo sin uso);
 #   - el digest queda en el resumen del job para copiarlo al PR de GitOps.
 # No hace bump automático en ISP-K8s-Platform: la imagen de Chatwoot se cambia
-# a mano en platform/apps/chatwoot*/values.yaml y producción exige autorización.
+# a mano en platform/apps/chatwoot/values.yaml y producción exige autorización.
+#
+# GATE DE TESTS (mismo patrón que el resto de repos del ISP: test → release):
+# `build` sólo corre si pasan rubocop, eslint, vitest y la suite rspec CE
+# (mismos pasos que run_foss_spec.yml de upstream, con enterprise/ retirado
+# para probar EXACTAMENTE lo que va en la imagen). brakeman y bundle-audit
+# corren pero no bloquean: upstream ya lo hace así con brakeman (hallazgos
+# pendientes de triage) y bundle-audit fallaría por CVEs de gemas que sólo
+# upstream puede actualizar; se revisan en el resumen del run.
 
 name: Publish ISP Chatwoot CE image
 
@@ -29,7 +37,131 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/chatwoot
 
 jobs:
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Run Rubocop
+        run: bundle exec rubocop --parallel
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Run Brakeman (no bloquea)
+        continue-on-error: true
+        run: bundle exec brakeman -q --no-pager
+      - name: Run bundle-audit (no bloquea)
+        continue-on-error: true
+        run: |
+          bundle exec bundle-audit update
+          bundle exec bundle-audit check
+
+  lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+      - name: Install pnpm dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run ESLint
+        run: pnpm run eslint
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+      - name: Install pnpm dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run frontend tests
+        run: pnpm run test:coverage
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_node_total: [8]
+        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --mount type=tmpfs,destination=/var/lib/postgresql/data
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+      - name: Install pnpm dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Strip enterprise code
+        run: |
+          rm -rf enterprise
+          rm -rf spec/enterprise
+      - name: Create database
+        run: bundle exec rake db:create
+      - name: Load schema
+        run: bundle exec rake db:schema:load
+      - name: Run backend tests (parallelized)
+        run: |
+          SPEC_FILES=($(find spec -name '*_spec.rb' | sort))
+          TESTS=""
+          for i in "${!SPEC_FILES[@]}"; do
+            if [ $(( i % ${{ matrix.ci_node_total }} )) -eq ${{ matrix.ci_node_index }} ]; then
+              TESTS="$TESTS ${SPEC_FILES[$i]}"
+            fi
+          done
+          if [ -n "$TESTS" ]; then
+            bundle exec rspec --profile=10 --format progress $TESTS
+          fi
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+      - name: Upload rails log folder
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rails-log-folder-${{ matrix.ci_node_index }}
+          path: log
+
   build:
+    needs: [lint-backend, lint-frontend, frontend-tests, backend-tests, security-scan]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
