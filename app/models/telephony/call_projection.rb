@@ -9,6 +9,8 @@ class Telephony::CallProjection < ApplicationRecord
   belongs_to :inbox, optional: true
   belongs_to :message, optional: true, inverse_of: :telephony_call
 
+  has_one_attached :recording
+
   validates :external_call_id, presence: true, uniqueness: { scope: :account_id }
   validates :state, inclusion: { in: STATES }
 
@@ -47,7 +49,9 @@ class Telephony::CallProjection < ApplicationRecord
   end
 
   def recording_url
-    nil
+    return nil unless recording.attached?
+
+    Rails.application.routes.url_helpers.rails_blob_url(recording)
   end
 
   def destination_masked

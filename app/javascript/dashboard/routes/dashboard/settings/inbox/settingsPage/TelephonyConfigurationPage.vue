@@ -24,10 +24,23 @@ const {
   saving: pbxSaving,
   testing: pbxTesting,
   testResult: pbxTestResult,
+  purging: pbxPurging,
   load: loadPbx,
   save: savePbx,
   test: testPbx,
+  purgeRecordings,
 } = useTelephonyPbx();
+const purgeDays = ref(90);
+const onPurge = () => {
+  const before = new Date(Date.now() - purgeDays.value * 86400000);
+  if (
+    // eslint-disable-next-line no-alert
+    window.confirm(
+      t('INBOX_MGMT.ADD.TELEPHONY.PBX.PURGE.CONFIRM', { days: purgeDays.value })
+    )
+  )
+    purgeRecordings(before.toISOString());
+};
 const trunk = ref({});
 const saving = ref(false);
 const status = ref(null);
@@ -262,6 +275,25 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
             :is-loading="pbxSaving"
             :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.SAVE')"
             @click="onSavePbx"
+          />
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span>{{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.PURGE.LABEL') }}</span>
+          <input
+            v-model.number="purgeDays"
+            type="number"
+            min="1"
+            max="3650"
+            class="!mb-0 w-24"
+          />
+          <span>{{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.PURGE.DAYS') }}</span>
+          <NextButton
+            sm
+            faded
+            ruby
+            :is-loading="pbxPurging"
+            :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.PURGE.BUTTON')"
+            @click="onPurge"
           />
         </div>
       </div>

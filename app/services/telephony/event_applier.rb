@@ -64,6 +64,15 @@ class Telephony::EventApplier
     projection.update!(attrs)
     hand_over_conversation(projection) if owner_changed
     Telephony::NoteProjector.new(projection: projection).upsert!
+    fetch_recording(projection, data)
+  end
+
+  # La grabación queda en la PBX al colgar: recogerla en segundo plano.
+  def fetch_recording(projection, data)
+    return unless projection.ended? && data['recording_name'].present? && projection.recording_state.blank?
+
+    projection.update!(recording_name: data['recording_name'], recording_state: 'stored')
+    Telephony::RecordingFetchJob.perform_later(projection.id)
   end
 
   # El agente que recibe la llamada pasa a llevar la conversación: asignado y participante.

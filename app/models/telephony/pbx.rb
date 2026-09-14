@@ -13,6 +13,8 @@
 #  max_call_seconds    :integer          default(3600), not null
 #  provision_url       :string           default(""), not null
 #  pstn_timeout        :integer          default(45), not null
+#  record_calls        :string           default("never"), not null
+#  recording_retention_days :integer     default(0), not null
 #  sip_domain          :string           default(""), not null
 #  sip_ws_url          :string           default(""), not null
 #  stun_url            :string           default(""), not null
@@ -39,7 +41,11 @@ class Telephony::Pbx < ApplicationRecord
   belongs_to :account
 
   EDITABLE_ATTRS = %i[ari_url ari_user ari_app sip_ws_url sip_domain stun_url turn_urls turn_ttl_seconds provision_url
-                      test_dial agent_timeout transfer_timeout pstn_timeout max_call_seconds].freeze
+                      test_dial agent_timeout transfer_timeout pstn_timeout max_call_seconds record_calls
+                      recording_retention_days].freeze
+  # Lo que viaja al controlador (la retención la aplica Chatwoot).
+  CONTROLLER_ATTRS = (EDITABLE_ATTRS - %i[recording_retention_days]).freeze
+  RECORD_MODES = %w[never inbound outbound all].freeze
   SECRET_ATTRS = %i[ari_password turn_secret provision_token].freeze
   MASK = '********'.freeze
 
@@ -54,6 +60,8 @@ class Telephony::Pbx < ApplicationRecord
   validates :agent_timeout, :transfer_timeout, numericality: { only_integer: true, greater_than_or_equal_to: 5, less_than_or_equal_to: 120 }
   validates :pstn_timeout, numericality: { only_integer: true, greater_than_or_equal_to: 10, less_than_or_equal_to: 180 }
   validates :max_call_seconds, numericality: { only_integer: true, greater_than_or_equal_to: 60, less_than_or_equal_to: 14_400 }
+  validates :record_calls, inclusion: { in: RECORD_MODES }
+  validates :recording_retention_days, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3650 }
 
   before_validation :track_secrets
 
@@ -64,7 +72,7 @@ class Telephony::Pbx < ApplicationRecord
   # Cuerpo para PUT /internal/pbx. Secreto nil o '********' = el controlador conserva el suyo;
   # '' = borrarlo; otro valor = nuevo.
   def controller_payload
-    config = EDITABLE_ATTRS.index_with { |a| public_send(a) }
+    config = CONTROLLER_ATTRS.index_with { |a| public_send(a) }
     SECRET_ATTRS.each { |a| config[a] = public_send(a).nil? ? MASK : public_send(a) }
     { account_id: account_id, config: config }
   end

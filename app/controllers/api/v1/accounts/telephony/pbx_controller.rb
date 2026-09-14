@@ -24,6 +24,15 @@ class Api::V1::Accounts::Telephony::PbxController < Api::V1::Accounts::Telephony
     raise CustomExceptions::Telephony::Unavailable, e.code
   end
 
+  # POST telephony/pbx/purge_recordings { before: '2026-01-01' }
+  def purge_recordings
+    before = Time.zone.parse(params.require(:before).to_s)
+    raise CustomExceptions::Telephony::Invalid, 'invalid_date' unless before
+
+    Telephony::RecordingPurgeJob.perform_later(account_id: Current.account.id, before: before.iso8601)
+    head :accepted
+  end
+
   def destroy
     telephony_client.delete_pbx(account_id: Current.account.id) if @pbx.persisted?
     @pbx.destroy! if @pbx.persisted?

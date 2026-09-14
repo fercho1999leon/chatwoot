@@ -1,5 +1,5 @@
 class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony::BaseController
-  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer]
+  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording]
 
   def active
     @telephony_call = Telephony::CallProjection.active.find_by(account_id: Current.account.id, user_id: Current.user.id)
@@ -55,6 +55,16 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     raise CustomExceptions::Telephony::Invalid, 'not_inbox_member' if @telephony_call.conversation.inbox.assignable_agents.exclude?(to_user)
 
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
+  end
+
+  # Borra la grabación de una llamada (administradores).
+  def recording
+    raise Pundit::NotAuthorizedError unless Current.account_user.administrator?
+
+    @telephony_call.recording.purge_later if @telephony_call.recording.attached?
+    @telephony_call.update!(recording_state: 'purged')
+    @telephony_call.message&.touch # rubocop:disable Rails/SkipsModelValidations
+    head :no_content
   end
 
   def cancel_transfer

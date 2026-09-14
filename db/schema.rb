@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120006) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_120007) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1554,6 +1554,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120006) do
     t.jsonb "ringing_user_ids", default: [], null: false
     t.string "answered_by"
     t.string "contact_name"
+    t.string "recording_name"
+    t.string "recording_state"
     t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
     t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"
     t.index ["conversation_id"], name: "index_telephony_call_projections_on_conversation_id"
@@ -1605,6 +1607,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120006) do
     t.string "sync_error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "record_calls", default: "never", null: false
+    t.integer "recording_retention_days", default: 0, null: false
     t.index ["account_id"], name: "index_telephony_pbxes_on_account_id", unique: true
   end
 

@@ -210,6 +210,7 @@ Rails.application.routes.draw do
               post :unhold
               post :transfer
               post :cancel_transfer
+              delete :recording
             end
           end
           namespace :telephony do
@@ -218,6 +219,7 @@ Rails.application.routes.draw do
             resource :status, only: [:show], controller: :status
             resource :pbx, only: [:show, :update, :destroy], controller: :pbx do
               post :test
+              post :purge_recordings
             end
             resources :agents, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id

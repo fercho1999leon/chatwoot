@@ -22,6 +22,8 @@ export const EMPTY_PBX = {
   transfer_timeout: 30,
   pstn_timeout: 45,
   max_call_seconds: 3600,
+  record_calls: 'never',
+  recording_retention_days: 0,
 };
 
 export const useTelephonyPbx = () => {

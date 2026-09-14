@@ -692,6 +692,26 @@
             "PBX_UNREACHABLE": "The telephony service is unreachable",
             "NOT_CONFIGURED": "Telephony is not enabled on this installation (TELEPHONY_CONTROLLER_URL)",
             "INVALID": "Some values are invalid"
+          },
+          "RECORDING_TITLE": "Call recording",
+          "RECORDING_HELP": "The PBX records the mixed audio; Chatwoot stores it with the call (conversation card and Calls page) and removes it from the PBX. Check your local law about informing callers.",
+          "RECORD_CALLS": {
+            "LABEL": "Record calls",
+            "NEVER": "Never",
+            "INBOUND": "Incoming only",
+            "OUTBOUND": "Outgoing only",
+            "ALL": "All calls"
+          },
+          "RETENTION": {
+            "LABEL": "Keep recordings for (days)",
+            "HELP": "0 = keep forever. Older recordings are deleted automatically every day."
+          },
+          "PURGE": {
+            "LABEL": "Delete recordings older than",
+            "DAYS": "days",
+            "BUTTON": "Purge now",
+            "CONFIRM": "Delete all recordings older than {days} days? This cannot be undone.",
+            "STARTED": "Purge started in the background"
           }
         },
         "DIDS": {

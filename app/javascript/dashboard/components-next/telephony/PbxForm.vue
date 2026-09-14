@@ -24,6 +24,7 @@ const EXAMPLES = {
 const set = (key, value) =>
   emit('update:modelValue', { ...props.modelValue, [key]: value });
 const setInt = (key, value) => set(key, parseInt(value, 10) || 0);
+const RECORD_MODES = ['never', 'inbound', 'outbound', 'all'];
 const testMode = computed({
   get: () => Boolean(form.value.test_dial),
   set: v => set('test_dial', v ? 'Local/*43@from-internal' : ''),
@@ -196,6 +197,40 @@ const testMode = computed({
         {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.TEST_MODE.HELP') }}
       </p>
     </label>
+    <h4 class="text-sm font-medium text-n-slate-12">
+      {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.RECORDING_TITLE') }}
+    </h4>
+    <p class="help-text">
+      {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.RECORDING_HELP') }}
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.RECORD_CALLS.LABEL') }}
+        <select
+          :value="form.record_calls"
+          @change="set('record_calls', $event.target.value)"
+        >
+          <option v-for="m in RECORD_MODES" :key="m" :value="m">
+            {{
+              t(`INBOX_MGMT.ADD.TELEPHONY.PBX.RECORD_CALLS.${m.toUpperCase()}`)
+            }}
+          </option>
+        </select>
+      </label>
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.RETENTION.LABEL') }}
+        <input
+          :value="form.recording_retention_days"
+          type="number"
+          min="0"
+          max="3650"
+          @input="setInt('recording_retention_days', $event.target.value)"
+        />
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.RETENTION.HELP') }}
+        </p>
+      </label>
+    </div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <label>
         {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.AGENT_TIMEOUT') }}
