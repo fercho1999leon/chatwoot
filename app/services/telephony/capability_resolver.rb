@@ -14,7 +14,11 @@ class Telephony::CapabilityResolver
   end
 
   def feature_enabled?
-    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? && telephony_channel&.configured?
+    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? && pbx_configured? && telephony_channel&.configured?
+  end
+
+  def pbx_configured?
+    account.telephony_pbx&.configured? || false
   end
 
   # Inbox de tipo Telephony de la cuenta (la troncal). Uno por cuenta en el MVP.
@@ -40,7 +44,6 @@ class Telephony::CapabilityResolver
   def base_capabilities
     {
       destination_masked: destination_masked,
-      sip_ws_url: Telephony::Config.get('TELEPHONY_SIP_WS_URL'),
       max_call_seconds: telephony_channel&.max_call_seconds || 3600
     }
   end
@@ -49,6 +52,7 @@ class Telephony::CapabilityResolver
   def blockers
     {
       'feature_disabled' => account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?,
+      'no_pbx' => pbx_configured?,
       'no_trunk' => telephony_channel&.configured?,
       'inbox_not_enabled' => inbox_enabled?,
       'no_endpoint' => endpoint.present?,

@@ -87,6 +87,18 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  pbx() {
+    return axios.get(`${this.url}/pbx`).then(r => r.data);
+  }
+
+  updatePbx(pbx) {
+    return axios.put(`${this.url}/pbx`, { pbx }).then(r => r.data);
+  }
+
+  testPbx(pbx) {
+    return axios.post(`${this.url}/pbx/test`, { pbx }).then(r => r.data);
+  }
+
   status() {
     return axios.get(`${this.url}/status`).then(r => r.data);
   }

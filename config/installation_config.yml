@@ -596,8 +596,3 @@
   value:
   locked: false
   type: secret
-- name: TELEPHONY_SIP_WS_URL
-  display_title: 'Telephony SIP WebSocket URL'
-  description: 'wss:// endpoint of the PBX for the browser softphone.'
-  value:
-  locked: false

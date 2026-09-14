@@ -215,6 +215,9 @@ Rails.application.routes.draw do
             resource :capabilities, only: [:show]
             resource :browser_session, only: [:create]
             resource :status, only: [:show], controller: :status
+            resource :pbx, only: [:show, :update, :destroy], controller: :pbx do
+              post :test
+            end
             resources :agents, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id
             resources :extensions, only: [:index] do

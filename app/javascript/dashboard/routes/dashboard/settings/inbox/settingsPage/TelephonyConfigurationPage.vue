@@ -9,11 +9,24 @@ import TelephonyAPI from 'dashboard/api/telephony';
 import SettingsFieldSection from 'dashboard/components-next/Settings/SettingsFieldSection.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import TrunkForm from 'dashboard/components-next/telephony/TrunkForm.vue';
+import PbxForm from 'dashboard/components-next/telephony/PbxForm.vue';
+import PbxTestResult from 'dashboard/components-next/telephony/PbxTestResult.vue';
+import { useTelephonyPbx } from 'dashboard/composables/useTelephonyPbx';
 
 const props = defineProps({ inbox: { type: Object, required: true } });
 const { t } = useI18n();
 const store = useStore();
 
+const {
+  pbx,
+  configured: pbxConfigured,
+  saving: pbxSaving,
+  testing: pbxTesting,
+  testResult: pbxTestResult,
+  load: loadPbx,
+  save: savePbx,
+  test: testPbx,
+} = useTelephonyPbx();
 const trunk = ref({});
 const saving = ref(false);
 const status = ref(null);
@@ -144,10 +157,17 @@ const unassign = async userId => {
 const extensionLabel = ext =>
   `${ext.ext} — ${ext.name}${ext.assigned_to ? ` (${t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.TAKEN')})` : ''}`;
 
+const onSavePbx = async () => {
+  if (await savePbx()) {
+    // La sesión ARI se abre en segundo plano: releer estado y directorio en unos segundos.
+    setTimeout(() => Promise.all([loadStatus(), loadDirectory()]), 2500);
+  }
+};
+
 onMounted(async () => {
   loadTrunk();
   await store.dispatch('agents/get');
-  await Promise.all([loadStatus(), loadDirectory()]);
+  await Promise.all([loadPbx(), loadStatus(), loadDirectory()]);
 });
 watch(() => props.inbox.telephony, loadTrunk, { deep: true });
 </script>
@@ -171,8 +191,16 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
           {{
             status?.ari_connected
               ? t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.CONNECTED')
-              : t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.DISCONNECTED')
+              : status?.pbx_configured === false
+                ? t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.NOT_CONFIGURED')
+                : t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.DISCONNECTED')
           }}
+        </span>
+        <span
+          v-if="status?.test_mode"
+          class="px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11"
+        >
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TEST_MODE') }}
         </span>
         <span
           v-if="status?.trunk"
@@ -208,8 +236,38 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
       </div>
     </SettingsFieldSection>
 
+    <!-- Conexión PBX -->
+    <SettingsFieldSection
+      :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.PBX.TITLE')"
+    >
+      <p class="help-text mb-3">
+        {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.PBX.HELP') }}
+      </p>
+      <PbxForm v-model="pbx" />
+      <div class="mt-4 flex flex-col gap-3">
+        <PbxTestResult :result="pbxTestResult" />
+        <div class="flex gap-2">
+          <NextButton
+            faded
+            slate
+            :is-loading="pbxTesting"
+            :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.TEST.BUTTON')"
+            @click="testPbx"
+          />
+          <NextButton
+            solid
+            blue
+            :is-loading="pbxSaving"
+            :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.SAVE')"
+            @click="onSavePbx"
+          />
+        </div>
+      </div>
+    </SettingsFieldSection>
+
     <!-- Troncal -->
     <SettingsFieldSection
+      v-if="pbxConfigured"
       :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.TRUNK.TITLE')"
     >
       <TrunkForm v-model="trunk" :inboxes="inboxes" />

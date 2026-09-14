@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120004) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1574,6 +1574,32 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120004) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "user_id", "key"], name: "index_telephony_idem_on_account_user_key", unique: true
+  end
+
+  create_table "telephony_pbxes", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "ari_url", default: "", null: false
+    t.string "ari_user", default: "", null: false
+    t.string "ari_app", default: "chatwoot", null: false
+    t.string "sip_ws_url", default: "", null: false
+    t.string "sip_domain", default: "", null: false
+    t.string "stun_url", default: "", null: false
+    t.string "turn_urls", default: "", null: false
+    t.integer "turn_ttl_seconds", default: 3600, null: false
+    t.string "provision_url", default: "", null: false
+    t.string "test_dial", default: "", null: false
+    t.integer "agent_timeout", default: 30, null: false
+    t.integer "transfer_timeout", default: 30, null: false
+    t.integer "pstn_timeout", default: 45, null: false
+    t.integer "max_call_seconds", default: 3600, null: false
+    t.boolean "has_ari_password", default: false, null: false
+    t.boolean "has_turn_secret", default: false, null: false
+    t.boolean "has_provision_token", default: false, null: false
+    t.datetime "synced_at"
+    t.string "sync_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_telephony_pbxes_on_account_id", unique: true
   end
 
   create_table "telephony_processed_events", force: :cascade do |t|

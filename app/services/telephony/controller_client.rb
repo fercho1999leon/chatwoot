@@ -57,12 +57,28 @@ class Telephony::ControllerClient
     request(:delete, '/internal/endpoints', body: { account_id: account_id, user_id: user_id })
   end
 
-  def extensions
-    get('/internal/extensions')
+  def extensions(account_id:)
+    get('/internal/extensions', account_id: account_id)
   end
 
-  def ring_groups
-    get('/internal/ringgroups')
+  def ring_groups(account_id:)
+    get('/internal/ringgroups', account_id: account_id)
+  end
+
+  def pbx(account_id:)
+    get('/internal/pbx', account_id: account_id)
+  end
+
+  def upsert_pbx(payload)
+    request(:put, '/internal/pbx', body: payload)
+  end
+
+  def test_pbx(payload)
+    post('/internal/pbx/test', payload)
+  end
+
+  def delete_pbx(account_id:)
+    request(:delete, '/internal/pbx', query: { account_id: account_id })
   end
 
   def upsert_trunk(payload)

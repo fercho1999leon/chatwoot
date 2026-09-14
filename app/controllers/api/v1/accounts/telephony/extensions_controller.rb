@@ -3,13 +3,13 @@ class Api::V1::Accounts::Telephony::ExtensionsController < Api::V1::Accounts::Te
   before_action :check_authorization
 
   def index
-    render json: telephony_client.extensions
+    render json: telephony_client.extensions(account_id: Current.account.id)
   rescue Telephony::ControllerClient::Error => e
     raise CustomExceptions::Telephony::Unavailable, e.code
   end
 
   def ring_groups
-    render json: telephony_client.ring_groups
+    render json: telephony_client.ring_groups(account_id: Current.account.id)
   rescue Telephony::ControllerClient::Error => e
     raise CustomExceptions::Telephony::Unavailable, e.code
   end

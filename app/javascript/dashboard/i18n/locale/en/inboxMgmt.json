@@ -561,7 +561,7 @@
       },
       "TELEPHONY": {
         "TITLE": "Telephony (SIP trunk)",
-        "DESC": "Configure the SIP trunk of your carrier. Agents call from the browser; the PBX places the call through this trunk.",
+        "DESC": "Connect your PBX (Asterisk/FreePBX) once, then configure the SIP trunk of your carrier. Agents call from the browser; the PBX places the call through the trunk.",
         "CHANNEL_NAME": {
           "LABEL": "Inbox name",
           "PLACEHOLDER": "Telephony"
@@ -630,7 +630,70 @@
           "HELP": "None selected = all inboxes of the account."
         },
         "SUBMIT_BUTTON": "Create telephony inbox",
-        "ERROR_MESSAGE": "Could not create the telephony inbox"
+        "ERROR_MESSAGE": "Could not create the telephony inbox",
+        "PBX": {
+          "STEP_TITLE": "Step 1 · Connect your PBX",
+          "STEP_HELP": "Chatwoot talks to your Asterisk/FreePBX through ARI and the browser softphone registers over WebSocket. Everything below comes from your PBX; nothing is hard-coded.",
+          "CONFIGURED": "PBX connected: {url}",
+          "EDIT": "Edit",
+          "SAVE": "Save PBX connection",
+          "SAVED": "PBX connection saved",
+          "ARI_TITLE": "ARI (Asterisk REST Interface)",
+          "ARI_URL": {
+            "LABEL": "ARI base URL",
+            "HELP": "http(s)://host[:8088]. In FreePBX enable ARI in Settings → Asterisk REST Interface Users; the app name below must have a Stasis user with read/write."
+          },
+          "ARI_USER": "ARI user",
+          "ARI_PASSWORD": "ARI password",
+          "ARI_APP": {
+            "LABEL": "Stasis app name",
+            "HELP": "Name of the ARI application (default \"chatwoot\")."
+          },
+          "SIP_TITLE": "Browser softphone (SIP over WebSocket)",
+          "SIP_WS_URL": {
+            "LABEL": "SIP WebSocket URL",
+            "HELP": "wss://… endpoint of Asterisk (http.conf / reverse proxy). Must be reachable from agents' browsers."
+          },
+          "SIP_DOMAIN": {
+            "LABEL": "SIP domain",
+            "HELP": "Domain used in the SIP URI of agents (sip:1001@domain)."
+          },
+          "STUN_URL": "STUN server (optional)",
+          "TURN_URLS": {
+            "LABEL": "TURN servers (optional)",
+            "HELP": "Comma-separated turn:/turns: URLs (coturn). Needed when agents are behind NAT/firewalls."
+          },
+          "TURN_SECRET": {
+            "LABEL": "TURN shared secret",
+            "HELP": "coturn static-auth-secret (use-auth-secret). Credentials are generated per session."
+          },
+          "TURN_TTL": "TURN credential TTL (s)",
+          "PROVISION_TITLE": "PBX provisioner (optional)",
+          "PROVISION_HELP": "Small service on the PBX that lets Chatwoot write the trunk and enable WebRTC on FreePBX extensions. Without it, create the trunk in FreePBX and choose \"Already exists in FreePBX\".",
+          "PROVISION_URL": "Provisioner URL",
+          "PROVISION_TOKEN": "Provisioner token",
+          "CALLS_TITLE": "Calls",
+          "TEST_MODE": {
+            "LABEL": "Test mode: dial the PBX echo test instead of the carrier",
+            "DIAL": "Test dial string",
+            "HELP": "Local/*43@from-internal is the FreePBX echo test. Turn off once the trunk is registered."
+          },
+          "AGENT_TIMEOUT": "Agent ring (s)",
+          "PSTN_TIMEOUT": "Carrier ring (s)",
+          "TRANSFER_TIMEOUT": "Transfer ring (s)",
+          "MAX_CALL_SECONDS": "Max call (s)",
+          "TEST": {
+            "BUTTON": "Test connection",
+            "OK": "OK",
+            "NOT_CONFIGURED": "not configured"
+          },
+          "ERROR": {
+            "UNKNOWN": "Could not save the PBX connection",
+            "PBX_UNREACHABLE": "The telephony service is unreachable",
+            "NOT_CONFIGURED": "Telephony is not enabled on this installation (TELEPHONY_CONTROLLER_URL)",
+            "INVALID": "Some values are invalid"
+          }
+        }
       }
     },
     "DETAILS": {
@@ -740,9 +803,8 @@
       "ACCOUNT_HEALTH": "Account Health",
       "CSAT": "CSAT",
       "VOICE": "Voice",
-      "TELEPHONY": "Telephony (SIP)",
-      "CALLS": "Calls",
-      "TELEPHONY": "Telephony"
+      "TELEPHONY": "Telephony",
+      "CALLS": "Calls"
     },
     "VOICE_CONFIGURATION": {
       "ENABLE_VOICE": {
@@ -1137,7 +1199,9 @@
           "DISCONNECTED": "disconnected",
           "TRUNK": "Trunk",
           "ACTIVE_CALLS": "Active calls: {count}",
-          "PBX": "PBX"
+          "PBX": "PBX",
+          "NOT_CONFIGURED": "not configured",
+          "TEST_MODE": "Test mode (echo)"
         },
         "TRUNK": {
           "TITLE": "SIP trunk",
@@ -1158,6 +1222,10 @@
         "GROUPS": {
           "TITLE": "Ring groups (FreePBX)",
           "HELP": "Managed in FreePBX. Used as routing and transfer targets."
+        },
+        "PBX": {
+          "TITLE": "PBX connection",
+          "HELP": "Your Asterisk/FreePBX: ARI, browser SIP WebSocket, TURN, provisioner and call timeouts."
         }
       }
     },

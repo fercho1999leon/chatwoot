@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -7,10 +7,26 @@ import router from '../../../../index';
 import PageHeader from '../../SettingsSubPageHeader.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import TrunkForm from 'dashboard/components-next/telephony/TrunkForm.vue';
+import PbxForm from 'dashboard/components-next/telephony/PbxForm.vue';
+import PbxTestResult from 'dashboard/components-next/telephony/PbxTestResult.vue';
+import { useTelephonyPbx } from 'dashboard/composables/useTelephonyPbx';
 
 const { t } = useI18n();
 const store = useStore();
 
+// Paso 1: conexión a la PBX de la cuenta (una vez); paso 2: troncal del carrier.
+const {
+  pbx,
+  configured: pbxConfigured,
+  loading: pbxLoading,
+  saving: pbxSaving,
+  testing: pbxTesting,
+  testResult: pbxTestResult,
+  load: loadPbx,
+  save: savePbx,
+  test: testPbx,
+} = useTelephonyPbx();
+const editingPbx = ref(false);
 const channelName = ref('Telephony');
 const trunk = ref({
   trunk_mode: 'custom',
@@ -39,6 +55,12 @@ const isValid = computed(
       : trunk.value.host)
 );
 
+const onSavePbx = async () => {
+  if (await savePbx()) editingPbx.value = false;
+};
+
+onMounted(loadPbx);
+
 const createChannel = async () => {
   if (!isValid.value) return;
   try {
@@ -62,10 +84,49 @@ const createChannel = async () => {
       :header-title="t('INBOX_MGMT.ADD.TELEPHONY.TITLE')"
       :header-content="t('INBOX_MGMT.ADD.TELEPHONY.DESC')"
     />
+    <div
+      v-if="!pbxLoading && (!pbxConfigured || editingPbx)"
+      class="flex flex-col gap-4 mx-0 max-w-3xl"
+    >
+      <h3 class="text-base font-medium text-n-slate-12">
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.STEP_TITLE') }}
+      </h3>
+      <p class="help-text">{{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.STEP_HELP') }}</p>
+      <PbxForm v-model="pbx" />
+      <PbxTestResult :result="pbxTestResult" />
+      <div class="flex gap-2">
+        <NextButton
+          faded
+          slate
+          :is-loading="pbxTesting"
+          :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.TEST.BUTTON')"
+          @click="testPbx"
+        />
+        <NextButton
+          solid
+          blue
+          :is-loading="pbxSaving"
+          :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.SAVE')"
+          @click="onSavePbx"
+        />
+      </div>
+    </div>
     <form
+      v-else-if="!pbxLoading"
       class="flex flex-col gap-4 mx-0 max-w-3xl"
       @submit.prevent="createChannel"
     >
+      <div class="flex items-center gap-2 text-sm text-n-slate-11">
+        <span class="i-lucide-check text-n-teal-11" />
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.PBX.CONFIGURED', { url: pbx.ari_url }) }}
+        <NextButton
+          sm
+          link
+          blue
+          :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.EDIT')"
+          @click="editingPbx = true"
+        />
+      </div>
       <label>
         {{ t('INBOX_MGMT.ADD.TELEPHONY.CHANNEL_NAME.LABEL') }}
         <input
