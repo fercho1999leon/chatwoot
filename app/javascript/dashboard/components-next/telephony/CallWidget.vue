@@ -3,6 +3,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useAlert } from 'dashboard/composables';
 import {
   useTelephonyStore,
   TELEPHONY_STATES,
@@ -147,8 +148,11 @@ const onTransfer = async userId => {
   try {
     await store.transferTo(userId);
     showTransfer.value = false;
-  } catch (e) {
-    // 409 agent_busy / transfer_in_progress
+  } catch (error) {
+    const code = error?.response?.data?.code || 'unknown';
+    useAlert(
+      t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))
+    );
   } finally {
     isWorking.value = false;
   }

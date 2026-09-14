@@ -69,6 +69,10 @@
       "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
       "FEATURE_DISABLED": "Telephony is not enabled for this account",
       "NO_TRUNK": "No SIP trunk configured",
+      "TARGET_UNREGISTERED": "That agent's softphone is not connected (they need to have Chatwoot open)",
+      "TARGET_BUSY": "That agent is already on a call",
+      "TRANSFER_IN_PROGRESS": "A transfer is already in progress",
+      "NOT_ANSWERED": "The call is not connected yet",
       "UNKNOWN": "Could not start the call"
     }
   }

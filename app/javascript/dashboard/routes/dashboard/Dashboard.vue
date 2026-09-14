@@ -1,5 +1,5 @@
 <script>
-import { defineAsyncComponent, ref, computed } from 'vue';
+import { defineAsyncComponent, ref, computed, onMounted } from 'vue';
 
 import NextSidebar from 'next/sidebar/Sidebar.vue';
 import WootKeyShortcutModal from 'dashboard/components/widgets/modal/WootKeyShortcutModal.vue';
@@ -30,6 +30,8 @@ import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue'
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
 import { useTelephonyStore } from 'dashboard/stores/telephony';
+import { useSipSession } from 'dashboard/composables/useSipSession';
+import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 
 export default {
   components: {
@@ -47,10 +49,19 @@ export default {
   setup() {
     const upgradePageRef = ref(null);
     const { uiSettings, updateUISettings } = useUISettings();
-    const { accountId } = useAccount();
+    const { accountId, isCloudFeatureEnabled } = useAccount();
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
     const telephonyStore = useTelephonyStore();
+    const { connect: connectSip } = useSipSession();
+
+    // Register the softphone as soon as the agent opens the dashboard so it can
+    // receive transfers (and later inbound calls) without having called first.
+    onMounted(() => {
+      if (isCloudFeatureEnabled(FEATURE_FLAGS.TELEPHONY_CALLS)) {
+        connectSip({ quiet: true });
+      }
+    });
 
     return {
       uiSettings,

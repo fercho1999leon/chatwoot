@@ -15,6 +15,8 @@ let invitation = null;
 let remoteAudio = null;
 let refreshTimer = null;
 
+const QUIET_REGISTER_ERRORS = ['no_endpoint', 'feature_disabled'];
+
 const ensureAudioElement = () => {
   if (remoteAudio) return remoteAudio;
   remoteAudio = document.createElement('audio');
@@ -88,7 +90,9 @@ export const useSipSession = () => {
     }
   };
 
-  const connect = async ({ force = false } = {}) => {
+  // quiet: registration attempted on dashboard load; a user without a linked
+  // extension (or feature off) must not see the widget in a failed state.
+  const connect = async ({ force = false, quiet = false } = {}) => {
     if (userAgent && !force) return true;
     store.setSipStatus(SIP_STATUS.CONNECTING);
     try {
@@ -133,10 +137,12 @@ export const useSipSession = () => {
       }, ttl * 1000);
       return true;
     } catch (error) {
-      store.setSipStatus(
-        SIP_STATUS.FAILED,
-        error?.response?.data?.code || error?.message || 'unknown'
-      );
+      const code = error?.response?.data?.code || error?.message || 'unknown';
+      if (quiet && QUIET_REGISTER_ERRORS.includes(code)) {
+        store.setSipStatus(SIP_STATUS.IDLE);
+      } else {
+        store.setSipStatus(SIP_STATUS.FAILED, code);
+      }
       return false;
     }
   };
