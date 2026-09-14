@@ -1,5 +1,5 @@
 <script>
-import { defineAsyncComponent, ref, computed, onMounted } from 'vue';
+import { defineAsyncComponent, ref, computed, watch } from 'vue';
 
 import NextSidebar from 'next/sidebar/Sidebar.vue';
 import WootKeyShortcutModal from 'dashboard/components/widgets/modal/WootKeyShortcutModal.vue';
@@ -55,13 +55,21 @@ export default {
     const telephonyStore = useTelephonyStore();
     const { connect: connectSip } = useSipSession();
 
-    // Register the softphone as soon as the agent opens the dashboard so it can
-    // receive transfers (and later inbound calls) without having called first.
-    onMounted(() => {
-      if (isCloudFeatureEnabled(FEATURE_FLAGS.TELEPHONY_CALLS)) {
-        connectSip({ quiet: true });
-      }
-    });
+    // Register the softphone as soon as the account (and its feature flags) is
+    // loaded, so the agent can receive transfers (and later inbound calls)
+    // without having called first.
+    const telephonyEnabled = computed(() =>
+      Boolean(
+        accountId.value && isCloudFeatureEnabled(FEATURE_FLAGS.TELEPHONY_CALLS)
+      )
+    );
+    watch(
+      telephonyEnabled,
+      enabled => {
+        if (enabled) connectSip({ quiet: true });
+      },
+      { immediate: true }
+    );
 
     return {
       uiSettings,

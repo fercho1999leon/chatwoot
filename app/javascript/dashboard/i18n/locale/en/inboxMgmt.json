@@ -656,7 +656,7 @@
           },
           "SIP_DOMAIN": {
             "LABEL": "SIP domain",
-            "HELP": "Domain used in the SIP URI of agents (sip:1001@domain)."
+            "HELP": "Domain used in the SIP URI of agents (sip:1001{'@'}domain)."
           },
           "STUN_URL": "STUN server (optional)",
           "TURN_URLS": {
@@ -676,7 +676,7 @@
           "TEST_MODE": {
             "LABEL": "Test mode: dial the PBX echo test instead of the carrier",
             "DIAL": "Test dial string",
-            "HELP": "Local/*43@from-internal is the FreePBX echo test. Turn off once the trunk is registered."
+            "HELP": "Local/*43{'@'}from-internal is the FreePBX echo test. Turn off once the trunk is registered."
           },
           "AGENT_TIMEOUT": "Agent ring (s)",
           "PSTN_TIMEOUT": "Carrier ring (s)",
