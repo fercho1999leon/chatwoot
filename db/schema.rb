@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_120006) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -687,6 +687,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
     t.string "provision_error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "dids", default: "", null: false
     t.index ["account_id"], name: "index_channel_telephony_on_account_id"
   end
 
@@ -1529,7 +1530,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
   create_table "telephony_call_projections", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.uuid "external_call_id", null: false
-    t.bigint "user_id", null: false
+    t.bigint "user_id"
     t.bigint "conversation_id", null: false
     t.bigint "inbox_id"
     t.bigint "message_id"
@@ -1548,6 +1549,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
     t.integer "previous_user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "direction", default: "outbound", null: false
+    t.string "did"
+    t.jsonb "ringing_user_ids", default: [], null: false
+    t.string "answered_by"
+    t.string "contact_name"
     t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
     t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"
     t.index ["conversation_id"], name: "index_telephony_call_projections_on_conversation_id"
@@ -1600,6 +1606,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120005) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_telephony_pbxes_on_account_id", unique: true
+  end
+
+  create_table "telephony_routing_rules", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", default: "", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "enabled", default: true, null: false
+    t.jsonb "conditions", default: {}, null: false
+    t.jsonb "destination", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_telephony_routing_rules_on_account_id"
   end
 
   create_table "telephony_processed_events", force: :cascade do |t|

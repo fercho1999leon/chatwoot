@@ -15,3 +15,8 @@ json.on_hold resource.on_hold
 json.transfer_to_user_id resource.transfer_to_user_id
 json.transfer_state resource.transfer_state
 json.previous_user_id resource.previous_user_id
+json.direction resource.direction
+json.did resource.did
+json.ringing_user_ids resource.ringing_user_ids
+json.answered_by resource.answered_by
+json.contact_name resource.contact_name

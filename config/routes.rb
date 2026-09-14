@@ -45,6 +45,7 @@ Rails.application.routes.draw do
       # Callback firmado del telephony-controller (sin sesión de usuario).
       namespace :telephony do
         resources :internal_events, only: [:create]
+        resources :internal_inbound, only: [:create]
       end
       # ----------------------------------
       # start of account scoped api routes
@@ -221,7 +222,13 @@ Rails.application.routes.draw do
             resources :agents, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id
             resources :extensions, only: [:index] do
-              collection { get :ring_groups }
+              collection do
+                get :ring_groups
+                get :ivrs
+              end
+            end
+            resources :routing_rules, only: [:index, :create, :update, :destroy] do
+              collection { post :reorder }
             end
           end
 

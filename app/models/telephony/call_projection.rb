@@ -4,7 +4,7 @@ class Telephony::CallProjection < ApplicationRecord
   STATES = %w[requested agent_connecting dialing ringing answered ended].freeze
 
   belongs_to :account
-  belongs_to :user
+  belongs_to :user, optional: true
   belongs_to :conversation
   belongs_to :inbox, optional: true
   belongs_to :message, optional: true
@@ -16,6 +16,10 @@ class Telephony::CallProjection < ApplicationRecord
 
   def ended?
     state == 'ended'
+  end
+
+  def inbound?
+    direction == 'inbound'
   end
 
   def destination_masked
@@ -42,7 +46,12 @@ class Telephony::CallProjection < ApplicationRecord
       previous_user_id: previous_user_id,
       on_hold: on_hold,
       transfer_to_user_id: transfer_to_user_id,
-      transfer_state: transfer_state
+      transfer_state: transfer_state,
+      direction: direction,
+      did: did,
+      ringing_user_ids: ringing_user_ids,
+      answered_by: answered_by,
+      contact_name: contact_name
     }
   end
 end

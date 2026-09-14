@@ -27,7 +27,13 @@ class Telephony::NoteProjector
   def build_content
     result = I18n.t("telephony.end_reason.#{projection.end_reason || 'unknown'}", default: projection.end_reason.to_s)
     duration = projection.duration_seconds ? Time.at(projection.duration_seconds).utc.strftime('%M:%S') : nil
-    I18n.t('telephony.note', agent: projection.user.name, destination: projection.destination_masked, result: result,
-                             duration: duration || '00:00', id: projection.external_call_id.to_s[0, 8])
+    if projection.inbound?
+      answered_by = projection.user&.name || projection.answered_by.presence || I18n.t('telephony.nobody')
+      I18n.t('telephony.inbound_note', caller: projection.contact_name.presence || projection.destination_masked, agent: answered_by,
+                                       result: result, duration: duration || '00:00', id: projection.external_call_id.to_s[0, 8])
+    else
+      I18n.t('telephony.note', agent: projection.user.name, destination: projection.destination_masked, result: result,
+                               duration: duration || '00:00', id: projection.external_call_id.to_s[0, 8])
+    end
   end
 end

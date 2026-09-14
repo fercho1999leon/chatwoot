@@ -141,6 +141,7 @@ if resource.telephony?
     json.password ch.password.present? ? Channel::Telephony::MASKED_PASSWORD : ''
     json.carrier_ips ch.carrier_ips
     json.caller_id ch.caller_id
+    json.dids ch.dids
     json.codecs ch.codecs
     json.dtmf ch.dtmf
     json.register ch.register

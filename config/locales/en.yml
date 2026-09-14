@@ -675,6 +675,8 @@ en:
         already_confirmed: 'User is already confirmed.'
   telephony:
     note: "Call %{id} — agent %{agent} → %{destination}: %{result} (duration %{duration})"
+    inbound_note: "Incoming call %{id} from %{caller} → %{agent}: %{result} (duration %{duration})"
+    nobody: nobody
     end_reason:
       completed: completed
       agent_hangup: ended by agent before answer
@@ -691,5 +693,8 @@ en:
       policy_denied: denied by policy
       max_duration: maximum duration reached
       no_agents: no agents available
-      missed: missed
+      missed: missed (caller hung up)
+      to_ivr: sent to the PBX IVR
+      to_voicemail: sent to voicemail
+      unrouted: could not be routed
       unknown: unknown

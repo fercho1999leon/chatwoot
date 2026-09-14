@@ -65,6 +65,10 @@ class Telephony::ControllerClient
     get('/internal/ringgroups', account_id: account_id)
   end
 
+  def ivrs(account_id:)
+    get('/internal/ivrs', account_id: account_id)
+  end
+
   def pbx(account_id:)
     get('/internal/pbx', account_id: account_id)
   end

@@ -48,11 +48,15 @@ class Telephony::EventApplier
       answered_at: data['answered_at'], ended_at: data['ended_at'], duration_seconds: data['duration_seconds'],
       last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
       transfer_to_user_id: data['transfer_to_user_id'], transfer_state: data['transfer_state'],
-      previous_user_id: data['previous_user_id']
+      previous_user_id: data['previous_user_id'],
+      ringing_user_ids: Array(data['ringing_user_ids']), answered_by: data['answered_by']
     }
-    # Transferencia completada: la llamada cambia de dueño.
+    attrs[:contact_name] = data['contact_name'] if data['contact_name'].present?
+    # Transferencia completada o entrante contestada: la llamada cambia de dueño.
     owner_changed = data['user_id'].present? && data['user_id'].to_i != projection.user_id
     attrs[:user_id] = data['user_id'].to_i if owner_changed
+    # Los agentes que sonaban y no contestaron deben cerrar su widget: se les avisa una última vez.
+    @previously_ringing = projection.ringing_user_ids
     projection.update!(attrs)
     hand_over_conversation(projection) if owner_changed
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
@@ -76,6 +80,6 @@ class Telephony::EventApplier
             when 'requested', 'agent_connecting' then Events::Types::TELEPHONY_CALL_CREATED
             else Events::Types::TELEPHONY_CALL_UPDATED
             end
-    Rails.configuration.dispatcher.dispatch(event, Time.zone.now, telephony_call: projection)
+    Rails.configuration.dispatcher.dispatch(event, Time.zone.now, telephony_call: projection, previously_ringing: @previously_ringing || [])
   end
 end

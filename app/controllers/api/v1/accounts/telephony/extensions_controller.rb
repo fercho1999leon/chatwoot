@@ -14,6 +14,12 @@ class Api::V1::Accounts::Telephony::ExtensionsController < Api::V1::Accounts::Te
     raise CustomExceptions::Telephony::Unavailable, e.code
   end
 
+  def ivrs
+    render json: telephony_client.ivrs(account_id: Current.account.id)
+  rescue Telephony::ControllerClient::Error => e
+    raise CustomExceptions::Telephony::Unavailable, e.code
+  end
+
   private
 
   def check_authorization

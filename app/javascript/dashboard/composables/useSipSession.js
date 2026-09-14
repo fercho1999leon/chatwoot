@@ -14,6 +14,18 @@ let registerer = null;
 let invitation = null;
 let remoteAudio = null;
 let refreshTimer = null;
+let unloadHooked = false;
+
+// Unregister when the tab goes away; otherwise the stale contact lingers in
+// Asterisk until it expires and, with max_contacts reached, can evict the
+// agent's live registration (the INVITE then rings a dead contact).
+const hookUnload = disconnect => {
+  if (unloadHooked) return;
+  unloadHooked = true;
+  window.addEventListener('pagehide', () => {
+    disconnect();
+  });
+};
 
 const QUIET_REGISTER_ERRORS = ['no_endpoint', 'feature_disabled'];
 
@@ -126,6 +138,7 @@ export const useSipSession = () => {
           store.setSipStatus(SIP_STATUS.IDLE);
       });
       await registerer.register();
+      hookUnload(disconnect);
       // TURN credentials expire: refresh the session before they do.
       const ttl = Math.max(
         60,

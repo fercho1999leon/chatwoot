@@ -9,6 +9,7 @@
 #  carrier_ips       :jsonb            not null
 #  codecs            :jsonb            not null
 #  default_country   :string           default(""), not null
+#  dids              :string           default(""), not null
 #  dtmf              :string           default("rfc4733"), not null
 #  host              :string           default(""), not null
 #  max_call_seconds  :integer          default(3600), not null
@@ -35,7 +36,7 @@ class Channel::Telephony < ApplicationRecord
 
   self.table_name = 'channel_telephony'
   EDITABLE_ATTRS = [:trunk_mode, :trunk_name, :host, :port, :transport, :auth_mode, :username, :password, :caller_id, :dtmf, :register,
-                    :default_country, :max_call_seconds, { carrier_ips: [], codecs: [], allowed_inbox_ids: [] }].freeze
+                    :default_country, :max_call_seconds, :dids, { carrier_ips: [], codecs: [], allowed_inbox_ids: [] }].freeze
 
   TRUNK_MODES = %w[custom gui].freeze
   TRANSPORTS = %w[udp tcp tls].freeze
@@ -53,6 +54,7 @@ class Channel::Telephony < ApplicationRecord
   validates :max_call_seconds, numericality: { only_integer: true, greater_than_or_equal_to: 60,
                                                less_than_or_equal_to: 14_400 }
   validates :host, format: { with: /\A[A-Za-z0-9.-]*\z/ }
+  validates :dids, format: { with: /\A[\d+,\s]*\z/ }
   validate :codecs_are_known
   validate :carrier_ips_are_ips
 
@@ -81,7 +83,8 @@ class Channel::Telephony < ApplicationRecord
     {
       account_id: account_id, mode: trunk_mode, trunk_name: trunk_name, host: host, port: port, transport: transport,
       auth: auth_mode, username: username, password: password, carrier_ips: carrier_ips, caller_id: caller_id,
-      codecs: codecs, dtmf: dtmf, register: register, default_country: default_country, max_call_seconds: max_call_seconds
+      codecs: codecs, dtmf: dtmf, register: register, default_country: default_country, max_call_seconds: max_call_seconds,
+      dids: dids
     }
   end
 
