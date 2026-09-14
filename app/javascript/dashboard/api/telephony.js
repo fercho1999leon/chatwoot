@@ -79,8 +79,12 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
-  agents() {
-    return axios.get(`${this.url}/agents`).then(r => r.data);
+  agents(conversationId) {
+    return axios
+      .get(`${this.url}/agents`, {
+        params: { conversation_id: conversationId },
+      })
+      .then(r => r.data);
   }
 
   status() {

@@ -51,9 +51,23 @@ class Telephony::EventApplier
       previous_user_id: data['previous_user_id']
     }
     # Transferencia completada: la llamada cambia de dueño.
-    attrs[:user_id] = data['user_id'].to_i if data['user_id'].present? && data['user_id'].to_i != projection.user_id
+    owner_changed = data['user_id'].present? && data['user_id'].to_i != projection.user_id
+    attrs[:user_id] = data['user_id'].to_i if owner_changed
     projection.update!(attrs)
+    hand_over_conversation(projection) if owner_changed
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
+  end
+
+  # El agente que recibe la llamada pasa a llevar la conversación: asignado y participante.
+  def hand_over_conversation(projection)
+    conversation = projection.conversation
+    user = projection.user
+    return unless conversation && user
+
+    return if conversation.inbox.assignable_agents.exclude?(user)
+
+    conversation.update!(assignee: user) if conversation.assignee_id != user.id
+    ConversationParticipant.find_or_create_by!(conversation: conversation, user: user)
   end
 
   def broadcast(projection)

@@ -51,6 +51,8 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     unless Telephony::Endpoint.exists?(account_id: Current.account.id, user_id: to_user.id, enabled: true)
       raise CustomExceptions::Telephony::Invalid, 'no_endpoint'
     end
+    # Sin acceso al inbox no vería la conversación (ConversationParticipant lo exige).
+    raise CustomExceptions::Telephony::Invalid, 'not_inbox_member' if @telephony_call.conversation.inbox.assignable_agents.exclude?(to_user)
 
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
   end

@@ -50,6 +50,8 @@
       "TRANSFERRING": "Transferring…",
       "TRANSFER_TO": "Transfer to",
       "TRANSFER_RINGING": "Ringing the other agent…",
+      "NOT_INBOX_MEMBER": "Not a collaborator of this inbox",
+      "ADD_TO_INBOX": "Add to inbox",
       "NO_AGENTS": "No agents with an extension available",
       "BUSY": "busy",
       "CANCEL": "Cancel",
@@ -72,6 +74,7 @@
       "TARGET_UNREGISTERED": "That agent's softphone is not connected (they need to have Chatwoot open)",
       "TARGET_BUSY": "That agent is already on a call",
       "TRANSFER_IN_PROGRESS": "A transfer is already in progress",
+      "NOT_INBOX_MEMBER": "That agent is not a collaborator of this inbox",
       "NOT_ANSWERED": "The call is not connected yet",
       "UNKNOWN": "Could not start the call"
     }

@@ -2,6 +2,7 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { useStore } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useAlert } from 'dashboard/composables';
 import {
@@ -15,6 +16,7 @@ import TelephonyAPI from 'dashboard/api/telephony';
 
 const { t } = useI18n();
 const router = useRouter();
+const vuexStore = useStore();
 const store = useTelephonyStore();
 const { accountId } = useAccount();
 const { acceptInvitation, setMuted, hangupLocal, connect } = useSipSession();
@@ -23,7 +25,10 @@ const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const showKeypad = ref(false);
 const showTransfer = ref(false);
 const transferAgents = ref([]);
+const transferInboxId = ref(null);
+const canAddMembers = ref(false);
 const transferLoading = ref(false);
+const addingMember = ref(null);
 const isWorking = ref(false);
 const seconds = ref(0);
 let timer = null;
@@ -135,11 +140,34 @@ const openTransfer = async () => {
   if (!showTransfer.value) return;
   transferLoading.value = true;
   try {
-    transferAgents.value = await TelephonyAPI.agents();
+    const data = await TelephonyAPI.agents(call.value?.conversation_display_id);
+    transferAgents.value = data.agents;
+    transferInboxId.value = data.inbox_id;
+    canAddMembers.value = data.can_add_members;
   } catch (e) {
     transferAgents.value = [];
   } finally {
     transferLoading.value = false;
+  }
+};
+
+// Admin shortcut: make the agent a collaborator of the inbox so the transfer can proceed.
+const onAddToInbox = async agent => {
+  addingMember.value = agent.user_id;
+  try {
+    const members = await vuexStore.dispatch('inboxMembers/get', {
+      inboxId: transferInboxId.value,
+    });
+    const agentList = [...members.data.payload.map(m => m.id), agent.user_id];
+    await vuexStore.dispatch('inboxMembers/create', {
+      inboxId: transferInboxId.value,
+      agentList,
+    });
+    agent.inbox_member = true;
+  } catch (error) {
+    useAlert(t('TELEPHONY.ERROR.UNKNOWN'));
+  } finally {
+    addingMember.value = null;
   }
 };
 
@@ -230,16 +258,34 @@ onBeforeUnmount(stopTimer);
       <p v-else-if="!transferAgents.length" class="text-xs text-n-slate-11">
         {{ t('TELEPHONY.WIDGET.NO_AGENTS') }}
       </p>
-      <NextButton
+      <div
         v-for="agent in transferAgents"
         :key="agent.user_id"
-        sm
-        faded
-        slate
-        :disabled="agent.busy || agent.availability === 'offline'"
-        :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}`"
-        @click="onTransfer(agent.user_id)"
-      />
+        class="flex items-center gap-1"
+      >
+        <NextButton
+          sm
+          faded
+          slate
+          class="flex-1"
+          :disabled="
+            agent.busy ||
+            agent.availability === 'offline' ||
+            !agent.inbox_member
+          "
+          :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}${!agent.inbox_member ? ' · ' + t('TELEPHONY.WIDGET.NOT_INBOX_MEMBER') : ''}`"
+          @click="onTransfer(agent.user_id)"
+        />
+        <NextButton
+          v-if="!agent.inbox_member && canAddMembers"
+          sm
+          ghost
+          blue
+          :is-loading="addingMember === agent.user_id"
+          :label="t('TELEPHONY.WIDGET.ADD_TO_INBOX')"
+          @click="onAddToInbox(agent)"
+        />
+      </div>
     </div>
 
     <div
