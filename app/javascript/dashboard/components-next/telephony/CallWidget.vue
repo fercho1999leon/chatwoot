@@ -11,6 +11,7 @@ import {
   SIP_STATUS,
 } from 'dashboard/stores/telephony';
 import { useSipSession } from 'dashboard/composables/useSipSession';
+import { useRingtone } from 'dashboard/composables/useRingtone';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import TelephonyAPI from 'dashboard/api/telephony';
 
@@ -20,6 +21,7 @@ const vuexStore = useStore();
 const store = useTelephonyStore();
 const { accountId } = useAccount();
 const { acceptInvitation, setMuted, hangupLocal, connect } = useSipSession();
+const ringtone = useRingtone();
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const showKeypad = ref(false);
@@ -103,6 +105,14 @@ watch(state, s => {
     if (!s) seconds.value = 0;
   }
 });
+
+// Ring while an incoming call is offered to this agent; stop on answer/decline/end.
+watch(
+  () => store.isIncoming && store.hasInvitation,
+  ringing => (ringing ? ringtone.start() : ringtone.stop()),
+  { immediate: true }
+);
+onBeforeUnmount(() => ringtone.stop());
 
 const onAccept = async () => {
   isWorking.value = true;
