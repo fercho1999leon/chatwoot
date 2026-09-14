@@ -1,5 +1,6 @@
 class ActionCableListener < BaseListener
-  include Events::Types, TelephonyBroadcastable
+  include Events::Types
+  include TelephonyBroadcastable
 
   def notification_created(event)
     notification, account, unread_count, count = extract_notification_and_account(event)
