@@ -50,7 +50,8 @@ class Channel::Telephony < ApplicationRecord
   validates :auth_mode, inclusion: { in: AUTH_MODES }
   validates :dtmf, inclusion: { in: DTMF_MODES }
   validates :port, numericality: { only_integer: true, greater_than: 0, less_than: 65_536 }
-  validates :max_call_seconds, numericality: { only_integer: true, greater_than_or_equal_to: 60, less_than_or_equal_to: 14_400 }
+  validates :max_call_seconds, numericality: { only_integer: true, greater_than_or_equal_to: 60,
+                                               less_than_or_equal_to: 14_400 }
   validates :host, format: { with: /\A[A-Za-z0-9.-]*\z/ }
   validate :codecs_are_known
   validate :carrier_ips_are_ips
@@ -87,13 +88,16 @@ class Channel::Telephony < ApplicationRecord
   private
 
   def normalize
-    self.carrier_ips = Array(carrier_ips).map(&:to_s).map(&:strip).compact_blank.uniq
-    self.codecs = Array(codecs).map(&:to_s).compact_blank.uniq
-    self.codecs = %w[ulaw alaw] if codecs.empty?
-    self.allowed_inbox_ids = Array(allowed_inbox_ids).map(&:to_i).uniq
+    normalize_lists
     self.caller_id = caller_id.to_s.gsub(/[^0-9+]/, '')
     # La UI manda '********' para conservar la contraseña guardada.
     self.password = password_was.to_s if password == MASKED_PASSWORD
+  end
+
+  def normalize_lists
+    self.carrier_ips = Array(carrier_ips).map { |ip| ip.to_s.strip }.compact_blank.uniq
+    self.codecs = Array(codecs).map(&:to_s).compact_blank.uniq.presence || %w[ulaw alaw]
+    self.allowed_inbox_ids = Array(allowed_inbox_ids).map(&:to_i).uniq
   end
 
   def codecs_are_known
@@ -101,7 +105,7 @@ class Channel::Telephony < ApplicationRecord
   end
 
   def carrier_ips_are_ips
-    bad = carrier_ips.reject { |ip| ip.match?(%r{\A\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?\z}) }
+    bad = carrier_ips.grep_v(%r{\A\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?\z})
     errors.add(:carrier_ips, "invalid: #{bad.join(', ')}") if bad.any?
   end
 

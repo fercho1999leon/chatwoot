@@ -48,7 +48,9 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
 
   def transfer
     to_user = Current.account.users.find(params.require(:to_user_id))
-    raise CustomExceptions::Telephony::Invalid, 'no_endpoint' unless Telephony::Endpoint.exists?(account_id: Current.account.id, user_id: to_user.id, enabled: true)
+    unless Telephony::Endpoint.exists?(account_id: Current.account.id, user_id: to_user.id, enabled: true)
+      raise CustomExceptions::Telephony::Invalid, 'no_endpoint'
+    end
 
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
   end

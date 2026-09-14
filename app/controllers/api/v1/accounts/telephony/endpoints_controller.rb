@@ -14,13 +14,8 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
     extension = params.require(:extension).to_s
     raise CustomExceptions::Telephony::Invalid, 'invalid_extension' unless extension.match?(/\A\d{2,8}\z/)
 
-    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension,
-                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]))
-    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
-    record.endpoint = extension
-    record.enabled = true
-    record.save!
-    render json: serialize(record)
+    link_extension(user, extension)
+    render json: serialize(Telephony::Endpoint.find_by!(account_id: Current.account.id, user_id: user.id))
   rescue Telephony::ControllerClient::Error => e
     raise CustomExceptions::Telephony::Conflict, e.code if e.status == 409
     raise CustomExceptions::Telephony::Invalid, e.code if e.status == 422
@@ -38,6 +33,13 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
   end
 
   private
+
+  def link_extension(user, extension)
+    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension,
+                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]))
+    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
+    record.update!(endpoint: extension, enabled: true)
+  end
 
   def serialize(record)
     { user_id: record.user_id, name: record.user&.name, extension: record.endpoint, enabled: record.enabled }

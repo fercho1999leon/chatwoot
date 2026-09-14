@@ -5,15 +5,12 @@ class Telephony::CapabilityResolver
   def resolve
     reason = first_blocker
     active = reason.nil? ? active_call : nil
-    {
+    base_capabilities.merge(
       enabled: feature_enabled? && inbox_enabled?,
       can_call: reason.nil? && active.nil?,
       reason: reason || (active ? 'agent_busy' : nil),
-      destination_masked: destination_masked,
-      sip_ws_url: GlobalConfigService.load('TELEPHONY_SIP_WS_URL', ''),
-      max_call_seconds: telephony_channel&.max_call_seconds || 3600,
       active_call: active&.push_event_data
-    }
+    )
   end
 
   def feature_enabled?
@@ -40,13 +37,24 @@ class Telephony::CapabilityResolver
 
   private
 
-  def first_blocker
-    return 'feature_disabled' unless account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?
-    return 'no_trunk' unless telephony_channel&.configured?
-    return 'inbox_not_enabled' unless inbox_enabled?
-    return 'no_endpoint' unless endpoint
-    return 'no_phone' unless destination
+  def base_capabilities
+    {
+      destination_masked: destination_masked,
+      sip_ws_url: GlobalConfigService.load('TELEPHONY_SIP_WS_URL', ''),
+      max_call_seconds: telephony_channel&.max_call_seconds || 3600
+    }
+  end
 
+  BLOCKERS = [
+    ['feature_disabled', ->(r) { r.account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? }],
+    ['no_trunk', ->(r) { r.telephony_channel&.configured? }],
+    ['inbox_not_enabled', ->(r) { r.inbox_enabled? }],
+    ['no_endpoint', ->(r) { r.endpoint }],
+    ['no_phone', ->(r) { r.destination }]
+  ].freeze
+
+  def first_blocker
+    BLOCKERS.each { |reason, ok| return reason unless ok.call(self) }
     nil
   end
 

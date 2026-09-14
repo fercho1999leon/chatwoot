@@ -4,14 +4,21 @@ class Telephony::TrunkSyncJob < ApplicationJob
 
   def perform(channel_id)
     channel = Channel::Telephony.find_by(id: channel_id)
-    return unless channel&.configured?
-    return unless Telephony::ControllerClient.configured?
+    return unless channel&.configured? && Telephony::ControllerClient.configured?
 
     result = Telephony::ControllerClient.new.upsert_trunk(channel.controller_payload)
-    provision = result['provision'] || {}
-    channel.update_columns(provisioned_at: provision['ok'] ? Time.current : channel.provisioned_at, # rubocop:disable Rails/SkipsModelValidations
-                           provision_error: provision['ok'] ? nil : provision['error'].to_s.first(250))
+    record_result(channel, result['provision'] || {})
   rescue Telephony::ControllerClient::Error => e
     channel.update_columns(provision_error: e.message.first(250)) # rubocop:disable Rails/SkipsModelValidations
+  end
+
+  private
+
+  def record_result(channel, provision)
+    if provision['ok']
+      channel.update_columns(provisioned_at: Time.current, provision_error: nil) # rubocop:disable Rails/SkipsModelValidations
+    else
+      channel.update_columns(provision_error: provision['error'].to_s.first(250)) # rubocop:disable Rails/SkipsModelValidations
+    end
   end
 end
