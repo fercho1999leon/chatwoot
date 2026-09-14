@@ -22,7 +22,7 @@ class Api::V1::Telephony::InternalEventsController < ActionController::API
   end
 
   def signature_valid?
-    secret = GlobalConfigService.load('TELEPHONY_HMAC_SECRET', '')
+    secret = Telephony::Config.get('TELEPHONY_HMAC_SECRET')
     ts = request.headers['X-Telephony-Timestamp'].to_s
     sig = request.headers['X-Telephony-Signature'].to_s
     return false if secret.blank? || ts.blank? || sig.blank?

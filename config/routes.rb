@@ -214,7 +214,7 @@ Rails.application.routes.draw do
           namespace :telephony do
             resource :capabilities, only: [:show]
             resource :browser_session, only: [:create]
-            resource :status, only: [:show]
+            resource :status, only: [:show], controller: :status
             resources :agents, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id
             resources :extensions, only: [:index] do

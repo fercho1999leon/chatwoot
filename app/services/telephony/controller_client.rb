@@ -18,11 +18,11 @@ class Telephony::ControllerClient
   end
 
   def self.base_url
-    GlobalConfigService.load('TELEPHONY_CONTROLLER_URL', '')
+    Telephony::Config.get('TELEPHONY_CONTROLLER_URL')
   end
 
   def self.token
-    GlobalConfigService.load('TELEPHONY_SERVICE_TOKEN', '')
+    Telephony::Config.get('TELEPHONY_SERVICE_TOKEN')
   end
 
   def create_call(payload)

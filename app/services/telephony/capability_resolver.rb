@@ -40,7 +40,7 @@ class Telephony::CapabilityResolver
   def base_capabilities
     {
       destination_masked: destination_masked,
-      sip_ws_url: GlobalConfigService.load('TELEPHONY_SIP_WS_URL', ''),
+      sip_ws_url: Telephony::Config.get('TELEPHONY_SIP_WS_URL'),
       max_call_seconds: telephony_channel&.max_call_seconds || 3600
     }
   end
