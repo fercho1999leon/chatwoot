@@ -38,7 +38,10 @@
       "MAX_DURATION": "Maximum duration reached",
       "TRANSFERRED": "Transferred to another agent",
       "NO_AGENTS": "No agents available",
-      "MISSED": "Missed"
+      "MISSED": "Missed (caller hung up)",
+      "TO_IVR": "Sent to the PBX IVR",
+      "TO_VOICEMAIL": "Sent to voicemail",
+      "UNROUTED": "Could not be routed"
     },
     "WIDGET": {
       "INVITATION": "Incoming audio for your call",
@@ -55,7 +58,10 @@
       "NO_AGENTS": "No agents with an extension available",
       "BUSY": "busy",
       "CANCEL": "Cancel",
-      "LOADING": "Loading…"
+      "LOADING": "Loading…",
+      "INCOMING": "Incoming call",
+      "ANSWER": "Answer",
+      "DECLINE": "Decline"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",

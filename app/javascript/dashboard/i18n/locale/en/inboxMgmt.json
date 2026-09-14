@@ -693,6 +693,11 @@
             "NOT_CONFIGURED": "Telephony is not enabled on this installation (TELEPHONY_CONTROLLER_URL)",
             "INVALID": "Some values are invalid"
           }
+        },
+        "DIDS": {
+          "LABEL": "Your numbers (DIDs) for incoming calls",
+          "PLACEHOLDER": "593000000000, 593000000001",
+          "HELP": "Numbers the carrier delivers to this PBX for this account. In FreePBX, point each DID's Inbound Route to the Custom Destination \"Chatwoot\"; Chatwoot then decides who rings using the routing rules below."
         }
       }
     },
@@ -1226,6 +1231,47 @@
         "PBX": {
           "TITLE": "PBX connection",
           "HELP": "Your Asterisk/FreePBX: ARI, browser SIP WebSocket, TURN, provisioner and call timeouts."
+        },
+        "ROUTING": {
+          "TITLE": "Incoming call routing",
+          "HELP": "Rules are evaluated top to bottom for every incoming call. Each matching rule adds a step (who rings, for how long); an IVR, voicemail or hang-up rule ends the list. If no agent picks up, the next step runs.",
+          "ADD": "Add rule",
+          "NAME": "Name",
+          "SAVE": "Save",
+          "DELETE": "Delete",
+          "ENABLED": "Enabled",
+          "MOVE_UP": "Move up",
+          "MOVE_DOWN": "Move down",
+          "WHEN": "When",
+          "THEN": "Then",
+          "TIMEOUT": "Ring for (s)",
+          "EMPTY": "No rules yet: incoming calls are hung up. Add at least one rule.",
+          "SAVED": "Rule saved",
+          "ERROR": "Could not save the rule",
+          "COND": {
+            "CONTACT_KNOWN": "Contact",
+            "OPEN_CONVERSATION": "Open conversation",
+            "ASSIGNEE_ONLINE": "Assigned agent online",
+            "BUSINESS_HOURS": "Business hours",
+            "DIDS": "Only these DIDs",
+            "CALLER_PREFIX": "Caller starts with",
+            "ANY": "any",
+            "YES": "yes",
+            "NO": "no",
+            "IN": "inside",
+            "OUT": "outside"
+          },
+          "DEST": {
+            "ASSIGNEE": "Ring the assigned agent of the conversation",
+            "AGENT": "Ring an agent",
+            "TEAM": "Ring a team (all online members)",
+            "EXTENSION": "Ring a FreePBX extension",
+            "RINGGROUP": "Ring a FreePBX ring group",
+            "IVR": "Send to a FreePBX IVR (bot/menu)",
+            "VOICEMAIL": "Send to a voicemail",
+            "HANGUP": "Hang up"
+          },
+          "FREEPBX_HINT": "Extensions, ring groups and IVRs are managed in FreePBX; the lists below are read live from the PBX."
         }
       }
     },

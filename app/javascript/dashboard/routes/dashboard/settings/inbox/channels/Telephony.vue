@@ -40,6 +40,7 @@ const trunk = ref({
   register: true,
   carrier_ips: [],
   caller_id: '',
+  dids: '',
   codecs: ['ulaw', 'alaw'],
   dtmf: 'rfc4733',
   default_country: '',

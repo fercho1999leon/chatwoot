@@ -99,6 +99,36 @@ class TelephonyAPI extends ApiClient {
     return axios.post(`${this.url}/pbx/test`, { pbx }).then(r => r.data);
   }
 
+  ivrs() {
+    return axios.get(`${this.url}/extensions/ivrs`).then(r => r.data);
+  }
+
+  routingRules() {
+    return axios.get(`${this.url}/routing_rules`).then(r => r.data);
+  }
+
+  createRoutingRule(rule) {
+    return axios
+      .post(`${this.url}/routing_rules`, { routing_rule: rule })
+      .then(r => r.data);
+  }
+
+  updateRoutingRule(id, rule) {
+    return axios
+      .patch(`${this.url}/routing_rules/${id}`, { routing_rule: rule })
+      .then(r => r.data);
+  }
+
+  deleteRoutingRule(id) {
+    return axios.delete(`${this.url}/routing_rules/${id}`);
+  }
+
+  reorderRoutingRules(ids) {
+    return axios
+      .post(`${this.url}/routing_rules/reorder`, { ids })
+      .then(r => r.data);
+  }
+
   status() {
     return axios.get(`${this.url}/status`).then(r => r.data);
   }

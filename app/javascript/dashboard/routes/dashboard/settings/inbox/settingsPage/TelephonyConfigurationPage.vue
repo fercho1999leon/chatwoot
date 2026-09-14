@@ -10,6 +10,7 @@ import SettingsFieldSection from 'dashboard/components-next/Settings/SettingsFie
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import TrunkForm from 'dashboard/components-next/telephony/TrunkForm.vue';
 import PbxForm from 'dashboard/components-next/telephony/PbxForm.vue';
+import RoutingRules from 'dashboard/components-next/telephony/RoutingRules.vue';
 import PbxTestResult from 'dashboard/components-next/telephony/PbxTestResult.vue';
 import { useTelephonyPbx } from 'dashboard/composables/useTelephonyPbx';
 
@@ -66,6 +67,7 @@ const loadTrunk = () => {
     register: tconf.register !== false,
     carrier_ips: tconf.carrier_ips || [],
     caller_id: tconf.caller_id || '',
+    dids: tconf.dids || '',
     codecs: tconf.codecs || ['ulaw', 'alaw'],
     dtmf: tconf.dtmf || 'rfc4733',
     default_country: tconf.default_country || '',
@@ -380,6 +382,18 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
       <p v-if="!extensions.length" class="help-text mt-2">
         {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.NO_EXTENSIONS') }}
       </p>
+    </SettingsFieldSection>
+
+    <!-- Enrutamiento de entrantes -->
+    <SettingsFieldSection
+      v-if="pbxConfigured"
+      :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.TITLE')"
+    >
+      <RoutingRules
+        :extensions="extensions"
+        :ring-groups="ringGroups"
+        :endpoints="endpoints"
+      />
     </SettingsFieldSection>
 
     <!-- Grupos (informativo) -->

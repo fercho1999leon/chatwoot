@@ -167,6 +167,18 @@ const isGui = computed(() => form.value.trunk_mode === 'gui');
           {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.HELP') }}
         </p>
       </label>
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.LABEL') }}
+        <input
+          :value="form.dids"
+          type="text"
+          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.DIDS.PLACEHOLDER')"
+          @input="set('dids', $event.target.value)"
+        />
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.HELP') }}
+        </p>
+      </label>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label>
           {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.LABEL') }}

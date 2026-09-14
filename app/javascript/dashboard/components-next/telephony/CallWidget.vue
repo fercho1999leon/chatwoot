@@ -37,6 +37,7 @@ const call = computed(() => store.activeCall || store.lastEndedCall);
 const state = computed(() => call.value?.state);
 
 const title = computed(() => {
+  if (store.isIncoming) return t('TELEPHONY.WIDGET.INCOMING');
   if (store.isTransferring) return t('TELEPHONY.WIDGET.TRANSFERRING');
   if (store.isOnHold && store.isAnswered) return t('TELEPHONY.WIDGET.ON_HOLD');
   if (store.sipStatus === SIP_STATUS.FAILED)
@@ -61,6 +62,8 @@ const subtitle = computed(() => {
       store.sipError
     );
   }
+  if (call.value?.direction === 'inbound' && call.value?.contact_name)
+    return `${call.value.contact_name} · ${call.value.destination_masked}`;
   return call.value?.destination_masked || '';
 });
 
@@ -108,6 +111,12 @@ const onAccept = async () => {
   } finally {
     isWorking.value = false;
   }
+};
+
+// Decline an incoming call: only reject the SIP invitation; the PBX moves on to the next destination.
+const onDecline = () => {
+  hangupLocal();
+  store.activeCall = null;
 };
 
 const onHangup = async () => {
@@ -340,9 +349,22 @@ onBeforeUnmount(stopTimer);
           solid
           teal
           icon="i-lucide-phone-incoming"
-          :label="t('TELEPHONY.WIDGET.CONNECT_AUDIO')"
+          :label="
+            store.isIncoming
+              ? t('TELEPHONY.WIDGET.ANSWER')
+              : t('TELEPHONY.WIDGET.CONNECT_AUDIO')
+          "
           :is-loading="isWorking"
           @click="onAccept"
+        />
+        <NextButton
+          v-if="store.isIncoming"
+          sm
+          faded
+          ruby
+          icon="i-lucide-phone-off"
+          :label="t('TELEPHONY.WIDGET.DECLINE')"
+          @click="onDecline"
         />
         <NextButton
           v-if="store.isAnswered"
@@ -378,7 +400,9 @@ onBeforeUnmount(stopTimer);
           @click="openTransfer"
         />
         <NextButton
-          v-if="store.hasActiveCall || store.hasInvitation"
+          v-if="
+            (store.hasActiveCall || store.hasInvitation) && !store.isIncoming
+          "
           sm
           solid
           ruby

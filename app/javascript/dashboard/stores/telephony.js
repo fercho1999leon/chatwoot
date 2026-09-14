@@ -43,6 +43,11 @@ export const useTelephonyStore = defineStore('telephony', {
     isAnswered: state => state.activeCall?.state === TELEPHONY_STATES.ANSWERED,
     isOnHold: state => !!state.activeCall?.on_hold,
     isTransferring: state => state.activeCall?.transfer_state === 'ringing',
+    // Inbound call ringing this agent (nobody has answered yet)
+    isIncoming: state =>
+      state.activeCall?.direction === 'inbound' &&
+      !state.activeCall?.user_id &&
+      state.activeCall?.state !== TELEPHONY_STATES.ENDED,
     showWidget() {
       return (
         this.hasActiveCall ||
@@ -74,6 +79,24 @@ export const useTelephonyStore = defineStore('telephony', {
     // `currentUserId` lets a tab drop a call that was transferred away from it.
     applyCall(call, currentUserId = null) {
       if (!call?.id) return;
+      if (call.direction === 'inbound' && currentUserId) {
+        const ringingMe = (call.ringing_user_ids || []).includes(currentUserId);
+        const mine = call.user_id === currentUserId;
+        const wasMine = this.activeCall?.id === call.id;
+        // Someone else answered, or this step stopped ringing me: drop it silently.
+        if (
+          !ringingMe &&
+          !mine &&
+          wasMine &&
+          call.state !== TELEPHONY_STATES.ENDED
+        ) {
+          this.activeCall = null;
+          this.hasInvitation = false;
+          return;
+        }
+        if (!ringingMe && !mine && !wasMine) return; // not for this agent
+        if (call.state === TELEPHONY_STATES.ENDED && !wasMine) return;
+      }
       if (
         currentUserId &&
         call.user_id &&
