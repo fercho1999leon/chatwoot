@@ -1,0 +1,13 @@
+json.id resource.external_call_id
+json.state resource.state
+json.state_version resource.state_version
+json.end_reason resource.end_reason
+json.conversation_display_id resource.conversation.display_id
+json.inbox_id resource.inbox_id
+json.user_id resource.user_id
+json.destination_masked resource.destination_masked
+json.requested_at resource.requested_at
+json.answered_at resource.answered_at
+json.ended_at resource.ended_at
+json.duration_seconds resource.duration_seconds
+json.message_id resource.message_id

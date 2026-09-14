@@ -673,3 +673,21 @@ en:
         button: 'Resend confirmation email'
         sent: 'Confirmation email sent.'
         already_confirmed: 'User is already confirmed.'
+  telephony:
+    note: "Call %{id} — agent %{agent} → %{destination}: %{result} (duration %{duration})"
+    end_reason:
+      completed: completed
+      agent_hangup: ended by agent before answer
+      agent_no_answer: agent did not connect audio
+      agent_unregistered: agent softphone not registered
+      busy: busy
+      no_answer: no answer
+      rejected: rejected by destination
+      invalid_number: invalid number
+      trunk_failure: trunk failure
+      canceled: canceled
+      controller_restart: controller restarted
+      pbx_unreachable: PBX unreachable
+      policy_denied: denied by policy
+      max_duration: maximum duration reached
+      unknown: unknown

@@ -272,3 +272,7 @@
   display_name: Delayed Automations
   enabled: false
   column: feature_flags_ext_1
+- name: telephony_calls
+  display_name: Telephony Calls (SIP/WebRTC)
+  enabled: false
+  column: feature_flags_ext_1

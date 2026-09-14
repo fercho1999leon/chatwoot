@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_14_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -502,8 +502,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.integer "status", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
     t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
@@ -743,8 +743,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.jsonb "phone_number_health", default: {}, null: false
     t.datetime "phone_number_health_checked_at"
     t.string "phone_number_health_error", limit: 500
-    t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
+    t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
   end
 
   create_table "companies", force: :cascade do |t|
@@ -1084,10 +1084,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "inbox_id"
-    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "(account_id IS NOT NULL) AND (inbox_id IS NULL)"
+    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "((account_id IS NOT NULL) AND (inbox_id IS NULL))"
     t.index ["inbox_id", "name", "template_type", "locale"], name: "index_email_templates_on_inbox_scope", unique: true, where: "(inbox_id IS NOT NULL)"
     t.index ["inbox_id"], name: "index_email_templates_on_inbox_id"
-    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "(account_id IS NULL) AND (inbox_id IS NULL)"
+    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "((account_id IS NULL) AND (inbox_id IS NULL))"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -1499,6 +1499,67 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.string "icon_color", default: ""
     t.index ["account_id"], name: "index_teams_on_account_id"
     t.index ["name", "account_id"], name: "index_teams_on_name_and_account_id", unique: true
+  end
+
+  create_table "telephony_call_projections", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.uuid "external_call_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "inbox_id"
+    t.bigint "message_id"
+    t.string "state", default: "requested", null: false
+    t.integer "state_version", default: 0, null: false
+    t.string "end_reason"
+    t.string "destination_e164", null: false
+    t.datetime "requested_at"
+    t.datetime "answered_at"
+    t.datetime "ended_at"
+    t.integer "duration_seconds"
+    t.uuid "last_event_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
+    t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"
+    t.index ["conversation_id"], name: "index_telephony_call_projections_on_conversation_id"
+  end
+
+  create_table "telephony_endpoints", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "endpoint", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id"], name: "index_telephony_endpoints_on_account_id_and_user_id", unique: true
+    t.index ["endpoint"], name: "index_telephony_endpoints_on_endpoint", unique: true
+  end
+
+  create_table "telephony_idempotency_keys", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "key", null: false
+    t.string "payload_hash", null: false
+    t.uuid "call_id", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id", "key"], name: "index_telephony_idem_on_account_user_key", unique: true
+  end
+
+  create_table "telephony_inbox_settings", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "inbox_id"], name: "index_telephony_inbox_settings_on_account_id_and_inbox_id", unique: true
+  end
+
+  create_table "telephony_processed_events", force: :cascade do |t|
+    t.uuid "event_id", null: false
+    t.datetime "created_at", null: false
+    t.index ["event_id"], name: "index_telephony_processed_events_on_event_id", unique: true
   end
 
   create_table "user_sessions", force: :cascade do |t|

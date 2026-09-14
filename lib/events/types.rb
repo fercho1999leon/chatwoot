@@ -63,4 +63,9 @@ module Events::Types
 
   # copilot events
   COPILOT_MESSAGE_CREATED = 'copilot.message.created'
+
+  # telephony (SIP/WebRTC) events
+  TELEPHONY_CALL_CREATED = 'telephony_call.created'
+  TELEPHONY_CALL_UPDATED = 'telephony_call.updated'
+  TELEPHONY_CALL_ENDED = 'telephony_call.ended'
 end

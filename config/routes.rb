@@ -42,6 +42,10 @@ Rails.application.routes.draw do
   get '/api', to: 'api#index'
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
+      # Callback firmado del telephony-controller (sin sesión de usuario).
+      namespace :telephony do
+        resources :internal_events, only: [:create]
+      end
       # ----------------------------------
       # start of account scoped api routes
       resources :accounts, only: [:create, :show, :update] do
@@ -176,6 +180,7 @@ Rails.application.routes.draw do
               resource :participants, only: [:show, :create, :update, :destroy]
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
+              resources :telephony_calls, only: [:create]
             end
             member do
               post :mute
@@ -192,6 +197,21 @@ Rails.application.routes.draw do
               get :inbox_assistant
               get :reporting_events if ChatwootApp.enterprise?
             end
+          end
+
+          # Telefonía SIP/WebRTC (CE). `active` va ANTES de `:id`.
+          resources :telephony_calls, only: [:show] do
+            collection { get :active }
+            member do
+              post :hangup
+              post :dtmf
+            end
+          end
+          namespace :telephony do
+            resource :capabilities, only: [:show]
+            resource :browser_session, only: [:create]
+            resources :inbox_settings, only: [:index, :update], param: :inbox_id
+            resources :endpoints, only: [:index, :update], param: :user_id
           end
 
           resources :search, only: [:index] do
