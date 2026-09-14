@@ -84,7 +84,8 @@
       "TRANSFER_IN_PROGRESS": "A transfer is already in progress",
       "NOT_INBOX_MEMBER": "That agent is not a collaborator of this inbox",
       "NOT_ANSWERED": "The call is not connected yet",
-      "UNKNOWN": "Could not start the call"
+      "UNKNOWN": "Could not start the call",
+      "NOT_RINGING_YOU": "This call is no longer ringing you"
     }
   }
 }

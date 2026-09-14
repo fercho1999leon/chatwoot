@@ -74,6 +74,12 @@ export const useSipSession = () => {
     }
     invitation = inv;
     store.hasInvitation = true;
+    if (store.autoAcceptInvitation) {
+      store.autoAcceptInvitation = false;
+      // Declared below; only invoked at runtime once the composable is built.
+      // eslint-disable-next-line no-use-before-define
+      acceptInvitation();
+    }
     inv.stateChange.addListener(state => {
       if (state === SessionState.Established) {
         attachRemoteStream(inv);

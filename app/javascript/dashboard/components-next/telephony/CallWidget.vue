@@ -123,7 +123,16 @@ onBeforeUnmount(() => ringtone.stop());
 const onAccept = async () => {
   isWorking.value = true;
   try {
-    await acceptInvitation();
+    if (store.isIncoming && !store.hasInvitation) {
+      await store.answerIncoming(); // the INVITE arrives again and is auto-accepted
+    } else {
+      await acceptInvitation();
+    }
+  } catch (error) {
+    const code = error?.response?.data?.code || 'unknown';
+    useAlert(
+      t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))
+    );
   } finally {
     isWorking.value = false;
   }
@@ -378,7 +387,7 @@ onBeforeUnmount(stopTimer);
           @click="onRetryRegister"
         />
         <NextButton
-          v-if="store.hasInvitation"
+          v-if="store.hasInvitation || store.isIncoming"
           sm
           solid
           teal

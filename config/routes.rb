@@ -210,6 +210,7 @@ Rails.application.routes.draw do
               post :unhold
               post :transfer
               post :cancel_transfer
+              post :answer
               delete :recording
             end
           end

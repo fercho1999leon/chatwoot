@@ -66,7 +66,10 @@ export default {
     watch(
       telephonyEnabled,
       enabled => {
-        if (enabled) connectSip({ quiet: true });
+        if (!enabled) return;
+        connectSip({ quiet: true });
+        // A call may still be live (or ringing us) after a reload.
+        telephonyStore.refreshActive().catch(() => {});
       },
       { immediate: true }
     );

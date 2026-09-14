@@ -53,6 +53,12 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  answer(id) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/answer`)
+      .then(r => r.data);
+  }
+
   hold(id) {
     return axios
       .post(`${this.baseUrl()}/telephony_calls/${id}/hold`)

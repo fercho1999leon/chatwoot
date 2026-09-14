@@ -1,8 +1,11 @@
 class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony::BaseController
-  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording]
+  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording, :answer]
 
+  # Llamada viva del usuario: la suya o una entrante que le está sonando (ringing_user_ids).
   def active
-    @telephony_call = Telephony::CallProjection.active.find_by(account_id: Current.account.id, user_id: Current.user.id)
+    scope = Telephony::CallProjection.active.where(account_id: Current.account.id)
+    @telephony_call = scope.find_by(user_id: Current.user.id) ||
+                      scope.where('ringing_user_ids @> ?', [Current.user.id].to_json).order(:id).last
     return render json: nil unless @telephony_call
 
     refresh_from_controller
@@ -55,6 +58,13 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     raise CustomExceptions::Telephony::Invalid, 'not_inbox_member' if @telephony_call.conversation.inbox.assignable_agents.exclude?(to_user)
 
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
+  end
+
+  # Entrante que suena a este agente pero cuya invitación SIP se perdió (recarga): volver a timbrar.
+  def answer
+    raise CustomExceptions::Telephony::Invalid, 'not_ringing_you' unless @telephony_call.ringing_user_ids.include?(Current.user.id)
+
+    apply_remote { telephony_client.ring_me(@telephony_call.external_call_id, user_id: Current.user.id) }
   end
 
   # Borra la grabación de una llamada (administradores).

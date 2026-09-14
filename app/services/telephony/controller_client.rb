@@ -41,6 +41,10 @@ class Telephony::ControllerClient
     post("/internal/calls/#{id}/hangup", { requested_by_user_id: requested_by_user_id })
   end
 
+  def ring_me(id, user_id:)
+    post("/internal/calls/#{id}/ring_me", { user_id: user_id })
+  end
+
   def dtmf(id, digits)
     post("/internal/calls/#{id}/dtmf", { digits: digits })
   end

@@ -31,6 +31,7 @@ export const useTelephonyStore = defineStore('telephony', {
     sipStatus: SIP_STATUS.IDLE,
     sipError: null,
     hasInvitation: false, // agent leg ringing in the browser: show "Connect audio"
+    autoAcceptInvitation: false, // agent already pressed Answer: accept the next INVITE without asking
     audioConnected: false,
     isMuted: false,
     isCreating: false,
@@ -183,6 +184,14 @@ export const useTelephonyStore = defineStore('telephony', {
           state: TELEPHONY_STATES.ENDED,
           state_version: 1e9,
         });
+    },
+
+    // Incoming call whose SIP invitation was lost (page reload): ask the PBX to ring us again.
+    async answerIncoming() {
+      if (!this.activeCall) return;
+      this.autoAcceptInvitation = true;
+      const call = await TelephonyAPI.answer(this.activeCall.id);
+      this.applyCall(call);
     },
 
     async hangup() {
