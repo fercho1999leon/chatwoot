@@ -63,7 +63,8 @@
       "ANSWER": "Answer",
       "DECLINE": "Decline",
       "MISSED": "Missed call",
-      "CALL_BACK": "Call back"
+      "CALL_BACK": "Call back",
+      "RECONNECT_AUDIO": "Reconnect audio"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",

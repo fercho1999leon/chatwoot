@@ -123,8 +123,8 @@ onBeforeUnmount(() => ringtone.stop());
 const onAccept = async () => {
   isWorking.value = true;
   try {
-    if (store.isIncoming && !store.hasInvitation) {
-      await store.answerIncoming(); // the INVITE arrives again and is auto-accepted
+    if (!store.hasInvitation) {
+      await store.reinvite(); // the INVITE arrives again and is auto-accepted
     } else {
       await acceptInvitation();
     }
@@ -147,8 +147,8 @@ const onDecline = () => {
 const onHangup = async () => {
   isWorking.value = true;
   try {
-    hangupLocal();
     if (store.hasActiveCall) await store.hangup();
+    hangupLocal();
   } catch (e) {
     // the controller will close it on StasisEnd anyway
   } finally {
@@ -387,7 +387,7 @@ onBeforeUnmount(stopTimer);
           @click="onRetryRegister"
         />
         <NextButton
-          v-if="store.hasInvitation || store.isIncoming"
+          v-if="store.hasInvitation || store.needsReinvite"
           sm
           solid
           teal
@@ -395,7 +395,9 @@ onBeforeUnmount(stopTimer);
           :label="
             store.isIncoming
               ? t('TELEPHONY.WIDGET.ANSWER')
-              : t('TELEPHONY.WIDGET.CONNECT_AUDIO')
+              : store.isAnswered
+                ? t('TELEPHONY.WIDGET.RECONNECT_AUDIO')
+                : t('TELEPHONY.WIDGET.CONNECT_AUDIO')
           "
           :is-loading="isWorking"
           @click="onAccept"

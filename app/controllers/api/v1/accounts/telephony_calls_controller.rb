@@ -60,9 +60,10 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
   end
 
-  # Entrante que suena a este agente pero cuya invitación SIP se perdió (recarga): volver a timbrar.
+  # La invitación SIP se perdió (recarga/red): volver a invitar. Entrante que me suena o mi propia llamada.
   def answer
-    raise CustomExceptions::Telephony::Invalid, 'not_ringing_you' unless @telephony_call.ringing_user_ids.include?(Current.user.id)
+    mine = @telephony_call.user_id == Current.user.id || @telephony_call.ringing_user_ids.include?(Current.user.id)
+    raise CustomExceptions::Telephony::Invalid, 'not_ringing_you' unless mine
 
     apply_remote { telephony_client.ring_me(@telephony_call.external_call_id, user_id: Current.user.id) }
   end

@@ -45,6 +45,12 @@ export const useTelephonyStore = defineStore('telephony', {
     isOnHold: state => !!state.activeCall?.on_hold,
     isTransferring: state => state.activeCall?.transfer_state === 'ringing',
     // Inbound call that ended without this agent (or anyone) answering it
+    // Live call but this tab has no SIP leg (page reload / network drop)
+    needsReinvite: state =>
+      !!state.activeCall &&
+      state.activeCall.state !== TELEPHONY_STATES.ENDED &&
+      !state.hasInvitation &&
+      !state.audioConnected,
     isMissedInbound: state =>
       !state.activeCall &&
       state.lastEndedCall?.direction === 'inbound' &&
@@ -186,8 +192,8 @@ export const useTelephonyStore = defineStore('telephony', {
         });
     },
 
-    // Incoming call whose SIP invitation was lost (page reload): ask the PBX to ring us again.
-    async answerIncoming() {
+    // Audio needed but no SIP invitation (page reload / network drop): ask the PBX to invite us again.
+    async reinvite() {
       if (!this.activeCall) return;
       this.autoAcceptInvitation = true;
       const call = await TelephonyAPI.answer(this.activeCall.id);
