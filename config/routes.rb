@@ -312,8 +312,9 @@ Rails.application.routes.draw do
           end
           resources :reporting_events, only: [:index] if ChatwootApp.enterprise?
 
-          resources :calls, only: [:index]
+          resources :calls, only: [:index], controller: :telephony_call_history unless ChatwootApp.enterprise?
           if ChatwootApp.enterprise?
+            resources :calls, only: [:index]
             resources :whatsapp_calls, only: [:show] do
               member do
                 post :accept

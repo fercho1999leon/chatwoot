@@ -15,6 +15,7 @@ import {
 import { useCallActions } from 'dashboard/composables/useCallSession';
 import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { useTelephonyStore } from 'dashboard/stores/telephony';
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { formatDuration } from 'shared/helpers/timeHelper';
 import { useAlert } from 'dashboard/composables';
@@ -53,7 +54,10 @@ const { joinCall, endCall, activeCall, hasActiveCall, isJoining } =
   useCallActions();
 const whatsappCallSession = useWhatsappCallSession();
 const callsStore = useCallsStore();
+const telephonyStore = useTelephonyStore();
 const contactsUiFlags = useMapGetter('contacts/getUIFlags');
+// SIP telephony (community): call back through the telephony controller, not Twilio.
+const isAsterisk = computed(() => call.value?.provider === 'asterisk');
 const isInitiatingCall = computed(
   () => contactsUiFlags.value?.isInitiatingCall || false
 );
@@ -209,6 +213,7 @@ const iconContainerClass = computed(() => {
 const callSid = computed(() => call.value?.providerCallId);
 
 const canJoinCall = computed(() => {
+  if (isAsterisk.value) return false; // SIP calls are answered from the telephony widget
   if (status.value !== VOICE_CALL_STATUS.RINGING) return false;
   if (isOutbound.value) return false;
   if (acceptedByAgentId.value) return false;
@@ -262,6 +267,10 @@ const canCallBack = computed(
 const handleCallBack = async () => {
   if (!canCallBack.value || isInitiatingCall.value) return;
   try {
+    if (isAsterisk.value) {
+      await telephonyStore.createCall(conversationId.value);
+      return;
+    }
     if (isWhatsapp.value) {
       const response = await whatsappCallSession.initiateOutboundCall({
         conversationId: conversationId.value,
