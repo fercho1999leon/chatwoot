@@ -55,6 +55,9 @@ const isActive = computed(() => {
   if (key === 'voice' || key === 'whatsapp_call') {
     return props.enabledFeatures.channel_voice;
   }
+  if (key === 'telephony') {
+    return props.enabledFeatures.telephony_calls;
+  }
 
   return [
     'website',

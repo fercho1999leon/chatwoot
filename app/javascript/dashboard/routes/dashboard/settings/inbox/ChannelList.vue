@@ -60,6 +60,12 @@ const channelList = computed(() => {
       icon: 'i-woot-api',
     },
     {
+      key: 'telephony',
+      title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.TELEPHONY.TITLE'),
+      description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.TELEPHONY.DESCRIPTION'),
+      icon: 'i-woot-voice-call',
+    },
+    {
       key: 'telegram',
       title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.TELEGRAM.TITLE'),
       description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.TELEGRAM.DESCRIPTION'),

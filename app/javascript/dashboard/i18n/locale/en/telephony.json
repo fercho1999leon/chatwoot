@@ -9,6 +9,7 @@
       "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
       "NO_ENDPOINT": "You don't have a SIP extension assigned",
       "NO_PHONE": "The contact has no valid phone number",
+      "NO_TRUNK": "No SIP trunk configured (Settings → Inboxes → Telephony)",
       "AGENT_BUSY": "You already have a call in progress",
       "PBX_DRAINING": "The phone system is under maintenance"
     },
@@ -34,14 +35,25 @@
       "CONTROLLER_RESTART": "Phone system restarted",
       "PBX_UNREACHABLE": "Phone system unreachable",
       "POLICY_DENIED": "Not allowed",
-      "MAX_DURATION": "Maximum duration reached"
+      "MAX_DURATION": "Maximum duration reached",
+      "TRANSFERRED": "Transferred to another agent",
+      "NO_AGENTS": "No agents available",
+      "MISSED": "Missed"
     },
     "WIDGET": {
       "INVITATION": "Incoming audio for your call",
       "CONNECT_AUDIO": "Connect audio",
       "SIP_CONNECTING": "Registering softphone…",
       "SIP_FAILED": "Softphone not available",
-      "RETRY": "Retry"
+      "RETRY": "Retry",
+      "ON_HOLD": "On hold",
+      "TRANSFERRING": "Transferring…",
+      "TRANSFER_TO": "Transfer to",
+      "TRANSFER_RINGING": "Ringing the other agent…",
+      "NO_AGENTS": "No agents with an extension available",
+      "BUSY": "busy",
+      "CANCEL": "Cancel",
+      "LOADING": "Loading…"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",
@@ -56,6 +68,7 @@
       "NO_ENDPOINT": "You don't have a SIP extension assigned",
       "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
       "FEATURE_DISABLED": "Telephony is not enabled for this account",
+      "NO_TRUNK": "No SIP trunk configured",
       "UNKNOWN": "Could not start the call"
     }
   }

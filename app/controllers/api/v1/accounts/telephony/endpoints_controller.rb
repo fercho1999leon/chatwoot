@@ -1,37 +1,46 @@
-# Administración: asignar un endpoint SIP a un usuario. El secreto se genera aquí,
-# se entrega al controlador (que lo guarda y lo servirá solo al dueño) y se devuelve
-# UNA vez para cargarlo en la PBX hasta que exista provisión automática (Fase 5).
+# Administración: vincular extensiones de FreePBX a usuarios. El provisioner deja la
+# extensión registrable por WebRTC; el secreto vive en el controlador, nunca aquí.
 class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Telephony::BaseController
   before_action :check_authorization
 
   def index
-    endpoints = Telephony::Endpoint.where(account_id: Current.account.id)
-    render json: endpoints.map { |e| { user_id: e.user_id, endpoint: e.endpoint, enabled: e.enabled } }
+    endpoints = Telephony::Endpoint.where(account_id: Current.account.id).includes(:user)
+    render json: endpoints.map { |e| serialize(e) }
   end
 
+  # PUT telephony/endpoints/:user_id { extension: "1001", rotate: false }
   def update
     user = Current.account.users.find(params[:user_id])
-    record = build_record(user)
-    secret = params[:secret].presence || SecureRandom.hex(16)
-    push_to_controller(record, user, secret)
+    extension = params.require(:extension).to_s
+    raise CustomExceptions::Telephony::Invalid, 'invalid_extension' unless extension.match?(/\A\d{2,8}\z/)
+
+    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension,
+                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]))
+    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
+    record.endpoint = extension
+    record.enabled = true
     record.save!
-    render json: { user_id: user.id, endpoint: record.endpoint, enabled: record.enabled, secret: secret }
+    render json: serialize(record)
+  rescue Telephony::ControllerClient::Error => e
+    raise CustomExceptions::Telephony::Conflict, e.code if e.status == 409
+    raise CustomExceptions::Telephony::Invalid, e.code if e.status == 422
+
+    raise CustomExceptions::Telephony::Unavailable, e.code
+  end
+
+  def destroy
+    user = Current.account.users.find(params[:user_id])
+    telephony_client.delete_endpoint(account_id: Current.account.id, user_id: user.id)
+    Telephony::Endpoint.where(account_id: Current.account.id, user_id: user.id).delete_all
+    head :no_content
   rescue Telephony::ControllerClient::Error => e
     raise CustomExceptions::Telephony::Unavailable, e.code
   end
 
   private
 
-  def build_record(user)
-    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
-    record.endpoint = params[:endpoint].presence || "agent-#{user.id}"
-    record.enabled = params.key?(:enabled) ? ActiveModel::Type::Boolean.new.cast(params[:enabled]) : true
-    record
-  end
-
-  def push_to_controller(record, user, secret)
-    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, endpoint: record.endpoint,
-                                     secret: secret, display_name: user.name, enabled: record.enabled)
+  def serialize(record)
+    { user_id: record.user_id, name: record.user&.name, extension: record.endpoint, enabled: record.enabled }
   end
 
   def check_authorization

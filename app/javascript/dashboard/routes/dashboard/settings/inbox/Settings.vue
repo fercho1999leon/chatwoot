@@ -25,6 +25,7 @@ import GreetingsEditor from 'shared/components/GreetingsEditor.vue';
 import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
+import TelephonyConfigurationPage from './settingsPage/TelephonyConfigurationPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
 import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
@@ -56,6 +57,7 @@ export default {
     ConfigurationPage,
     VoiceConfigurationPage,
     WhatsappCallingPage,
+    TelephonyConfigurationPage,
     CustomerSatisfactionPage,
     FacebookReauthorize,
     GreetingsEditor,
@@ -274,6 +276,16 @@ export default {
           {
             key: 'calls-configuration',
             name: this.$t('INBOX_MGMT.TABS.CALLS'),
+          },
+        ];
+      }
+
+      if (this.inbox.channel_type === 'Channel::Telephony') {
+        visibleToAllChannelTabs = [
+          ...visibleToAllChannelTabs,
+          {
+            key: 'telephony-configuration',
+            name: this.$t('INBOX_MGMT.TABS.TELEPHONY'),
           },
         ];
       }
@@ -1414,6 +1426,12 @@ export default {
           class="mx-6 max-w-4xl"
         >
           <WhatsappCallingPage :inbox="inbox" />
+        </div>
+        <div
+          v-if="selectedTabKey === 'telephony-configuration'"
+          class="mx-6 max-w-4xl"
+        >
+          <TelephonyConfigurationPage :inbox="inbox" />
         </div>
         <div v-if="selectedTabKey === 'csat'">
           <CustomerSatisfactionPage :inbox="inbox" />

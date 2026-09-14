@@ -53,6 +53,38 @@ class Telephony::ControllerClient
     request(:put, '/internal/endpoints', body: payload)
   end
 
+  def delete_endpoint(account_id:, user_id:)
+    request(:delete, '/internal/endpoints', body: { account_id: account_id, user_id: user_id })
+  end
+
+  def extensions
+    get('/internal/extensions')
+  end
+
+  def ring_groups
+    get('/internal/ringgroups')
+  end
+
+  def upsert_trunk(payload)
+    request(:put, '/internal/trunk', body: payload)
+  end
+
+  def status(account_id:)
+    get('/internal/status', account_id: account_id)
+  end
+
+  def hold(id, hold:)
+    post("/internal/calls/#{id}/hold", { hold: hold })
+  end
+
+  def transfer(id, to_user_id:)
+    post("/internal/calls/#{id}/transfer", { to_user_id: to_user_id })
+  end
+
+  def cancel_transfer(id)
+    post("/internal/calls/#{id}/transfer/cancel", {})
+  end
+
   private
 
   def get(path, query = {})

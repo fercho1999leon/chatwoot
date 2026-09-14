@@ -52,6 +52,62 @@ class TelephonyAPI extends ApiClient {
       .post(`${this.baseUrl()}/telephony_calls/${id}/dtmf`, { digits })
       .then(r => r.data);
   }
+
+  hold(id) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/hold`)
+      .then(r => r.data);
+  }
+
+  unhold(id) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/unhold`)
+      .then(r => r.data);
+  }
+
+  transfer(id, toUserId) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/transfer`, {
+        to_user_id: toUserId,
+      })
+      .then(r => r.data);
+  }
+
+  cancelTransfer(id) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/cancel_transfer`)
+      .then(r => r.data);
+  }
+
+  agents() {
+    return axios.get(`${this.url}/agents`).then(r => r.data);
+  }
+
+  status() {
+    return axios.get(`${this.url}/status`).then(r => r.data);
+  }
+
+  endpoints() {
+    return axios.get(`${this.url}/endpoints`).then(r => r.data);
+  }
+
+  assignExtension(userId, extension, rotate = false) {
+    return axios
+      .put(`${this.url}/endpoints/${userId}`, { extension, rotate })
+      .then(r => r.data);
+  }
+
+  unassignExtension(userId) {
+    return axios.delete(`${this.url}/endpoints/${userId}`);
+  }
+
+  extensions() {
+    return axios.get(`${this.url}/extensions`).then(r => r.data);
+  }
+
+  ringGroups() {
+    return axios.get(`${this.url}/extensions/ring_groups`).then(r => r.data);
+  }
 }
 
 export default new TelephonyAPI();

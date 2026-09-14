@@ -43,11 +43,16 @@ class Telephony::EventApplier
   end
 
   def update_projection(projection, data)
-    projection.update!(
+    attrs = {
       state: data['state'], state_version: data['state_version'].to_i, end_reason: data['end_reason'],
       answered_at: data['answered_at'], ended_at: data['ended_at'], duration_seconds: data['duration_seconds'],
-      last_event_id: data['event_id']
-    )
+      last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
+      transfer_to_user_id: data['transfer_to_user_id'], transfer_state: data['transfer_state'],
+      previous_user_id: data['previous_user_id']
+    }
+    # Transferencia completada: la llamada cambia de dueño.
+    attrs[:user_id] = data['user_id'].to_i if data['user_id'].present? && data['user_id'].to_i != projection.user_id
+    projection.update!(attrs)
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
   end
 

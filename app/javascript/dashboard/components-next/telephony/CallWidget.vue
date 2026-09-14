@@ -10,6 +10,7 @@ import {
 } from 'dashboard/stores/telephony';
 import { useSipSession } from 'dashboard/composables/useSipSession';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import TelephonyAPI from 'dashboard/api/telephony';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -19,6 +20,9 @@ const { acceptInvitation, setMuted, hangupLocal, connect } = useSipSession();
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const showKeypad = ref(false);
+const showTransfer = ref(false);
+const transferAgents = ref([]);
+const transferLoading = ref(false);
 const isWorking = ref(false);
 const seconds = ref(0);
 let timer = null;
@@ -27,6 +31,8 @@ const call = computed(() => store.activeCall || store.lastEndedCall);
 const state = computed(() => call.value?.state);
 
 const title = computed(() => {
+  if (store.isTransferring) return t('TELEPHONY.WIDGET.TRANSFERRING');
+  if (store.isOnHold && store.isAnswered) return t('TELEPHONY.WIDGET.ON_HOLD');
   if (store.sipStatus === SIP_STATUS.FAILED)
     return t('TELEPHONY.WIDGET.SIP_FAILED');
   if (store.sipStatus === SIP_STATUS.CONNECTING)
@@ -112,6 +118,51 @@ const onHangup = async () => {
 
 const onToggleMute = () => setMuted(!store.isMuted);
 
+const onToggleHold = async () => {
+  isWorking.value = true;
+  try {
+    await store.toggleHold();
+  } catch (e) {
+    // 409 si no está contestada
+  } finally {
+    isWorking.value = false;
+  }
+};
+
+const openTransfer = async () => {
+  showTransfer.value = !showTransfer.value;
+  if (!showTransfer.value) return;
+  transferLoading.value = true;
+  try {
+    transferAgents.value = await TelephonyAPI.agents();
+  } catch (e) {
+    transferAgents.value = [];
+  } finally {
+    transferLoading.value = false;
+  }
+};
+
+const onTransfer = async userId => {
+  isWorking.value = true;
+  try {
+    await store.transferTo(userId);
+    showTransfer.value = false;
+  } catch (e) {
+    // 409 agent_busy / transfer_in_progress
+  } finally {
+    isWorking.value = false;
+  }
+};
+
+const onCancelTransfer = async () => {
+  isWorking.value = true;
+  try {
+    await store.cancelTransfer();
+  } finally {
+    isWorking.value = false;
+  }
+};
+
 const onDtmf = async digit => {
   try {
     await store.sendDtmf(digit);
@@ -163,6 +214,44 @@ onBeforeUnmount(stopTimer);
       >
         {{ formattedDuration }}
       </span>
+    </div>
+
+    <div v-if="showTransfer && store.isAnswered" class="flex flex-col gap-1">
+      <p class="text-xs text-n-slate-11">
+        {{ t('TELEPHONY.WIDGET.TRANSFER_TO') }}
+      </p>
+      <p v-if="transferLoading" class="text-xs text-n-slate-11">
+        {{ t('TELEPHONY.WIDGET.LOADING') }}
+      </p>
+      <p v-else-if="!transferAgents.length" class="text-xs text-n-slate-11">
+        {{ t('TELEPHONY.WIDGET.NO_AGENTS') }}
+      </p>
+      <NextButton
+        v-for="agent in transferAgents"
+        :key="agent.user_id"
+        sm
+        faded
+        slate
+        :disabled="agent.busy || agent.availability === 'offline'"
+        :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}`"
+        @click="onTransfer(agent.user_id)"
+      />
+    </div>
+
+    <div
+      v-if="store.isTransferring"
+      class="flex items-center justify-between gap-2"
+    >
+      <span class="text-xs text-n-slate-11">{{
+        t('TELEPHONY.WIDGET.TRANSFER_RINGING')
+      }}</span>
+      <NextButton
+        sm
+        ghost
+        slate
+        :label="t('TELEPHONY.WIDGET.CANCEL')"
+        @click="onCancelTransfer"
+      />
     </div>
 
     <div v-if="showKeypad && store.isAnswered" class="grid grid-cols-3 gap-1">
@@ -220,6 +309,23 @@ onBeforeUnmount(stopTimer);
           slate
           icon="i-lucide-grid-3x3"
           @click="showKeypad = !showKeypad"
+        />
+        <NextButton
+          v-if="store.isAnswered && !store.isTransferring"
+          sm
+          ghost
+          slate
+          :icon="store.isOnHold ? 'i-lucide-play' : 'i-lucide-pause'"
+          :is-loading="isWorking"
+          @click="onToggleHold"
+        />
+        <NextButton
+          v-if="store.isAnswered && !store.isTransferring"
+          sm
+          ghost
+          slate
+          icon="i-lucide-phone-forwarded"
+          @click="openTransfer"
         />
         <NextButton
           v-if="store.hasActiveCall || store.hasInvitation"

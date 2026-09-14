@@ -11,3 +11,7 @@ json.answered_at resource.answered_at
 json.ended_at resource.ended_at
 json.duration_seconds resource.duration_seconds
 json.message_id resource.message_id
+json.on_hold resource.on_hold
+json.transfer_to_user_id resource.transfer_to_user_id
+json.transfer_state resource.transfer_state
+json.previous_user_id resource.previous_user_id

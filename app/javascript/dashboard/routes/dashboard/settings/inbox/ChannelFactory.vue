@@ -13,12 +13,14 @@ import Telegram from './channels/Telegram.vue';
 import Instagram from './channels/Instagram.vue';
 import Tiktok from './channels/Tiktok.vue';
 import Voice from './channels/Voice.vue';
+import Telephony from './channels/Telephony.vue';
 
 const channelViewList = {
   facebook: Facebook,
   website: Website,
   twitter: Twitter,
   api: Api,
+  telephony: Telephony,
   email: Email,
   sms: Sms,
   whatsapp: Whatsapp,

@@ -362,11 +362,11 @@ class ActionCableConnector extends BaseActionCableConnector {
     }
   };
 
-  // Telephony (SIP/WebRTC, CE): sent only to the owning agent's token; the store
-  // applies monotonically increasing state_version.
-  // eslint-disable-next-line class-methods-use-this
+  // Telephony (SIP/WebRTC, CE): sent only to the owning/target agents' tokens; the
+  // store applies monotonically increasing state_version.
   onTelephonyCall = data => {
-    useTelephonyStore().applyCall(data);
+    const currentUserId = this.app.$store.getters.getCurrentUserID;
+    useTelephonyStore().applyCall(data, currentUserId);
   };
 
   onVoiceCallIncoming = data => {

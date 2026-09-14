@@ -205,13 +205,21 @@ Rails.application.routes.draw do
             member do
               post :hangup
               post :dtmf
+              post :hold
+              post :unhold
+              post :transfer
+              post :cancel_transfer
             end
           end
           namespace :telephony do
             resource :capabilities, only: [:show]
             resource :browser_session, only: [:create]
-            resources :inbox_settings, only: [:index, :update], param: :inbox_id
-            resources :endpoints, only: [:index, :update], param: :user_id
+            resource :status, only: [:show]
+            resources :agents, only: [:index]
+            resources :endpoints, only: [:index, :update, :destroy], param: :user_id
+            resources :extensions, only: [:index] do
+              collection { get :ring_groups }
+            end
           end
 
           resources :search, only: [:index] do

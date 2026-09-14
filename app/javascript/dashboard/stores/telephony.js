@@ -41,6 +41,8 @@ export const useTelephonyStore = defineStore('telephony', {
     hasActiveCall: state =>
       !!state.activeCall && state.activeCall.state !== TELEPHONY_STATES.ENDED,
     isAnswered: state => state.activeCall?.state === TELEPHONY_STATES.ANSWERED,
+    isOnHold: state => !!state.activeCall?.on_hold,
+    isTransferring: state => state.activeCall?.transfer_state === 'ringing',
     showWidget() {
       return (
         this.hasActiveCall ||
@@ -69,8 +71,36 @@ export const useTelephonyStore = defineStore('telephony', {
     },
 
     // Apply a snapshot/event. Only monotonically increasing versions win.
-    applyCall(call) {
+    // `currentUserId` lets a tab drop a call that was transferred away from it.
+    applyCall(call, currentUserId = null) {
       if (!call?.id) return;
+      if (
+        currentUserId &&
+        call.user_id &&
+        call.user_id !== currentUserId &&
+        call.transfer_state === 'completed' &&
+        this.activeCall?.id === call.id
+      ) {
+        this.lastEndedCall = {
+          ...call,
+          state: TELEPHONY_STATES.ENDED,
+          end_reason: 'transferred',
+        };
+        this.activeCall = null;
+        this.hasInvitation = false;
+        this.audioConnected = false;
+        this.isMuted = false;
+        this.idempotencyKey = null;
+        return;
+      }
+      if (
+        currentUserId &&
+        call.user_id &&
+        call.user_id !== currentUserId &&
+        call.transfer_to_user_id !== currentUserId
+      ) {
+        return; // event for another agent (broadcast to previous owner after completion)
+      }
       const current = this.activeCall;
       if (
         current &&
@@ -136,6 +166,26 @@ export const useTelephonyStore = defineStore('telephony', {
     async sendDtmf(digits) {
       if (!this.activeCall) return;
       await TelephonyAPI.dtmf(this.activeCall.id, digits);
+    },
+
+    async toggleHold() {
+      if (!this.activeCall) return;
+      const call = this.activeCall.on_hold
+        ? await TelephonyAPI.unhold(this.activeCall.id)
+        : await TelephonyAPI.hold(this.activeCall.id);
+      this.applyCall(call);
+    },
+
+    async transferTo(userId) {
+      if (!this.activeCall) return;
+      const call = await TelephonyAPI.transfer(this.activeCall.id, userId);
+      this.applyCall(call);
+    },
+
+    async cancelTransfer() {
+      if (!this.activeCall) return;
+      const call = await TelephonyAPI.cancelTransfer(this.activeCall.id);
+      this.applyCall(call);
     },
 
     dismissEnded() {

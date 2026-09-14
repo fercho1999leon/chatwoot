@@ -37,7 +37,12 @@ class Telephony::CallProjection < ApplicationRecord
       answered_at: answered_at,
       ended_at: ended_at,
       duration_seconds: duration_seconds,
-      message_id: message_id
+      message_id: message_id,
+      user_id: user_id,
+      previous_user_id: previous_user_id,
+      on_hold: on_hold,
+      transfer_to_user_id: transfer_to_user_id,
+      transfer_state: transfer_state
     }
   end
 end

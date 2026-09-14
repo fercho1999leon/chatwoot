@@ -11,19 +11,25 @@ class Telephony::CapabilityResolver
       reason: reason || (active ? 'agent_busy' : nil),
       destination_masked: destination_masked,
       sip_ws_url: GlobalConfigService.load('TELEPHONY_SIP_WS_URL', ''),
-      max_call_seconds: GlobalConfigService.load('TELEPHONY_MAX_CALL_SECONDS', '3600').to_i,
+      max_call_seconds: telephony_channel&.max_call_seconds || 3600,
       active_call: active&.push_event_data
     }
   end
 
   def feature_enabled?
-    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?
+    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? && telephony_channel&.configured?
+  end
+
+  # Inbox de tipo Telephony de la cuenta (la troncal). Uno por cuenta en el MVP.
+  def telephony_channel
+    @telephony_channel ||= Channel::Telephony.where(account_id: account.id).order(:id).first
   end
 
   def inbox_enabled?
-    Telephony::InboxSetting.exists?(account_id: account.id, inbox_id: conversation.inbox_id, enabled: true)
+    telephony_channel&.allows_inbox?(conversation.inbox_id) || false
   end
 
+  # El agente debe ser colaborador del inbox Telephony y tener extensión provisionada.
   def endpoint
     @endpoint ||= Telephony::Endpoint.find_by(account_id: account.id, user_id: user.id, enabled: true)
   end
@@ -35,7 +41,8 @@ class Telephony::CapabilityResolver
   private
 
   def first_blocker
-    return 'feature_disabled' unless feature_enabled?
+    return 'feature_disabled' unless account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?
+    return 'no_trunk' unless telephony_channel&.configured?
     return 'inbox_not_enabled' unless inbox_enabled?
     return 'no_endpoint' unless endpoint
     return 'no_phone' unless destination

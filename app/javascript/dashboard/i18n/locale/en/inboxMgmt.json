@@ -520,6 +520,10 @@
           "VOICE": {
             "TITLE": "Voice",
             "DESCRIPTION": "Integrate with Twilio Voice"
+          },
+          "TELEPHONY": {
+            "TITLE": "Telephony (SIP)",
+            "DESCRIPTION": "Call your contacts from any conversation through your own SIP trunk (Asterisk/FreePBX)."
           }
         }
       },
@@ -554,6 +558,79 @@
         "SIGN_IN": "Sign in with Google",
         "EMAIL_PLACEHOLDER": "Enter email address",
         "ERROR_MESSAGE": "There was an error connecting to Google, please try again"
+      },
+      "TELEPHONY": {
+        "TITLE": "Telephony (SIP trunk)",
+        "DESC": "Configure the SIP trunk of your carrier. Agents call from the browser; the PBX places the call through this trunk.",
+        "CHANNEL_NAME": {
+          "LABEL": "Inbox name",
+          "PLACEHOLDER": "Telephony"
+        },
+        "TRUNK_MODE": {
+          "LABEL": "Trunk",
+          "CUSTOM": "Configure here (Chatwoot provisions it in the PBX)",
+          "GUI": "Already exists in FreePBX (use its name)",
+          "HELP": "Choose \"Configure here\" unless your trunk is already created in the FreePBX admin."
+        },
+        "TRUNK_NAME": {
+          "LABEL": "FreePBX trunk name",
+          "HELP": "Exactly as shown in FreePBX → Connectivity → Trunks.",
+          "PLACEHOLDER": "Carrier"
+        },
+        "HOST": {
+          "LABEL": "SIP server (host or IP)",
+          "PLACEHOLDER": "sip.provider.com"
+        },
+        "PORT": {
+          "LABEL": "Port"
+        },
+        "TRANSPORT": {
+          "LABEL": "Transport"
+        },
+        "AUTH_MODE": {
+          "LABEL": "Authentication",
+          "REGISTER": "Username and password (registration)",
+          "IP": "By IP (no credentials)"
+        },
+        "USERNAME": {
+          "LABEL": "Username"
+        },
+        "PASSWORD": {
+          "LABEL": "Password",
+          "HELP": "Leave the masked value to keep the current password."
+        },
+        "REGISTER": {
+          "LABEL": "Register with the carrier (uncheck if the carrier does not require registration)"
+        },
+        "CARRIER_IPS": {
+          "LABEL": "Carrier IP addresses",
+          "HELP": "Comma-separated. Used to identify incoming SIP traffic from the carrier and to open the firewall.",
+          "PLACEHOLDER": "203.0.113.10, 203.0.113.11"
+        },
+        "CALLER_ID": {
+          "LABEL": "Caller ID (number approved by the carrier)",
+          "PLACEHOLDER": "593999999999"
+        },
+        "DTMF": {
+          "LABEL": "DTMF mode"
+        },
+        "CODECS": {
+          "LABEL": "Codecs"
+        },
+        "DEFAULT_COUNTRY": {
+          "LABEL": "Default country (ISO)",
+          "HELP": "Used to normalize local numbers (e.g. EC → 09… becomes +5939…). Empty = only E.164.",
+          "PLACEHOLDER": "EC"
+        },
+        "MAX_CALL_SECONDS": {
+          "LABEL": "Maximum call duration (seconds)"
+        },
+        "ALLOWED_INBOXES": {
+          "LABEL": "Allow calling from these inboxes",
+          "HELP": "None selected = all inboxes of the account."
+        },
+        "SUBMIT_BUTTON": "Create telephony inbox",
+        "ERROR_MESSAGE": "Could not create the telephony inbox"
       }
     },
     "DETAILS": {
@@ -663,7 +740,8 @@
       "ACCOUNT_HEALTH": "Account Health",
       "CSAT": "CSAT",
       "VOICE": "Voice",
-      "CALLS": "Calls"
+      "CALLS": "Calls",
+      "TELEPHONY": "Telephony"
     },
     "VOICE_CONFIGURATION": {
       "ENABLE_VOICE": {
@@ -1039,7 +1117,48 @@
         "LABEL": "Enable voice calling",
         "DESCRIPTION": "Allow agents to start and receive WhatsApp voice calls on this inbox. Available only on embedded-signup WhatsApp Cloud channels with calling permission granted by Meta."
       },
-      "UPDATE_PRE_CHAT_FORM_SETTINGS": "Update Pre Chat Form Settings"
+      "UPDATE_PRE_CHAT_FORM_SETTINGS": "Update Pre Chat Form Settings",
+      "TELEPHONY": {
+        "SAVED": "Trunk saved and sent to the PBX",
+        "SAVE_ERROR": "Could not save the trunk",
+        "TAKEN": "taken",
+        "EXTENSION_LINKED": "Extension {extension} linked",
+        "EXTENSION_ERROR": {
+          "EXTENSION_TAKEN": "That extension is already linked to another agent",
+          "EXTENSION_UNAVAILABLE": "The extension does not exist in FreePBX or is not PJSIP",
+          "PROVISIONER_NOT_CONFIGURED": "The PBX provisioner is not configured",
+          "PBX_UNREACHABLE": "PBX unreachable",
+          "UNKNOWN": "Could not update the extension"
+        },
+        "STATUS": {
+          "TITLE": "Status",
+          "CONNECTED": "connected",
+          "DISCONNECTED": "disconnected",
+          "TRUNK": "Trunk",
+          "ACTIVE_CALLS": "Active calls: {count}",
+          "PBX": "PBX"
+        },
+        "TRUNK": {
+          "TITLE": "SIP trunk",
+          "SAVE": "Save and provision"
+        },
+        "AGENTS": {
+          "TITLE": "Agents and extensions",
+          "HELP": "Link a FreePBX extension to each agent. Chatwoot enables WebRTC on the extension so the browser can register; a desk phone can stay registered too.",
+          "AGENT": "Agent",
+          "EXTENSION": "Extension",
+          "REGISTERED": "Registered",
+          "YES": "yes",
+          "NO": "no",
+          "LINK": "Link",
+          "ROTATE": "Regenerate SIP secret",
+          "NO_EXTENSIONS": "No PJSIP extensions found in FreePBX (create them in FreePBX → Applications → Extensions)."
+        },
+        "GROUPS": {
+          "TITLE": "Ring groups (FreePBX)",
+          "HELP": "Managed in FreePBX. Used as routing and transfer targets."
+        }
+      }
     },
     "HELP_CENTER": {
       "LABEL": "Help Center",

@@ -690,4 +690,6 @@ en:
       pbx_unreachable: PBX unreachable
       policy_denied: denied by policy
       max_duration: maximum duration reached
+      no_agents: no agents available
+      missed: missed
       unknown: unknown

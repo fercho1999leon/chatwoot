@@ -17,6 +17,10 @@ class CreateTelephonyCallProjections < ActiveRecord::Migration[7.1]
       t.datetime :ended_at
       t.integer :duration_seconds
       t.uuid :last_event_id
+      t.boolean :on_hold, null: false, default: false
+      t.integer :transfer_to_user_id
+      t.string :transfer_state
+      t.integer :previous_user_id
       t.timestamps
     end
     add_projection_indexes

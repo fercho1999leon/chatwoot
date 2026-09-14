@@ -15,8 +15,12 @@ module TelephonyBroadcastable
 
   private
 
+  # Dueño actual + agente destino de una transferencia en curso + dueño anterior (para que
+  # su widget se cierre al completarse). Nunca a toda la cuenta.
   def broadcast_telephony_call(event)
     call = event.data[:telephony_call]
-    broadcast(call.account, [call.user.pubsub_token], event.name, call.push_event_data)
+    user_ids = [call.user_id, call.transfer_to_user_id, call.previous_user_id].compact.uniq
+    tokens = User.where(id: user_ids).pluck(:pubsub_token)
+    broadcast(call.account, tokens, event.name, call.push_event_data)
   end
 end

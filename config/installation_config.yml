@@ -579,3 +579,25 @@
   value: 'https://us.cloud.langfuse.com'
   locked: false
 ## ---- End of LLM Observability ---- ##
+- name: TELEPHONY_CONTROLLER_URL
+  display_title: 'Telephony controller URL'
+  description: 'Base URL of the telephony-controller (SIP/WebRTC calling). Empty disables telephony.'
+  value:
+  locked: false
+- name: TELEPHONY_SERVICE_TOKEN
+  display_title: 'Telephony service token'
+  description: 'Bearer token Chatwoot uses to call the telephony-controller.'
+  value:
+  locked: false
+  type: secret
+- name: TELEPHONY_HMAC_SECRET
+  display_title: 'Telephony callback HMAC secret'
+  description: 'Shared secret to verify callbacks from the telephony-controller.'
+  value:
+  locked: false
+  type: secret
+- name: TELEPHONY_SIP_WS_URL
+  display_title: 'Telephony SIP WebSocket URL'
+  description: 'wss:// endpoint of the PBX for the browser softphone.'
+  value:
+  locked: false

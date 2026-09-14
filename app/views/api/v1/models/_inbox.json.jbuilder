@@ -127,6 +127,33 @@ end
 
 json.provider resource.channel.try(:provider)
 
+## Telephony (SIP) Channel Attributes
+if resource.telephony?
+  json.telephony do
+    ch = resource.channel
+    json.trunk_mode ch.trunk_mode
+    json.trunk_name ch.trunk_name
+    json.host ch.host
+    json.port ch.port
+    json.transport ch.transport
+    json.auth_mode ch.auth_mode
+    json.username ch.username
+    json.password ch.password.present? ? Channel::Telephony::MASKED_PASSWORD : ''
+    json.carrier_ips ch.carrier_ips
+    json.caller_id ch.caller_id
+    json.codecs ch.codecs
+    json.dtmf ch.dtmf
+    json.register ch.register
+    json.default_country ch.default_country
+    json.max_call_seconds ch.max_call_seconds
+    json.allowed_inbox_ids ch.allowed_inbox_ids
+    json.dial_trunk_name ch.dial_trunk_name
+    json.configured ch.configured?
+    json.provisioned_at ch.provisioned_at
+    json.provision_error ch.provision_error
+  end
+end
+
 ## Telegram Attributes
 json.bot_name resource.channel.try(:bot_name) if resource.telegram?
 
