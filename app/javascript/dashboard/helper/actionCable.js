@@ -5,6 +5,7 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { emitter } from 'shared/helpers/mitt';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { useTelephonyStore } from 'dashboard/stores/telephony';
 import {
   applyOutboundAnswer,
   armOutboundRecorder,
@@ -66,6 +67,9 @@ class ActionCableConnector extends BaseActionCableConnector {
       'voice_call.outbound_connected': this.onVoiceCallOutboundConnected,
       'voice_call.outbound_accepted': this.onVoiceCallOutboundAccepted,
       'voice_call.ended': this.onVoiceCallEnded,
+      'telephony_call.created': this.onTelephonyCall,
+      'telephony_call.updated': this.onTelephonyCall,
+      'telephony_call.ended': this.onTelephonyCall,
     };
   }
 
@@ -356,6 +360,13 @@ class ActionCableConnector extends BaseActionCableConnector {
       // by filtered unread counts even when no conversation row changes.
       this.refreshConversationUnreadCountsWithFilteredRetry();
     }
+  };
+
+  // Telephony (SIP/WebRTC, CE): sent only to the owning agent's token; the store
+  // applies monotonically increasing state_version.
+  // eslint-disable-next-line class-methods-use-this
+  onTelephonyCall = data => {
+    useTelephonyStore().applyCall(data);
   };
 
   onVoiceCallIncoming = data => {

@@ -19,6 +19,12 @@ class CreateTelephonyCallProjections < ActiveRecord::Migration[7.1]
       t.uuid :last_event_id
       t.timestamps
     end
+    add_projection_indexes
+  end
+
+  private
+
+  def add_projection_indexes
     add_index :telephony_call_projections, [:account_id, :external_call_id], unique: true
     add_index :telephony_call_projections, [:account_id, :user_id, :state]
     add_index :telephony_call_projections, :conversation_id

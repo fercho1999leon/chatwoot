@@ -1,0 +1,62 @@
+{
+  "TELEPHONY": {
+    "BUTTON": {
+      "CALL": "Call {destination}",
+      "BUSY": "You already have a call in progress"
+    },
+    "REASON": {
+      "FEATURE_DISABLED": "Telephony is not enabled for this account",
+      "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
+      "NO_ENDPOINT": "You don't have a SIP extension assigned",
+      "NO_PHONE": "The contact has no valid phone number",
+      "AGENT_BUSY": "You already have a call in progress",
+      "PBX_DRAINING": "The phone system is under maintenance"
+    },
+    "STATE": {
+      "REQUESTED": "Starting call…",
+      "AGENT_CONNECTING": "Connecting your audio…",
+      "DIALING": "Dialing…",
+      "RINGING": "Ringing…",
+      "ANSWERED": "In call",
+      "ENDED": "Call ended"
+    },
+    "END_REASON": {
+      "COMPLETED": "Completed",
+      "AGENT_HANGUP": "Ended before answer",
+      "AGENT_NO_ANSWER": "Audio was not connected in time",
+      "AGENT_UNREGISTERED": "Your softphone is not registered",
+      "BUSY": "Busy",
+      "NO_ANSWER": "No answer",
+      "REJECTED": "Rejected by destination",
+      "INVALID_NUMBER": "Invalid number",
+      "TRUNK_FAILURE": "Trunk failure",
+      "CANCELED": "Canceled",
+      "CONTROLLER_RESTART": "Phone system restarted",
+      "PBX_UNREACHABLE": "Phone system unreachable",
+      "POLICY_DENIED": "Not allowed",
+      "MAX_DURATION": "Maximum duration reached"
+    },
+    "WIDGET": {
+      "INVITATION": "Incoming audio for your call",
+      "CONNECT_AUDIO": "Connect audio",
+      "SIP_CONNECTING": "Registering softphone…",
+      "SIP_FAILED": "Softphone not available",
+      "RETRY": "Retry"
+    },
+    "ERROR": {
+      "REGISTER": "Could not register the softphone: {reason}",
+      "MICROPHONE": "Microphone access was denied",
+      "TRANSPORT": "Connection to the phone system was lost",
+      "AGENT_BUSY": "You already have a call in progress",
+      "IDEMPOTENCY_MISMATCH": "Retry with a new call",
+      "PBX_DRAINING": "The phone system is under maintenance",
+      "PBX_UNREACHABLE": "Phone system unreachable",
+      "NOT_CONFIGURED": "Telephony is not configured",
+      "NO_PHONE": "The contact has no valid phone number",
+      "NO_ENDPOINT": "You don't have a SIP extension assigned",
+      "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
+      "FEATURE_DISABLED": "Telephony is not enabled for this account",
+      "UNKNOWN": "Could not start the call"
+    }
+  }
+}

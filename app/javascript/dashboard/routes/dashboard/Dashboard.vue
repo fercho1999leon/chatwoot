@@ -20,12 +20,16 @@ const CommandBar = defineAsyncComponent(
 const FloatingCallWidget = defineAsyncComponent(
   () => import('dashboard/components-next/call/FloatingCallWidget.vue')
 );
+const TelephonyCallWidget = defineAsyncComponent(
+  () => import('dashboard/components-next/telephony/CallWidget.vue')
+);
 
 import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.vue';
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
 
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { useTelephonyStore } from 'dashboard/stores/telephony';
 
 export default {
   components: {
@@ -37,6 +41,7 @@ export default {
     CopilotLauncher,
     CopilotContainer,
     FloatingCallWidget,
+    TelephonyCallWidget,
     MobileSidebarLauncher,
   },
   setup() {
@@ -45,6 +50,7 @@ export default {
     const { accountId } = useAccount();
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
+    const telephonyStore = useTelephonyStore();
 
     return {
       uiSettings,
@@ -54,6 +60,7 @@ export default {
       windowWidth,
       hasActiveCall: computed(() => callsStore.hasActiveCall),
       hasIncomingCall: computed(() => callsStore.hasIncomingCall),
+      showTelephonyWidget: computed(() => telephonyStore.showWidget),
     };
   },
   data() {
@@ -161,6 +168,7 @@ export default {
         />
         <CopilotContainer />
         <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
+        <TelephonyCallWidget v-if="showTelephonyWidget" />
       </template>
       <CommandBar :is-paywalled="isAccountPaywalled" />
       <AddAccountModal

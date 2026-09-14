@@ -37,6 +37,7 @@ import signup from './signup.json';
 import sla from './sla.json';
 import snooze from './snooze.json';
 import teamsSettings from './teamsSettings.json';
+import telephony from './telephony.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 import contentTemplates from './contentTemplates.json';
@@ -54,6 +55,7 @@ export default {
   ...automation,
   ...bulkActions,
   ...calls,
+  ...telephony,
   ...campaign,
   ...cannedMgmt,
   ...chatlist,
