@@ -44,9 +44,9 @@ class Api::V1::Accounts::Telephony::PbxController < Api::V1::Accounts::Telephony
 
   def sync!
     telephony_client.upsert_pbx(@pbx.controller_payload)
-    @pbx.update_columns(synced_at: Time.current, sync_error: nil)
+    @pbx.update!(synced_at: Time.current, sync_error: nil)
   rescue Telephony::ControllerClient::Error => e
-    @pbx.update_columns(sync_error: e.code)
+    @pbx.update!(sync_error: e.code)
     raise CustomExceptions::Telephony::Unavailable, e.code
   end
 

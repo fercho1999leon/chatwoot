@@ -15,8 +15,16 @@ vi.mock('dashboard/composables/useUISettings', async () => {
 
 vi.mock('dashboard/composables/useAccount', async () => {
   const { ref: createRef } = await import('vue');
-  return { useAccount: () => ({ accountId: createRef(1) }) };
+  return {
+    useAccount: () => ({
+      accountId: createRef(1),
+      isCloudFeatureEnabled: () => false,
+    }),
+  };
 });
+vi.mock('dashboard/composables/useSipSession', () => ({
+  useSipSession: () => ({ connect: vi.fn() }),
+}));
 
 vi.mock('dashboard/stores/telephony', () => ({
   useTelephonyStore: () => ({ showWidget: false }),
