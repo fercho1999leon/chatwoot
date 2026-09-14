@@ -45,16 +45,19 @@ class Telephony::CapabilityResolver
     }
   end
 
-  BLOCKERS = [
-    ['feature_disabled', ->(r) { r.account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? }],
-    ['no_trunk', ->(r) { r.telephony_channel&.configured? }],
-    ['inbox_not_enabled', ->(r) { r.inbox_enabled? }],
-    ['no_endpoint', ->(r) { r.endpoint }],
-    ['no_phone', ->(r) { r.destination }]
-  ].freeze
+  # pattr_initialize deja los readers privados: evaluar aquí, no en lambdas externas.
+  def blockers
+    {
+      'feature_disabled' => account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?,
+      'no_trunk' => telephony_channel&.configured?,
+      'inbox_not_enabled' => inbox_enabled?,
+      'no_endpoint' => endpoint.present?,
+      'no_phone' => destination.present?
+    }
+  end
 
   def first_blocker
-    BLOCKERS.each { |reason, ok| return reason unless ok.call(self) }
+    blockers.each { |reason, ok| return reason unless ok }
     nil
   end
 
