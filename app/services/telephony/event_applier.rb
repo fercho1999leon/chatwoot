@@ -19,33 +19,40 @@ class Telephony::EventApplier
   # Snapshot (respuesta de la API del controlador o cuerpo del callback).
   def apply_snapshot(data)
     data = data.to_h.stringify_keys
-    call_id = data['call_id'] || data['id']
-    projection = Telephony::CallProjection.find_by(account_id: account.id, external_call_id: call_id)
+    projection = Telephony::CallProjection.find_by(account_id: account.id, external_call_id: data['call_id'] || data['id'])
     return false unless projection
 
-    version = data['state_version'].to_i
     applied = false
     projection.with_lock do
-      next if version <= projection.state_version
-      next if projection.ended? && data['state'] != 'ended'
+      next unless applicable?(projection, data)
 
-      projection.assign_attributes(
-        state: data['state'], state_version: version, end_reason: data['end_reason'],
-        answered_at: data['answered_at'], ended_at: data['ended_at'], duration_seconds: data['duration_seconds'],
-        last_event_id: data['event_id']
-      )
-      projection.save!
-      Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
+      update_projection(projection, data)
       applied = true
     end
-    broadcast(projection, data['state']) if applied
+    broadcast(projection) if applied
     applied
   end
 
   private
 
-  def broadcast(projection, state)
-    event = case state
+  def applicable?(projection, data)
+    return false if data['state_version'].to_i <= projection.state_version
+    return false if projection.ended? && data['state'] != 'ended'
+
+    true
+  end
+
+  def update_projection(projection, data)
+    projection.update!(
+      state: data['state'], state_version: data['state_version'].to_i, end_reason: data['end_reason'],
+      answered_at: data['answered_at'], ended_at: data['ended_at'], duration_seconds: data['duration_seconds'],
+      last_event_id: data['event_id']
+    )
+    Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
+  end
+
+  def broadcast(projection)
+    event = case projection.state
             when 'ended' then Events::Types::TELEPHONY_CALL_ENDED
             when 'requested', 'agent_connecting' then Events::Types::TELEPHONY_CALL_CREATED
             else Events::Types::TELEPHONY_CALL_UPDATED

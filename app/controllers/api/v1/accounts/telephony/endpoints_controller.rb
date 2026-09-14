@@ -5,17 +5,15 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
   before_action :check_authorization
 
   def index
-    render json: Telephony::Endpoint.where(account_id: Current.account.id).map { |e| { user_id: e.user_id, endpoint: e.endpoint, enabled: e.enabled } }
+    endpoints = Telephony::Endpoint.where(account_id: Current.account.id)
+    render json: endpoints.map { |e| { user_id: e.user_id, endpoint: e.endpoint, enabled: e.enabled } }
   end
 
   def update
     user = Current.account.users.find(params[:user_id])
-    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
-    record.endpoint = params[:endpoint].presence || "agent-#{user.id}"
-    record.enabled = params.key?(:enabled) ? ActiveModel::Type::Boolean.new.cast(params[:enabled]) : true
+    record = build_record(user)
     secret = params[:secret].presence || SecureRandom.hex(16)
-    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, endpoint: record.endpoint,
-                                     secret: secret, display_name: user.name, enabled: record.enabled)
+    push_to_controller(record, user, secret)
     record.save!
     render json: { user_id: user.id, endpoint: record.endpoint, enabled: record.enabled, secret: secret }
   rescue Telephony::ControllerClient::Error => e
@@ -23,6 +21,18 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
   end
 
   private
+
+  def build_record(user)
+    record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
+    record.endpoint = params[:endpoint].presence || "agent-#{user.id}"
+    record.enabled = params.key?(:enabled) ? ActiveModel::Type::Boolean.new.cast(params[:enabled]) : true
+    record
+  end
+
+  def push_to_controller(record, user, secret)
+    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, endpoint: record.endpoint,
+                                     secret: secret, display_name: user.name, enabled: record.enabled)
+  end
 
   def check_authorization
     raise Pundit::NotAuthorizedError unless Current.account_user.administrator?

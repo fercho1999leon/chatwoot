@@ -11,6 +11,8 @@ class Telephony::ControllerClient
     end
   end
 
+  NETWORK_ERRORS = [Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout, SocketError].freeze
+
   def self.configured?
     base_url.present? && token.present?
   end
@@ -64,7 +66,18 @@ class Telephony::ControllerClient
   def request(method, path, query: {}, body: nil)
     raise Error.new(503, 'not_configured') unless self.class.configured?
 
-    response = HTTParty.public_send(
+    response = perform_request(method, path, query, body)
+    parsed = parse(response)
+    return parsed if response.success?
+
+    raise Error.new(response.code, error_code(parsed))
+  rescue *NETWORK_ERRORS => e
+    Rails.logger.error("telephony-controller inalcanzable: #{e.class}")
+    raise Error.new(503, 'pbx_unreachable')
+  end
+
+  def perform_request(method, path, query, body)
+    HTTParty.public_send(
       method,
       "#{self.class.base_url.chomp('/')}#{path}",
       headers: { 'Authorization' => "Bearer #{self.class.token}", 'Content-Type' => 'application/json' },
@@ -72,14 +85,16 @@ class Telephony::ControllerClient
       body: body&.to_json,
       timeout: 8
     )
-    parsed = response.parsed_response
-    parsed = JSON.parse(parsed) if parsed.is_a?(String) && parsed.present?
-    return parsed if response.success?
+  end
 
-    code = parsed.is_a?(Hash) ? (parsed['error'] || 'error') : 'error'
-    raise Error.new(response.code, code)
-  rescue Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout, SocketError => e
-    Rails.logger.error("telephony-controller inalcanzable: #{e.class}")
-    raise Error.new(503, 'pbx_unreachable')
+  def parse(response)
+    parsed = response.parsed_response
+    parsed.is_a?(String) && parsed.present? ? JSON.parse(parsed) : parsed
+  rescue JSON::ParserError
+    nil
+  end
+
+  def error_code(parsed)
+    parsed.is_a?(Hash) ? (parsed['error'] || 'error') : 'error'
   end
 end

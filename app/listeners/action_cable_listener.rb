@@ -1,4 +1,5 @@
 class ActionCableListener < BaseListener
+  include TelephonyBroadcastable
   include Events::Types
 
   def notification_created(event)
@@ -182,25 +183,7 @@ class ActionCableListener < BaseListener
     broadcast(account, [user.pubsub_token], CONVERSATION_MENTIONED, conversation.push_event_data)
   end
 
-  def telephony_call_created(event)
-    broadcast_telephony_call(event)
-  end
-
-  def telephony_call_updated(event)
-    broadcast_telephony_call(event)
-  end
-
-  def telephony_call_ended(event)
-    broadcast_telephony_call(event)
-  end
-
   private
-
-  # Solo al agente dueño de la llamada: nunca a toda la cuenta ni a los administradores.
-  def broadcast_telephony_call(event)
-    call = event.data[:telephony_call]
-    broadcast(call.account, [call.user.pubsub_token], event.name, call.push_event_data)
-  end
 
   def account_token(account)
     "account_#{account.id}"
