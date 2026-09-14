@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useAdmin } from 'dashboard/composables/useAdmin';
-import { isVoiceCallEnabled } from 'dashboard/helper/inbox';
+import { isVoiceCallEnabled, INBOX_TYPES } from 'dashboard/helper/inbox';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useCallHistoryStore } from 'dashboard/stores/callHistory';
 
@@ -38,13 +38,23 @@ const isFeatureEnabledonAccount = useMapGetter(
 const { isAdmin } = useAdmin();
 
 const voiceInboxes = computed(() => inboxes.value.filter(isVoiceCallEnabled));
+// SIP telephony (CE) feeds the same page through Channel::Telephony inboxes.
+const telephonyInboxes = computed(() =>
+  inboxes.value.filter(i => i.channel_type === INBOX_TYPES.TELEPHONY)
+);
 
 const isVoiceEnabled = computed(
   () =>
-    isFeatureEnabledonAccount.value(
+    (isFeatureEnabledonAccount.value(
       accountId.value,
       FEATURE_FLAGS.CHANNEL_VOICE
-    ) && voiceInboxes.value.length > 0
+    ) &&
+      voiceInboxes.value.length > 0) ||
+    (isFeatureEnabledonAccount.value(
+      accountId.value,
+      FEATURE_FLAGS.TELEPHONY_CALLS
+    ) &&
+      telephonyInboxes.value.length > 0)
 );
 
 const calls = computed(() => callHistoryStore.records);
@@ -142,7 +152,7 @@ onMounted(async () => {
         class="mt-5 pb-4 border-b border-n-weak mx-6"
         :total-count="isFetching ? null : meta.count"
         :agents="agents"
-        :inboxes="voiceInboxes"
+        :inboxes="[...voiceInboxes, ...telephonyInboxes]"
         :show-assignee="isAdmin"
       />
     </header>

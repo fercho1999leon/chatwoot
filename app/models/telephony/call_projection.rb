@@ -7,7 +7,7 @@ class Telephony::CallProjection < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :conversation
   belongs_to :inbox, optional: true
-  belongs_to :message, optional: true
+  belongs_to :message, optional: true, inverse_of: :telephony_call
 
   validates :external_call_id, presence: true, uniqueness: { scope: :account_id }
   validates :state, inclusion: { in: STATES }
@@ -20,6 +20,34 @@ class Telephony::CallProjection < ApplicationRecord
 
   def inbound?
     direction == 'inbound'
+  end
+
+  # Estado en el vocabulario de la tarjeta de llamada de Chatwoot (VoiceCall bubble / Calls page).
+  def display_status
+    return 'ringing' if %w[requested agent_connecting dialing ringing].include?(state)
+    return 'in-progress' if state == 'answered'
+
+    case end_reason
+    when 'completed', 'max_duration', 'to_ivr', 'to_voicemail' then 'completed'
+    when 'no_answer', 'agent_no_answer', 'missed', 'no_agents', 'busy' then 'no-answer'
+    when 'rejected', 'canceled', 'agent_hangup' then 'rejected'
+    else 'failed'
+    end
+  end
+
+  # Misma forma que Call#push_event_data (Enterprise) para reutilizar la burbuja y el historial.
+  def call_card_data
+    {
+      id: id, provider_call_id: external_call_id, provider: 'asterisk', direction: direction, status: display_status,
+      duration_seconds: duration_seconds, end_reason: end_reason, accepted_by_agent_id: user_id,
+      accepted_by_agent_name: user&.available_name, started_at: answered_at&.to_i, ended_at: ended_at,
+      from_number: inbound? ? destination_e164 : did, to_number: inbound? ? did : destination_e164,
+      recording_url: recording_url, transcript: nil, previous_user_id: previous_user_id
+    }
+  end
+
+  def recording_url
+    nil
   end
 
   def destination_masked

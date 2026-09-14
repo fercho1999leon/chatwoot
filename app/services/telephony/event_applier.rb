@@ -63,7 +63,7 @@ class Telephony::EventApplier
     @previously_ringing = projection.ringing_user_ids
     projection.update!(attrs)
     hand_over_conversation(projection) if owner_changed
-    Telephony::NoteProjector.new(projection: projection).upsert! if projection.ended?
+    Telephony::NoteProjector.new(projection: projection).upsert!
   end
 
   # El agente que recibe la llamada pasa a llevar la conversación: asignado y participante.

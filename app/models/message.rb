@@ -131,6 +131,8 @@ class Message < ApplicationRecord
   belongs_to :conversation
   belongs_to :sender, polymorphic: true, optional: true
 
+  # Telefonía SIP (CE): tarjeta de llamada asociada a un mensaje voice_call.
+  has_one :telephony_call, class_name: 'Telephony::CallProjection', foreign_key: :message_id, dependent: :nullify, inverse_of: :message
   has_many :attachments, dependent: :destroy, autosave: true, before_add: :validate_attachments_limit
   has_one :csat_survey_response, dependent: :destroy_async
   has_many :notifications, as: :primary_actor, dependent: :destroy_async

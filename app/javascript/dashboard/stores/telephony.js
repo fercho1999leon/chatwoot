@@ -43,6 +43,11 @@ export const useTelephonyStore = defineStore('telephony', {
     isAnswered: state => state.activeCall?.state === TELEPHONY_STATES.ANSWERED,
     isOnHold: state => !!state.activeCall?.on_hold,
     isTransferring: state => state.activeCall?.transfer_state === 'ringing',
+    // Inbound call that ended without this agent (or anyone) answering it
+    isMissedInbound: state =>
+      !state.activeCall &&
+      state.lastEndedCall?.direction === 'inbound' &&
+      !state.lastEndedCall?.answered_at,
     // Inbound call ringing this agent (nobody has answered yet)
     isIncoming: state =>
       state.activeCall?.direction === 'inbound' &&

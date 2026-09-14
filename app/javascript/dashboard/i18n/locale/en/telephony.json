@@ -61,7 +61,9 @@
       "LOADING": "Loading…",
       "INCOMING": "Incoming call",
       "ANSWER": "Answer",
-      "DECLINE": "Decline"
+      "DECLINE": "Decline",
+      "MISSED": "Missed call",
+      "CALL_BACK": "Call back"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",

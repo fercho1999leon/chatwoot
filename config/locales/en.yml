@@ -678,6 +678,11 @@ en:
     inbound_note: "Incoming call %{id} from %{caller} → %{agent}: %{result} (duration %{duration})"
     nobody: nobody
     end_reason:
+      requested: starting
+      agent_connecting: ringing
+      dialing: dialing
+      ringing: ringing
+      answered: in progress
       completed: completed
       agent_hangup: ended by agent before answer
       agent_no_answer: agent did not connect audio

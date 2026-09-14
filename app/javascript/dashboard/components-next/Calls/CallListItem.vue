@@ -63,7 +63,9 @@ const resultLabel = computed(() => {
 });
 
 const providerIcon = computed(() =>
-  getInboxVoiceIcon(props.call.inbox.channelType, props.call.inbox.medium)
+  props.call.provider === 'asterisk'
+    ? 'i-ri-phone-line'
+    : getInboxVoiceIcon(props.call.inbox.channelType, props.call.inbox.medium)
 );
 
 const createdAtLabel = computed(() =>

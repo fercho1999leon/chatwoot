@@ -40,6 +40,7 @@ const state = computed(() => call.value?.state);
 
 const title = computed(() => {
   if (store.isIncoming) return t('TELEPHONY.WIDGET.INCOMING');
+  if (store.isMissedInbound) return t('TELEPHONY.WIDGET.MISSED');
   if (store.isTransferring) return t('TELEPHONY.WIDGET.TRANSFERRING');
   if (store.isOnHold && store.isAnswered) return t('TELEPHONY.WIDGET.ON_HOLD');
   if (store.sipStatus === SIP_STATUS.FAILED)
@@ -52,6 +53,11 @@ const title = computed(() => {
 });
 
 const subtitle = computed(() => {
+  if (store.isMissedInbound) {
+    return [call.value?.contact_name, call.value?.destination_masked]
+      .filter(Boolean)
+      .join(' · ');
+  }
   if (state.value === TELEPHONY_STATES.ENDED && call.value?.end_reason) {
     return t(
       `TELEPHONY.END_REASON.${call.value.end_reason.toUpperCase()}`,
@@ -229,6 +235,24 @@ const onDismiss = () => {
 };
 
 const onRetryRegister = () => connect({ force: true });
+
+// Missed inbound: call the contact back from the same conversation.
+const onCallBack = async () => {
+  const displayId = call.value?.conversation_display_id;
+  if (!displayId) return;
+  isWorking.value = true;
+  try {
+    store.dismissEnded();
+    await store.createCall(displayId);
+  } catch (error) {
+    const code = error?.response?.data?.code || 'unknown';
+    useAlert(
+      t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))
+    );
+  } finally {
+    isWorking.value = false;
+  }
+};
 
 const goToConversation = () => {
   if (!call.value?.conversation_display_id) return;
@@ -419,6 +443,16 @@ onBeforeUnmount(stopTimer);
           icon="i-lucide-phone-off"
           :is-loading="isWorking"
           @click="onHangup"
+        />
+        <NextButton
+          v-if="store.isMissedInbound"
+          sm
+          solid
+          teal
+          icon="i-lucide-phone-outgoing"
+          :label="t('TELEPHONY.WIDGET.CALL_BACK')"
+          :is-loading="isWorking"
+          @click="onCallBack"
         />
         <NextButton
           v-if="!store.hasActiveCall && !store.hasInvitation"
