@@ -60,8 +60,11 @@ const startCall = async () => {
     return;
   }
   try {
+    // The agent already clicked "Call": accept the PBX's invitation for this leg without a second click.
+    store.autoAcceptInvitation = true;
     await store.createCall(displayId.value);
   } catch (error) {
+    store.autoAcceptInvitation = false;
     const code = error?.response?.data?.code || 'unknown';
     useAlert(
       t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))

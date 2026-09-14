@@ -78,7 +78,7 @@ export const useSipSession = () => {
       store.autoAcceptInvitation = false;
       // Declared below; only invoked at runtime once the composable is built.
       // eslint-disable-next-line no-use-before-define
-      acceptInvitation();
+      acceptInvitation(); // on failure (mic denied) the "Connect audio" button remains
     }
     inv.stateChange.addListener(state => {
       if (state === SessionState.Established) {

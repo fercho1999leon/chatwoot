@@ -158,6 +158,7 @@ export const useTelephonyStore = defineStore('telephony', {
         this.audioConnected = false;
         this.isMuted = false;
         this.idempotencyKey = null;
+        this.autoAcceptInvitation = false;
         return;
       }
       this.lastEndedCall = null;
