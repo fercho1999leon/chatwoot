@@ -79,9 +79,9 @@ class Channel::Telephony < ApplicationRecord
 
   def controller_payload
     {
-      account_id: account_id, mode: trunk_mode, trunk_name: trunk_name, host: host, port: port, transport: transport, auth: auth_mode, username: username,
-      password: password, carrier_ips: carrier_ips, caller_id: caller_id, codecs: codecs, dtmf: dtmf,
-      register: register, default_country: default_country, max_call_seconds: max_call_seconds
+      account_id: account_id, mode: trunk_mode, trunk_name: trunk_name, host: host, port: port, transport: transport,
+      auth: auth_mode, username: username, password: password, carrier_ips: carrier_ips, caller_id: caller_id,
+      codecs: codecs, dtmf: dtmf, register: register, default_country: default_country, max_call_seconds: max_call_seconds
     }
   end
 

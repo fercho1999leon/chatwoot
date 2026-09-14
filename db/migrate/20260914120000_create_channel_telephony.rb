@@ -17,26 +17,26 @@ class CreateChannelTelephony < ActiveRecord::Migration[7.1]
 
   private
 
-  def add_trunk_columns(t)
-    t.string :host, null: false, default: ''
-    t.integer :port, null: false, default: 5060
-    t.string :transport, null: false, default: 'udp'
-    t.string :auth_mode, null: false, default: 'register'
-    t.string :username, null: false, default: ''
-    t.string :password, null: false, default: ''
-    t.jsonb :carrier_ips, null: false, default: []
-    t.string :caller_id, null: false, default: ''
-    t.jsonb :codecs, null: false, default: %w[ulaw alaw]
-    t.string :dtmf, null: false, default: 'rfc4733'
-    t.boolean :register, null: false, default: true
+  def add_trunk_columns(table)
+    table.string :host, null: false, default: ''
+    table.integer :port, null: false, default: 5060
+    table.string :transport, null: false, default: 'udp'
+    table.string :auth_mode, null: false, default: 'register'
+    table.string :username, null: false, default: ''
+    table.string :password, null: false, default: ''
+    table.jsonb :carrier_ips, null: false, default: []
+    table.string :caller_id, null: false, default: ''
+    table.jsonb :codecs, null: false, default: %w[ulaw alaw]
+    table.string :dtmf, null: false, default: 'rfc4733'
+    table.boolean :register, null: false, default: true
   end
 
-  def add_policy_columns(t)
-    t.string :default_country, null: false, default: ''
-    t.integer :max_call_seconds, null: false, default: 3600
+  def add_policy_columns(table)
+    table.string :default_country, null: false, default: ''
+    table.integer :max_call_seconds, null: false, default: 3600
     # Inboxes desde cuyas conversaciones se puede llamar ([] = todos los de la cuenta)
-    t.jsonb :allowed_inbox_ids, null: false, default: []
-    t.datetime :provisioned_at
-    t.string :provision_error
+    table.jsonb :allowed_inbox_ids, null: false, default: []
+    table.datetime :provisioned_at
+    table.string :provision_error
   end
 end

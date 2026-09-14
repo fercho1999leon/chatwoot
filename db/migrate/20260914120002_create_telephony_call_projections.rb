@@ -16,20 +16,20 @@ class CreateTelephonyCallProjections < ActiveRecord::Migration[7.1]
 
   private
 
-  def add_state_columns(t)
-    t.string :state, null: false, default: 'requested'
-    t.integer :state_version, null: false, default: 0
-    t.string :end_reason
-    t.string :destination_e164, null: false
-    t.datetime :requested_at
-    t.datetime :answered_at
-    t.datetime :ended_at
-    t.integer :duration_seconds
-    t.uuid :last_event_id
-    t.boolean :on_hold, null: false, default: false
-    t.integer :transfer_to_user_id
-    t.string :transfer_state
-    t.integer :previous_user_id
+  def add_state_columns(table)
+    table.string :state, null: false, default: 'requested'
+    table.integer :state_version, null: false, default: 0
+    table.string :end_reason
+    table.string :destination_e164, null: false
+    table.datetime :requested_at
+    table.datetime :answered_at
+    table.datetime :ended_at
+    table.integer :duration_seconds
+    table.uuid :last_event_id
+    table.boolean :on_hold, null: false, default: false
+    table.integer :transfer_to_user_id
+    table.string :transfer_state
+    table.integer :previous_user_id
   end
 
   def add_projection_indexes
