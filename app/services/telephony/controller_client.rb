@@ -157,7 +157,7 @@ class Telephony::ControllerClient
     HTTParty.public_send(
       method,
       "#{self.class.base_url.chomp('/')}#{path}",
-      headers: { 'Authorization' => "Bearer #{self.class.token}", 'Content-Type' => 'application/json' },
+      headers: { 'Authorization' => "Bearer #{self.class.token}" }.merge(body ? { 'Content-Type' => 'application/json' } : {}),
       query: query.presence,
       body: body&.to_json,
       timeout: 8
