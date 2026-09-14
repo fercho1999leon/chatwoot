@@ -155,6 +155,7 @@ class Message < ApplicationRecord
     )
     data[:echo_id] = echo_id if echo_id.present?
     data[:attachments] = attachments.map(&:push_event_data) if attachments.present?
+    data[:call] = telephony_call.call_card_data if content_type == 'voice_call' && telephony_call.present?
     merge_sender_attributes(data)
   end
 
