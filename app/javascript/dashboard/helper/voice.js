@@ -44,8 +44,17 @@ export const clearLocalCall = callSid => {
 
 export const isInbound = direction => direction === 'inbound';
 
+// SIP telephony (community) calls are handled by the telephony widget, not the
+// Twilio/WhatsApp call session: their cards carry call_source 'asterisk'.
+const isSipTelephonyMessage = message =>
+  message?.content_attributes?.data?.call_source === 'asterisk' ||
+  message?.call?.provider === 'asterisk';
+
 const isVoiceCallMessage = message => {
-  return CONTENT_TYPES.VOICE_CALL === message?.content_type;
+  return (
+    CONTENT_TYPES.VOICE_CALL === message?.content_type &&
+    !isSipTelephonyMessage(message)
+  );
 };
 
 const shouldSkipCall = (callDirection, senderId, currentUserId) => {
