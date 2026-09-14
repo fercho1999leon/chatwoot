@@ -5,7 +5,7 @@ class Telephony::RoutingPlanner
 
   def plan
     steps = []
-    account.telephony_routing_rules.ordered.where(enabled: true).each do |rule|
+    account.telephony_routing_rules.ordered.where(enabled: true).find_each do |rule|
       next unless matches?(rule)
 
       step = build_step(rule)
@@ -22,12 +22,13 @@ class Telephony::RoutingPlanner
 
   def matches?(rule)
     c = rule.conditions.to_h.stringify_keys
-    tristate(c['contact_known'], contact.present?) &&
-      tristate(c['open_conversation'], conversation.persisted? && conversation.status == 'open' && !new_conversation?) &&
-      tristate(c['assignee_online'], assignee_online?) &&
-      hours(c['business_hours']) &&
-      did_matches?(c['dids']) &&
-      caller_e164.start_with?(c['caller_prefix'].to_s.strip)
+    facts = { 'contact_known' => contact.present?, 'open_conversation' => open_conversation?, 'assignee_online' => assignee_online? }
+    facts.all? { |key, fact| tristate(c[key], fact) } &&
+      hours(c['business_hours']) && did_matches?(c['dids']) && caller_e164.start_with?(c['caller_prefix'].to_s.strip)
+  end
+
+  def open_conversation?
+    conversation.status == 'open' && !new_conversation?
   end
 
   def tristate(value, fact)
@@ -72,15 +73,28 @@ class Telephony::RoutingPlanner
 
   def build_step(rule)
     d = rule.destination.to_h.stringify_keys
-    case d['type']
-    when 'assignee' then agents_step([conversation.assignee_id], rule.timeout)
-    when 'agent' then agents_step([d['user_id'].to_i], rule.timeout)
-    when 'team' then agents_step(account.teams.find_by(id: d['team_id'])&.members&.pluck(:id) || [], rule.timeout)
-    when 'extension' then { type: 'extension', extension: d['extension'].to_s, timeout: rule.timeout }
-    when 'ringgroup' then { type: 'ringgroup', number: d['number'].to_s, timeout: rule.timeout }
-    when 'ivr' then { type: 'ivr', id: d['ivr_id'].to_s }
-    when 'voicemail' then { type: 'voicemail', extension: d['extension'].to_s }
-    when 'hangup' then { type: 'hangup' }
+    user_ids = ringing_user_ids(d)
+    return agents_step(user_ids, rule.timeout) if user_ids
+
+    pbx_step(d, rule.timeout)
+  end
+
+  # Destinos que timbran a usuarios de Chatwoot (nil = destino de la PBX).
+  def ringing_user_ids(destination)
+    case destination['type']
+    when 'assignee' then [conversation.assignee_id]
+    when 'agent' then [destination['user_id'].to_i]
+    when 'team' then account.teams.find_by(id: destination['team_id'])&.members&.pluck(:id) || []
+    end
+  end
+
+  def pbx_step(destination, timeout)
+    case destination['type']
+    when 'extension' then { type: 'extension', extension: destination['extension'].to_s, timeout: timeout }
+    when 'ringgroup' then { type: 'ringgroup', number: destination['number'].to_s, timeout: timeout }
+    when 'ivr' then { type: 'ivr', id: destination['ivr_id'].to_s }
+    when 'voicemail' then { type: 'voicemail', extension: destination['extension'].to_s }
+    else { type: 'hangup' }
     end
   end
 

@@ -28,30 +28,13 @@ class Telephony::CallProjection < ApplicationRecord
     "#{destination_e164[0, 5]}****#{destination_e164[-3..]}"
   end
 
+  PUSH_ATTRIBUTES = %i[state state_version end_reason inbox_id requested_at answered_at ended_at duration_seconds message_id
+                       user_id previous_user_id on_hold transfer_to_user_id transfer_state direction did ringing_user_ids
+                       answered_by contact_name].freeze
+
   def push_event_data
-    {
-      id: external_call_id,
-      state: state,
-      state_version: state_version,
-      end_reason: end_reason,
-      conversation_display_id: conversation.display_id,
-      inbox_id: inbox_id,
-      destination_masked: destination_masked,
-      requested_at: requested_at,
-      answered_at: answered_at,
-      ended_at: ended_at,
-      duration_seconds: duration_seconds,
-      message_id: message_id,
-      user_id: user_id,
-      previous_user_id: previous_user_id,
-      on_hold: on_hold,
-      transfer_to_user_id: transfer_to_user_id,
-      transfer_state: transfer_state,
-      direction: direction,
-      did: did,
-      ringing_user_ids: ringing_user_ids,
-      answered_by: answered_by,
-      contact_name: contact_name
-    }
+    PUSH_ATTRIBUTES.index_with { |attr| public_send(attr) }.merge(
+      id: external_call_id, conversation_display_id: conversation.display_id, destination_masked: destination_masked
+    )
   end
 end

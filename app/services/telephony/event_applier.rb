@@ -42,16 +42,20 @@ class Telephony::EventApplier
     true
   end
 
-  def update_projection(projection, data)
-    attrs = {
-      state: data['state'], state_version: data['state_version'].to_i, end_reason: data['end_reason'],
-      answered_at: data['answered_at'], ended_at: data['ended_at'], duration_seconds: data['duration_seconds'],
-      last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
-      transfer_to_user_id: data['transfer_to_user_id'], transfer_state: data['transfer_state'],
-      previous_user_id: data['previous_user_id'],
-      ringing_user_ids: Array(data['ringing_user_ids']), answered_by: data['answered_by']
-    }
+  COPIED_KEYS = %w[state end_reason answered_at ended_at duration_seconds transfer_to_user_id transfer_state previous_user_id
+                   answered_by].freeze
+
+  def projection_attrs(data)
+    attrs = data.slice(*COPIED_KEYS).symbolize_keys.merge(
+      state_version: data['state_version'].to_i, last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
+      ringing_user_ids: Array(data['ringing_user_ids'])
+    )
     attrs[:contact_name] = data['contact_name'] if data['contact_name'].present?
+    attrs
+  end
+
+  def update_projection(projection, data)
+    attrs = projection_attrs(data)
     # Transferencia completada o entrante contestada: la llamada cambia de dueño.
     owner_changed = data['user_id'].present? && data['user_id'].to_i != projection.user_id
     attrs[:user_id] = data['user_id'].to_i if owner_changed
