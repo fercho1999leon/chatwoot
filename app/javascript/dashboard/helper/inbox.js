@@ -91,6 +91,7 @@ const INBOX_ICON_MAP_FILL = {
   [INBOX_TYPES.LINE]: 'i-ri-line-fill',
   [INBOX_TYPES.INSTAGRAM]: 'i-ri-instagram-fill',
   [INBOX_TYPES.TIKTOK]: 'i-ri-tiktok-fill',
+  [INBOX_TYPES.TELEPHONY]: 'i-ri-phone-fill',
 };
 
 const DEFAULT_ICON_FILL = 'i-ri-chat-1-fill';
@@ -106,6 +107,7 @@ const INBOX_ICON_MAP_LINE = {
   [INBOX_TYPES.LINE]: 'i-woot-line',
   [INBOX_TYPES.INSTAGRAM]: 'i-woot-instagram',
   [INBOX_TYPES.TIKTOK]: 'i-woot-tiktok',
+  [INBOX_TYPES.TELEPHONY]: 'i-ri-phone-line',
 };
 
 const DEFAULT_ICON_LINE = 'i-ri-chat-1-line';

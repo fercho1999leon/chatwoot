@@ -36,7 +36,7 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
 
   def link_extension(user, extension)
     telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension,
-                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]))
+                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]) || false)
     record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
     record.update!(endpoint: extension, enabled: true)
   end

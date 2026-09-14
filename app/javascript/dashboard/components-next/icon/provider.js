@@ -19,6 +19,7 @@ const channelTypeIconMap = {
   'Channel::Whatsapp': 'i-woot-whatsapp',
   'Channel::Instagram': 'i-woot-instagram',
   'Channel::Tiktok': 'i-woot-tiktok',
+  'Channel::Telephony': 'i-ri-phone-line',
 };
 
 const providerIconMap = {

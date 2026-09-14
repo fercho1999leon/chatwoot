@@ -740,6 +740,7 @@
       "ACCOUNT_HEALTH": "Account Health",
       "CSAT": "CSAT",
       "VOICE": "Voice",
+      "TELEPHONY": "Telephony (SIP)",
       "CALLS": "Calls",
       "TELEPHONY": "Telephony"
     },
@@ -1523,7 +1524,8 @@
       "API": "API Channel",
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
-      "VOICE": "Voice"
+      "VOICE": "Voice",
+      "TELEPHONY": "Telephony (SIP)"
     }
   }
 }
