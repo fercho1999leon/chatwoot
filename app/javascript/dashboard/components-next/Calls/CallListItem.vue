@@ -146,7 +146,7 @@ const conversationRoute = computed(() => ({
       <span class="w-px h-3 bg-n-strong shrink-0" />
       <Icon :icon="providerIcon" class="size-4 text-n-slate-11 shrink-0" />
       <span class="text-body-main truncate text-n-slate-11 min-w-0">
-        {{ call.inbox.name }}
+        {{ call.inbox?.name || t('CALLS_PAGE.ROW.INTERNAL') }}
       </span>
       <span
         v-if="!call.recordingUrl"
@@ -242,10 +242,11 @@ const conversationRoute = computed(() => ({
     >
       <Icon :icon="providerIcon" class="size-4 text-n-slate-11 shrink-0" />
       <span class="text-body-main truncate text-n-slate-11 min-w-0">
-        {{ call.inbox.name }}
+        {{ call.inbox?.name || t('CALLS_PAGE.ROW.INTERNAL') }}
       </span>
     </div>
     <RouterLink
+      v-if="call.conversation"
       :to="conversationRoute"
       class="inline-flex items-center h-6 gap-1 px-2 text-label-small py-3.5 outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0 justify-self-start"
     >

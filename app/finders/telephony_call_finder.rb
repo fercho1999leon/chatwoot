@@ -36,9 +36,13 @@ class TelephonyCallFinder
     @calls = @calls.where(user_id: @current_user.id)
   end
 
+  # custom_role es Enterprise: en CE solo cuenta el rol de administrador.
   def account_wide_access?
     account_user = Current.account_user
-    account_user&.administrator? || account_user&.custom_role&.permissions&.include?('report_manage')
+    return false unless account_user
+    return true if account_user.administrator?
+
+    account_user.respond_to?(:custom_role) && account_user.custom_role&.permissions&.include?('report_manage')
   end
 
   def filter_by_status

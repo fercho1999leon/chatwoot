@@ -42,7 +42,8 @@
       "YESTERDAY": "Yesterday",
       "DELETED_CONTACT": "Deleted contact",
       "INTERNAL_CALL": "Internal call · {name}",
-      "JOIN": "Join"
+      "JOIN": "Join",
+      "INTERNAL": "Internal"
     },
     "CALL_AGENT": {
       "PLACEHOLDER": "Call an agent…",
