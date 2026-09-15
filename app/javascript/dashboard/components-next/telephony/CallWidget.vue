@@ -12,6 +12,7 @@ import {
 } from 'dashboard/stores/telephony';
 import { useSipSession } from 'dashboard/composables/useSipSession';
 import { useRingtone } from 'dashboard/composables/useRingtone';
+import { useCallNotification } from 'dashboard/composables/useCallNotification';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import TelephonyAPI from 'dashboard/api/telephony';
 
@@ -22,6 +23,7 @@ const store = useTelephonyStore();
 const { accountId } = useAccount();
 const { acceptInvitation, setMuted, hangupLocal, connect } = useSipSession();
 const ringtone = useRingtone();
+const callNotification = useCallNotification();
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const showKeypad = ref(false);
@@ -147,7 +149,10 @@ watch(
   ringing => (ringing ? ringtone.start() : ringtone.stop()),
   { immediate: true }
 );
-onBeforeUnmount(() => ringtone.stop());
+onBeforeUnmount(() => {
+  ringtone.stop();
+  callNotification.clear();
+});
 
 const onAccept = async () => {
   isWorking.value = true;
@@ -334,6 +339,23 @@ const goToConversation = () => {
     },
   });
 };
+
+// Desktop notification + blinking title as soon as the call is offered (even before the INVITE).
+watch(
+  () => store.isIncoming,
+  incoming => {
+    if (!incoming) {
+      callNotification.clear();
+      return;
+    }
+    callNotification.notify({
+      title: title.value,
+      body: subtitle.value,
+      onClick: goToConversation,
+    });
+  },
+  { immediate: true }
+);
 
 // After a reload/reconnect, the call may still be live on the controller.
 onMounted(() => {

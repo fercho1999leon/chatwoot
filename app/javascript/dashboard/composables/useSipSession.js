@@ -7,6 +7,7 @@ import { Registerer, RegistererState, SessionState, UserAgent } from 'sip.js';
 import TelephonyAPI from 'dashboard/api/telephony';
 import { useTelephonyStore, SIP_STATUS } from 'dashboard/stores/telephony';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { requestCallNotificationPermission } from 'dashboard/composables/useCallNotification';
 
 // Module-level singletons: navigating between conversations must not drop the call.
 let userAgent = null;
@@ -144,6 +145,7 @@ export const useSipSession = () => {
           store.setSipStatus(SIP_STATUS.IDLE);
       });
       await registerer.register();
+      requestCallNotificationPermission();
       hookUnload(disconnect);
       // TURN credentials expire: refresh the session before they do.
       const ttl = Math.max(

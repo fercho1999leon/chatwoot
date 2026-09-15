@@ -46,7 +46,10 @@ const voiceCallData = computed(() => {
   }
   return {
     status: last.call.status,
-    direction: last.call.direction === 'outgoing' ? 'outbound' : 'inbound',
+    // Twilio/WhatsApp records say outgoing/incoming; SIP telephony says outbound/inbound.
+    direction: ['outgoing', 'outbound'].includes(last.call.direction)
+      ? 'outbound'
+      : 'inbound',
   };
 });
 
