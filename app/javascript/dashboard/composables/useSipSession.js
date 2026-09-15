@@ -17,6 +17,10 @@ let remoteAudio = null;
 let refreshTimer = null;
 let unloadHooked = false;
 let lockTimer = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const RECONNECT_BASE_MS = 2000;
+const RECONNECT_MAX_MS = 60000;
 
 // One registration per agent across tabs: with two tabs registered the PBX
 // rings both and one of them rejects. The tab holding a fresh lock in
@@ -137,6 +141,7 @@ export const useSipSession = () => {
 
   const disconnect = async () => {
     clearTimeout(refreshTimer);
+    clearTimeout(reconnectTimer);
     clearInterval(lockTimer);
     teardownSession();
     try {
@@ -147,6 +152,30 @@ export const useSipSession = () => {
       userAgent = null;
       store.setSipStatus(SIP_STATUS.IDLE);
     }
+  };
+
+  // Transport lost (proxy restart, network blip): re-register with backoff instead of
+  // waiting for the agent to press Retry. A live call keeps its media; only signalling returns.
+  const scheduleReconnect = () => {
+    const delay = Math.min(
+      RECONNECT_BASE_MS * 2 ** reconnectAttempts,
+      RECONNECT_MAX_MS
+    );
+    reconnectAttempts += 1;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(async () => {
+      if (store.sipStatus !== SIP_STATUS.FAILED) return;
+      // connect() tears the current session down: never while a call is up or ringing —
+      // the agent still has "Reconnect audio" for that case.
+      if (store.hasActiveCall || store.hasInvitation) {
+        scheduleReconnect();
+        return;
+      }
+      // eslint-disable-next-line no-use-before-define
+      const ok = await connect({ force: true, quiet: true });
+      if (ok) reconnectAttempts = 0;
+      else scheduleReconnect();
+    }, delay);
   };
 
   // Standby tab: poll the lock and register once the active tab is gone.
@@ -192,7 +221,11 @@ export const useSipSession = () => {
       await disconnect();
       userAgent = new UserAgent({
         uri: UserAgent.makeURI(session.sip.uri),
-        transportOptions: { server: session.sip.ws_url },
+        // CRLF keep-alives keep the WebSocket alive through proxies while a call has no SIP traffic.
+        transportOptions: {
+          server: session.sip.ws_url,
+          keepAliveInterval: 25,
+        },
         authorizationUsername: session.sip.username,
         authorizationPassword: session.sip.password,
         sessionDescriptionHandlerFactoryOptions: {
@@ -207,6 +240,7 @@ export const useSipSession = () => {
           store.sipStatus === SIP_STATUS.REGISTERED
         ) {
           store.setSipStatus(SIP_STATUS.FAILED, 'transport');
+          scheduleReconnect();
         }
       });
       await userAgent.start();
@@ -218,6 +252,7 @@ export const useSipSession = () => {
           store.setSipStatus(SIP_STATUS.IDLE);
       });
       await registerer.register();
+      reconnectAttempts = 0;
       holdLock();
       requestCallNotificationPermission();
       hookUnload(disconnect);

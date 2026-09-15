@@ -42,6 +42,10 @@ const call = computed(() => store.activeCall || store.lastEndedCall);
 const state = computed(() => call.value?.state);
 // Another tab of this agent holds the softphone: audio buttons here would ring that tab.
 const isStandby = computed(() => store.sipStatus === SIP_STATUS.STANDBY);
+// Mute/keypad/hold/transfer only make sense with audio up; while reconnecting the row shows Reconnect.
+const hasAudioControls = computed(
+  () => store.isAnswered && store.audioConnected && !isStandby.value
+);
 
 const isInternal = computed(() => call.value?.direction === 'internal');
 // Names of the other people on the call (owner + participants, minus me)
@@ -482,7 +486,7 @@ onBeforeUnmount(stopTimer);
         icon="i-lucide-message-square"
         @click="goToConversation"
       />
-      <div class="flex items-center gap-2 ml-auto">
+      <div class="flex flex-wrap items-center justify-end gap-2 ml-auto">
         <NextButton
           v-if="store.sipStatus === SIP_STATUS.FAILED"
           sm
@@ -526,7 +530,7 @@ onBeforeUnmount(stopTimer);
           @click="onDecline"
         />
         <NextButton
-          v-if="store.isAnswered"
+          v-if="hasAudioControls"
           sm
           ghost
           slate
@@ -534,7 +538,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleMute"
         />
         <NextButton
-          v-if="store.isAnswered && store.isOwner"
+          v-if="hasAudioControls && store.isOwner"
           sm
           ghost
           slate
@@ -542,7 +546,7 @@ onBeforeUnmount(stopTimer);
           @click="showKeypad = !showKeypad"
         />
         <NextButton
-          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
+          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
           sm
           ghost
           slate
@@ -551,7 +555,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleHold"
         />
         <NextButton
-          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
+          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
           v-tooltip="t('TELEPHONY.WIDGET.TRANSFER')"
           sm
           ghost
@@ -560,7 +564,7 @@ onBeforeUnmount(stopTimer);
           @click="openTransfer('transfer')"
         />
         <NextButton
-          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
+          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
           v-tooltip="t('TELEPHONY.WIDGET.ADD_AGENT')"
           sm
           ghost
