@@ -6,6 +6,7 @@ class Internal::TriggerDailyScheduledItemsJob < ApplicationJob
     # across the day without changing its slot on deploys or restarts.
     schedule_version_check
     Telephony::RecordingPurgeJob.perform_later
+    Telephony::HousekeepingJob.perform_later
   end
 
   private

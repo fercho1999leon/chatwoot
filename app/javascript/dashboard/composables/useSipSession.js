@@ -16,6 +16,44 @@ let invitation = null;
 let remoteAudio = null;
 let refreshTimer = null;
 let unloadHooked = false;
+let lockTimer = null;
+
+// One registration per agent across tabs: with two tabs registered the PBX
+// rings both and one of them rejects. The tab holding a fresh lock in
+// localStorage registers; the others stand by and take over when it goes away.
+const LOCK_KEY = 'telephony_sip_tab';
+const LOCK_TTL_MS = 12000;
+const LOCK_HEARTBEAT_MS = 4000;
+const tabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const readLock = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null');
+  } catch (e) {
+    return null;
+  }
+};
+const lockHeldByOtherTab = () => {
+  const lock = readLock();
+  return !!lock && lock.id !== tabId && Date.now() - lock.ts < LOCK_TTL_MS;
+};
+const writeLock = () => {
+  try {
+    localStorage.setItem(
+      LOCK_KEY,
+      JSON.stringify({ id: tabId, ts: Date.now() })
+    );
+  } catch (e) {
+    // storage unavailable: behave as a single tab
+  }
+};
+const releaseLock = () => {
+  try {
+    if (readLock()?.id === tabId) localStorage.removeItem(LOCK_KEY);
+  } catch (e) {
+    // ignore
+  }
+};
 
 // Unregister when the tab goes away; otherwise the stale contact lingers in
 // Asterisk until it expires and, with max_contacts reached, can evict the
@@ -24,6 +62,7 @@ const hookUnload = disconnect => {
   if (unloadHooked) return;
   unloadHooked = true;
   window.addEventListener('pagehide', () => {
+    releaseLock();
     disconnect();
   });
 };
@@ -98,6 +137,7 @@ export const useSipSession = () => {
 
   const disconnect = async () => {
     clearTimeout(refreshTimer);
+    clearInterval(lockTimer);
     teardownSession();
     try {
       if (registerer) await registerer.unregister().catch(() => {});
@@ -109,10 +149,43 @@ export const useSipSession = () => {
     }
   };
 
+  // Standby tab: poll the lock and register once the active tab is gone.
+  const watchLock = () => {
+    clearInterval(lockTimer);
+    lockTimer = setInterval(() => {
+      // eslint-disable-next-line no-use-before-define
+      if (!lockHeldByOtherTab()) connect({ quiet: true });
+    }, LOCK_HEARTBEAT_MS);
+  };
+
+  // Active tab: keep the lock fresh; yield if another tab took it over ("Use this tab").
+  const holdLock = () => {
+    writeLock();
+    clearInterval(lockTimer);
+    lockTimer = setInterval(async () => {
+      if (!lockHeldByOtherTab()) {
+        writeLock();
+        return;
+      }
+      if (store.hasActiveCall || store.hasInvitation) return; // finish the call first
+      await disconnect();
+      store.setSipStatus(SIP_STATUS.STANDBY);
+      watchLock();
+    }, LOCK_HEARTBEAT_MS);
+  };
+
   // quiet: registration attempted on dashboard load; a user without a linked
   // extension (or feature off) must not see the widget in a failed state.
+  // force: re-register even if already registered, and take the lock over from another tab.
   const connect = async ({ force = false, quiet = false } = {}) => {
     if (userAgent && !force) return true;
+    if (!force && lockHeldByOtherTab()) {
+      store.setSipStatus(SIP_STATUS.STANDBY);
+      watchLock();
+      return false;
+    }
+    clearInterval(lockTimer);
+    writeLock();
     store.setSipStatus(SIP_STATUS.CONNECTING);
     try {
       const session = await TelephonyAPI.browserSession();
@@ -145,6 +218,7 @@ export const useSipSession = () => {
           store.setSipStatus(SIP_STATUS.IDLE);
       });
       await registerer.register();
+      holdLock();
       requestCallNotificationPermission();
       hookUnload(disconnect);
       // TURN credentials expire: refresh the session before they do.
@@ -154,10 +228,12 @@ export const useSipSession = () => {
       );
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
-        if (!store.hasActiveCall) connect({ force: true });
+        if (!store.hasActiveCall && !lockHeldByOtherTab())
+          connect({ force: true });
       }, ttl * 1000);
       return true;
     } catch (error) {
+      releaseLock();
       const code = error?.response?.data?.code || error?.message || 'unknown';
       if (quiet && QUIET_REGISTER_ERRORS.includes(code)) {
         store.setSipStatus(SIP_STATUS.IDLE);

@@ -48,6 +48,8 @@
       "CONNECT_AUDIO": "Connect audio",
       "SIP_CONNECTING": "Registering softphone…",
       "SIP_FAILED": "Softphone not available",
+      "SIP_STANDBY": "Softphone active in another tab",
+      "USE_THIS_TAB": "Use this tab",
       "RETRY": "Retry",
       "ON_HOLD": "On hold",
       "TRANSFERRING": "Transferring…",

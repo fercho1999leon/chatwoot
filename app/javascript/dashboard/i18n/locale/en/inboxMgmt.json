@@ -676,7 +676,7 @@
           "TEST_MODE": {
             "LABEL": "Test mode: dial the PBX echo test instead of the carrier",
             "DIAL": "Test dial string",
-            "HELP": "Local/*43{'@'}from-internal is the FreePBX echo test. Turn off once the trunk is registered."
+            "HELP": "Local/*43{'@'}from-internal is the FreePBX echo test (answers instantly). Local/s{'@'}chatwoot-test rings for 6 seconds first, like a real call (needs the Chatwoot dialplan overlay on the PBX). Turn off once the trunk is registered."
           },
           "AGENT_TIMEOUT": "Agent ring (s)",
           "PSTN_TIMEOUT": "Carrier ring (s)",

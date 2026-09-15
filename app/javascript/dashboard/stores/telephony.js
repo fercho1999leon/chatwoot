@@ -16,6 +16,7 @@ export const SIP_STATUS = {
   CONNECTING: 'connecting',
   REGISTERED: 'registered',
   FAILED: 'failed',
+  STANDBY: 'standby', // another tab of this agent holds the registration
 };
 
 const uuid = () =>

@@ -36,9 +36,10 @@
 #
 # Indexes
 #
-#  idx_on_account_id_external_call_id_4b1d657f68        (account_id,external_call_id) UNIQUE
-#  idx_on_account_id_user_id_state_e4b12003b6           (account_id,user_id,state)
-#  index_telephony_call_projections_on_conversation_id  (conversation_id)
+#  idx_on_account_id_external_call_id_4b1d657f68                  (account_id,external_call_id) UNIQUE
+#  idx_on_account_id_user_id_state_e4b12003b6                     (account_id,user_id,state)
+#  index_telephony_call_projections_on_account_id_and_created_at  (account_id,created_at)
+#  index_telephony_call_projections_on_conversation_id            (conversation_id)
 #
 class Telephony::CallProjection < ApplicationRecord
   self.table_name = 'telephony_call_projections'
@@ -100,10 +101,13 @@ class Telephony::CallProjection < ApplicationRecord
     }
   end
 
+  # Enlace firmado y caducable: solo llega a quien pudo leer la tarjeta o el historial (API autenticada).
+  RECORDING_URL_TTL = 1.hour
+
   def recording_url
     return nil unless recording.attached?
 
-    Rails.application.routes.url_helpers.rails_blob_url(recording)
+    Rails.application.routes.url_helpers.rails_blob_url(recording, expires_in: RECORDING_URL_TTL)
   end
 
   def destination_masked

@@ -8,7 +8,8 @@
 #
 # Indexes
 #
-#  index_telephony_processed_events_on_event_id  (event_id) UNIQUE
+#  index_telephony_processed_events_on_created_at  (created_at)
+#  index_telephony_processed_events_on_event_id    (event_id) UNIQUE
 #
 class Telephony::ProcessedEvent < ApplicationRecord
   self.table_name = 'telephony_processed_events'

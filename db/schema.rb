@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120008) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_120009) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1558,6 +1558,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120008) do
     t.string "recording_state"
     t.integer "to_user_id"
     t.jsonb "participants", default: [], null: false
+    t.index ["account_id", "created_at"], name: "index_telephony_call_projections_on_account_id_and_created_at"
     t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
     t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"
     t.index ["conversation_id"], name: "index_telephony_call_projections_on_conversation_id"
@@ -1584,6 +1585,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120008) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "user_id", "key"], name: "index_telephony_idem_on_account_user_key", unique: true
+    t.index ["expires_at"], name: "index_telephony_idempotency_keys_on_expires_at"
   end
 
   create_table "telephony_pbxes", force: :cascade do |t|
@@ -1629,6 +1631,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120008) do
   create_table "telephony_processed_events", force: :cascade do |t|
     t.uuid "event_id", null: false
     t.datetime "created_at", null: false
+    t.index ["created_at"], name: "index_telephony_processed_events_on_created_at"
     t.index ["event_id"], name: "index_telephony_processed_events_on_event_id", unique: true
   end
 

@@ -14,7 +14,8 @@
 #
 # Indexes
 #
-#  index_telephony_idem_on_account_user_key  (account_id,user_id,key) UNIQUE
+#  index_telephony_idem_on_account_user_key        (account_id,user_id,key) UNIQUE
+#  index_telephony_idempotency_keys_on_expires_at  (expires_at)
 #
 class Telephony::IdempotencyKey < ApplicationRecord
   self.table_name = 'telephony_idempotency_keys'

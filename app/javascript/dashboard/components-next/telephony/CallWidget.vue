@@ -40,6 +40,8 @@ let timer = null;
 
 const call = computed(() => store.activeCall || store.lastEndedCall);
 const state = computed(() => call.value?.state);
+// Another tab of this agent holds the softphone: audio buttons here would ring that tab.
+const isStandby = computed(() => store.sipStatus === SIP_STATUS.STANDBY);
 
 const isInternal = computed(() => call.value?.direction === 'internal');
 // Names of the other people on the call (owner + participants, minus me)
@@ -91,6 +93,7 @@ const subtitle = computed(() => {
       store.sipError
     );
   }
+  if (isStandby.value) return t('TELEPHONY.WIDGET.SIP_STANDBY');
   if (isInternal.value) {
     return store.isOwner
       ? t('TELEPHONY.WIDGET.CALLING_AGENT', { name: agentNames.value })
@@ -149,7 +152,22 @@ watch(
   ringing => (ringing ? ringtone.start() : ringtone.stop()),
   { immediate: true }
 );
+// Safety net for lost ActionCable events: re-read the active call while one is live.
+const ACTIVE_POLL_MS = 15000;
+let pollTimer = null;
+watch(
+  () => store.hasActiveCall,
+  live => {
+    clearInterval(pollTimer);
+    if (!live) return;
+    pollTimer = setInterval(() => {
+      store.refreshActive().catch(() => {});
+    }, ACTIVE_POLL_MS);
+  },
+  { immediate: true }
+);
 onBeforeUnmount(() => {
+  clearInterval(pollTimer);
   ringtone.stop();
   callNotification.clear();
 });
@@ -474,7 +492,16 @@ onBeforeUnmount(stopTimer);
           @click="onRetryRegister"
         />
         <NextButton
-          v-if="store.hasInvitation || store.needsReinvite"
+          v-if="isStandby"
+          sm
+          solid
+          blue
+          icon="i-lucide-monitor-check"
+          :label="t('TELEPHONY.WIDGET.USE_THIS_TAB')"
+          @click="onRetryRegister"
+        />
+        <NextButton
+          v-if="!isStandby && (store.hasInvitation || store.needsReinvite)"
           sm
           solid
           teal
