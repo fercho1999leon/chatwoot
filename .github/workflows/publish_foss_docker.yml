@@ -23,6 +23,8 @@ permissions:
 
 jobs:
   build:
+    # Solo en el repo upstream: el fork publica su propia imagen (publish_isp_image.yml).
+    if: github.repository == 'chatwoot/chatwoot'
     strategy:
       fail-fast: false
       matrix:
