@@ -19,7 +19,7 @@ const EXAMPLES = {
   stun_url: 'stun:pbx.example.com:3478',
   turn_urls:
     'turn:pbx.example.com:3478?transport=udp, turns:pbx.example.com:5349?transport=tcp',
-  provision_url: 'https://pbx.example.com/provision',
+  provision_url: 'https://pbx.example.com',
 };
 const set = (key, value) =>
   emit('update:modelValue', { ...props.modelValue, [key]: value });

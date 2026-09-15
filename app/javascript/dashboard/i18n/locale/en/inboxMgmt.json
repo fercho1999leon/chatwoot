@@ -670,7 +670,7 @@
           "TURN_TTL": "TURN credential TTL (s)",
           "PROVISION_TITLE": "PBX provisioner (optional)",
           "PROVISION_HELP": "Small service on the PBX that lets Chatwoot write the trunk and enable WebRTC on FreePBX extensions. Without it, create the trunk in FreePBX and choose \"Already exists in FreePBX\".",
-          "PROVISION_URL": "Provisioner URL",
+          "PROVISION_URL": "Provisioner URL (base of the PBX; Chatwoot calls /provision/… on it)",
           "PROVISION_TOKEN": "Provisioner token",
           "CALLS_TITLE": "Calls",
           "TEST_MODE": {
