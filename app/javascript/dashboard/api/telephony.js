@@ -53,6 +53,16 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  contactCall(contactId, idempotencyKey) {
+    return axios
+      .post(
+        `${this.url}/contact_calls`,
+        { contact_id: contactId },
+        { headers: { 'Idempotency-Key': idempotencyKey } }
+      )
+      .then(r => r.data);
+  }
+
   createInternal(toUserId) {
     return axios
       .post(`${this.baseUrl()}/telephony_calls`, { to_user_id: toUserId })

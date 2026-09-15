@@ -16,6 +16,7 @@ import ContactDeleteModal from 'dashboard/modules/contact/ContactDeleteModal.vue
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.vue';
+import ContactCallButton from 'dashboard/components-next/telephony/ContactCallButton.vue';
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 
 export default {
@@ -29,6 +30,7 @@ export default {
     ContactMergeModal,
     ContactDeleteModal,
     VoiceCallButton,
+    ContactCallButton,
     InlineInput,
   },
   props: {
@@ -317,6 +319,13 @@ export default {
             />
           </template>
         </ComposeConversation>
+        <ContactCallButton
+          :phone="contact.phone_number"
+          :contact-id="contact.id"
+          sm
+          faded
+          slate
+        />
         <VoiceCallButton
           :phone="contact.phone_number"
           :contact-id="contact.id"

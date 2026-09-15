@@ -8,6 +8,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Breadcrumb from 'dashboard/components-next/breadcrumb/Breadcrumb.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.vue';
+import ContactCallButton from 'dashboard/components-next/telephony/ContactCallButton.vue';
 
 const props = defineProps({
   selectedContact: {
@@ -99,6 +100,14 @@ const closeMobileSidebar = () => {
                 :is-loading="isUpdating"
                 :disabled="isUpdating"
                 @click="toggleBlock"
+              />
+              <ContactCallButton
+                :phone="selectedContact?.phoneNumber"
+                :contact-id="contactId"
+                :label="$t('CONTACT_PANEL.CALL')"
+                sm
+                faded
+                slate
               />
               <VoiceCallButton
                 :phone="selectedContact?.phoneNumber"

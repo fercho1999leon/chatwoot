@@ -220,6 +220,7 @@ Rails.application.routes.draw do
             resource :capabilities, only: [:show]
             resource :browser_session, only: [:create]
             resource :status, only: [:show], controller: :status
+            resources :contact_calls, only: [:create]
             resource :pbx, only: [:show, :update, :destroy], controller: :pbx do
               post :test
               post :purge_recordings

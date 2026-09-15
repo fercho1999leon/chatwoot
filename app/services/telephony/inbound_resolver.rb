@@ -30,29 +30,17 @@ class Telephony::InboundResolver
     @contact = account.contacts.find_by(phone_number: caller_e164)
   end
 
-  # Conversación abierta más reciente del contacto (en cualquier inbox); si no hay, una nueva en el inbox Telephony.
+  # Conversación abierta más reciente del contacto (en cualquier inbox); si no hay, una nueva en el
+  # inbox Telephony (creando el contacto si el número es desconocido).
   def find_or_create_conversation
-    existing = open_conversation
-    return existing if existing
+    return Telephony::ConversationLocator.new(account: account, contact: contact).find_or_create if contact
     raise CustomExceptions::Telephony::Invalid, 'no_telephony_inbox' unless telephony_inbox
 
-    contact_inbox = telephony_contact_inbox
-    @contact = contact_inbox.contact
-    ConversationBuilder.new(params: {}, contact_inbox: contact_inbox).perform
-  end
-
-  def open_conversation
-    return nil unless contact
-
-    contact.conversations.where(status: :open).order(last_activity_at: :desc).first
-  end
-
-  def telephony_contact_inbox
-    return ContactInboxBuilder.new(contact: contact, inbox: telephony_inbox, source_id: caller_e164).perform if contact
-
-    ContactInboxWithContactBuilder.new(
+    contact_inbox = ContactInboxWithContactBuilder.new(
       inbox: telephony_inbox, source_id: caller_e164, contact_attributes: { phone_number: caller_e164, name: caller_e164 }
     ).perform
+    @contact = contact_inbox.contact
+    ConversationBuilder.new(params: {}, contact_inbox: contact_inbox).perform
   end
 
   def create_projection(conversation)
