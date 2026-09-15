@@ -31,6 +31,7 @@
       "FAILED": "Failed"
     },
     "ROW": {
+      "RECORDING_PROCESSING": "Recording…",
       "PICKED_BY": "Picked by",
       "DIALED_BY": "Dialed by",
       "ANSWERED": "Answered",

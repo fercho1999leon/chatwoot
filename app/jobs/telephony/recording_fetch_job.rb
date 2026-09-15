@@ -2,7 +2,14 @@
 # Idempotente: si ya está adjunta solo intenta el borrado remoto pendiente.
 class Telephony::RecordingFetchJob < ApplicationJob
   queue_as :low
-  retry_on Telephony::ControllerClient::Error, wait: 30.seconds, attempts: 5
+  # Tras agotar los reintentos la tarjeta deja de decir "procesando" y muestra que no hay grabación.
+  retry_on Telephony::ControllerClient::Error, wait: 30.seconds, attempts: 5 do |job, _error|
+    projection = Telephony::CallProjection.find_by(id: job.arguments.first)
+    next unless projection && projection.recording_state == 'stored'
+
+    projection.update!(recording_state: 'failed')
+    projection.message&.touch # rubocop:disable Rails/SkipsModelValidations
+  end
 
   def perform(projection_id)
     projection = Telephony::CallProjection.find_by(id: projection_id)

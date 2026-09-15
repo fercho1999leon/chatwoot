@@ -232,6 +232,12 @@ const conversationRoute = computed(() => ({
         :fallback-duration="call.durationSeconds || 0"
         class="w-auto min-w-44 shrink mx-auto"
       />
+      <span
+        v-else-if="call.recordingState === 'stored'"
+        class="text-label-small text-n-slate-11 mx-auto shrink-0"
+      >
+        {{ t('CALLS_PAGE.ROW.RECORDING_PROCESSING') }}
+      </span>
     </div>
     <div
       v-tooltip.top="{

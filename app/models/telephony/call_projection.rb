@@ -97,7 +97,7 @@ class Telephony::CallProjection < ApplicationRecord
       duration_seconds: duration_seconds, end_reason: end_reason, accepted_by_agent_id: user_id,
       accepted_by_agent_name: user&.available_name, started_at: answered_at&.to_i, ended_at: ended_at,
       from_number: inbound? ? destination_e164 : did, to_number: inbound? ? did : destination_e164, participants: participants,
-      recording_url: recording_url, transcript: nil, previous_user_id: previous_user_id
+      recording_url: recording_url, recording_state: recording_state, transcript: nil, previous_user_id: previous_user_id
     }
   end
 

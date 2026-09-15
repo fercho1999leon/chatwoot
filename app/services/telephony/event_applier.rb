@@ -72,7 +72,8 @@ class Telephony::EventApplier
     return unless projection.ended? && data['recording_name'].present? && projection.recording_state.blank?
 
     projection.update!(recording_name: data['recording_name'], recording_state: 'stored')
-    Telephony::RecordingFetchJob.perform_later(projection.id)
+    # Asterisk cierra el archivo justo después de colgar: sin la espera el primer intento suele fallar.
+    Telephony::RecordingFetchJob.set(wait: 5.seconds).perform_later(projection.id)
   end
 
   # El agente que recibe la llamada pasa a llevar la conversación: asignado y participante.

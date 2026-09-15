@@ -24,6 +24,7 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
 import AudioChip from 'next/message/chips/Audio.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
 const LABEL_MAP = {
   [VOICE_CALL_STATUS.IN_PROGRESS]: 'CONVERSATION.VOICE_CALL.CALL_IN_PROGRESS',
@@ -237,6 +238,17 @@ const recordingAttachment = computed(() => {
   };
 });
 
+// PBX recordings arrive a few seconds after hangup; 'stored' = still being fetched, 'failed' = gave up.
+const recordingState = computed(
+  () => call.value?.recordingState || call.value?.recording_state || null
+);
+const recordingPending = computed(
+  () => !recordingAttachment.value && recordingState.value === 'stored'
+);
+const recordingFailed = computed(
+  () => !recordingAttachment.value && recordingState.value === 'failed'
+);
+
 const handleJoinCall = async () => {
   if (!canJoinCall.value || isJoining.value) return;
 
@@ -345,6 +357,16 @@ const handleCallBack = async () => {
         :attachment="recordingAttachment"
         show-transcribed-text
       />
+      <div
+        v-else-if="recordingPending"
+        class="flex items-center gap-2 text-label-small text-n-slate-11"
+      >
+        <Spinner class="size-3" />
+        {{ t('CONVERSATION.VOICE_CALL.RECORDING_PROCESSING') }}
+      </div>
+      <span v-else-if="recordingFailed" class="text-label-small text-n-ruby-11">
+        {{ t('CONVERSATION.VOICE_CALL.RECORDING_FAILED') }}
+      </span>
 
       <!-- Call back button (missed inbound) -->
       <NextButton

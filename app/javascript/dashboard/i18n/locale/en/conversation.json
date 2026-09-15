@@ -104,6 +104,8 @@
       "LABELS_COUNT": "{count} labels"
     },
     "VOICE_CALL": {
+      "RECORDING_PROCESSING": "Recording is being processed…",
+      "RECORDING_FAILED": "Recording could not be retrieved from the PBX",
       "INCOMING_CALL": "Incoming call",
       "OUTGOING_CALL": "Outgoing call",
       "CALL_IN_PROGRESS": "Call in progress",

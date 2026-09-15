@@ -10,6 +10,7 @@ json.started_at call.answered_at&.to_i
 json.created_at call.created_at.to_i
 json.message_id call.message_id
 json.recording_url call.recording_url
+json.recording_state call.recording_state
 json.transcript nil
 json.answered_by call.answered_by
 json.previous_user_id call.previous_user_id
