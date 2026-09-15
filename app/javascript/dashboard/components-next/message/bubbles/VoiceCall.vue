@@ -160,7 +160,12 @@ const labelKey = computed(() => {
     : 'CONVERSATION.VOICE_CALL.INCOMING_CALL';
 });
 
-const subtext = computed(() => {
+// Inbound call handed over by the voice bot (bot API): shown after the handler/duration.
+const routedByBot = computed(
+  () => (call.value?.routedBy || call.value?.routed_by) === 'bot'
+);
+
+const baseSubtext = computed(() => {
   // Completed: "Handled by {agent} · 0:42" (drops either part when absent).
   if (status.value === VOICE_CALL_STATUS.COMPLETED) {
     return [handledBy.value, formattedDuration.value]
@@ -188,6 +193,15 @@ const subtext = computed(() => {
   }
   return t('CONVERSATION.VOICE_CALL.NOT_ANSWERED_YET');
 });
+
+const subtext = computed(() =>
+  [
+    baseSubtext.value,
+    routedByBot.value ? t('CONVERSATION.VOICE_CALL.ROUTED_BY_BOT') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+);
 
 const iconName = computed(() => {
   if (ICON_MAP[status.value]) return ICON_MAP[status.value];

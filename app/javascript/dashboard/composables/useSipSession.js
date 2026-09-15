@@ -18,9 +18,15 @@ let refreshTimer = null;
 let unloadHooked = false;
 let lockTimer = null;
 let reconnectTimer = null;
+let healthTimer = null;
 let reconnectAttempts = 0;
 const RECONNECT_BASE_MS = 2000;
 const RECONNECT_MAX_MS = 60000;
+// Reconnect deferred because a call is up: poll without growing the backoff.
+const RECONNECT_DEFER_MS = 5000;
+// TURN refresh skipped because a call is up: try again soon instead of dropping it.
+const REFRESH_RETRY_MS = 30000;
+const HEALTH_CHECK_MS = 60000;
 
 // One registration per agent across tabs: with two tabs registered the PBX
 // rings both and one of them rejects. The tab holding a fresh lock in
@@ -135,6 +141,7 @@ export const useSipSession = () => {
         store.hasInvitation = false;
         store.audioConnected = false;
         store.isMuted = false;
+        store.dropOrphanAudio(); // BYE on audio the controller no longer tracks: close the card
       }
     });
   };
@@ -142,33 +149,48 @@ export const useSipSession = () => {
   const disconnect = async () => {
     clearTimeout(refreshTimer);
     clearTimeout(reconnectTimer);
+    reconnectTimer = null;
     clearInterval(lockTimer);
+    clearInterval(healthTimer);
+    healthTimer = null;
     teardownSession();
+    // Detach first: the state listeners of a torn-down UA/registerer must not schedule reconnects.
+    const reg = registerer;
+    const ua = userAgent;
+    registerer = null;
+    userAgent = null;
     try {
-      if (registerer) await registerer.unregister().catch(() => {});
-      if (userAgent) await userAgent.stop().catch(() => {});
+      if (reg) await reg.unregister().catch(() => {});
+      if (ua) await ua.stop().catch(() => {});
     } finally {
-      registerer = null;
-      userAgent = null;
       store.setSipStatus(SIP_STATUS.IDLE);
     }
   };
 
-  // Transport lost (proxy restart, network blip): re-register with backoff instead of
-  // waiting for the agent to press Retry. A live call keeps its media; only signalling returns.
-  const scheduleReconnect = () => {
-    const delay = Math.min(
-      RECONNECT_BASE_MS * 2 ** reconnectAttempts,
-      RECONNECT_MAX_MS
-    );
-    reconnectAttempts += 1;
-    clearTimeout(reconnectTimer);
+  const sessionLive = () =>
+    store.hasActiveCall || store.hasInvitation || store.audioConnected;
+
+  // Transport lost / registration lost (proxy restart, network blip): re-register with
+  // backoff instead of waiting for the agent to press Retry. A live call keeps its media;
+  // only signalling returns. One pending timer at a time; a reconnect deferred because a
+  // call is up polls every few seconds without growing the backoff.
+  const scheduleReconnect = ({ deferred = false } = {}) => {
+    if (reconnectTimer) return;
+    let delay = RECONNECT_DEFER_MS;
+    if (!deferred) {
+      delay = Math.min(
+        RECONNECT_BASE_MS * 2 ** reconnectAttempts,
+        RECONNECT_MAX_MS
+      );
+      reconnectAttempts += 1;
+    }
     reconnectTimer = setTimeout(async () => {
+      reconnectTimer = null;
       if (store.sipStatus !== SIP_STATUS.FAILED) return;
       // connect() tears the current session down: never while a call is up or ringing —
       // the agent still has "Reconnect audio" for that case.
-      if (store.hasActiveCall || store.hasInvitation) {
-        scheduleReconnect();
+      if (sessionLive()) {
+        scheduleReconnect({ deferred: true });
         return;
       }
       // eslint-disable-next-line no-use-before-define
@@ -176,6 +198,47 @@ export const useSipSession = () => {
       if (ok) reconnectAttempts = 0;
       else scheduleReconnect();
     }, delay);
+  };
+
+  const failAndReconnect = reason => {
+    store.setSipStatus(SIP_STATUS.FAILED, reason);
+    scheduleReconnect();
+  };
+
+  // Belt and braces for missed state events: every minute make sure the registration
+  // and the WebSocket are really up; otherwise go through the reconnect path.
+  const startHealthCheck = () => {
+    clearInterval(healthTimer);
+    healthTimer = setInterval(() => {
+      if (
+        [SIP_STATUS.IDLE, SIP_STATUS.STANDBY, SIP_STATUS.CONNECTING].includes(
+          store.sipStatus
+        )
+      )
+        return;
+      if (reconnectTimer) return; // already on its way
+      const registered = registerer?.state === RegistererState.Registered;
+      const connected = !!userAgent?.transport?.isConnected?.();
+      if (registered && connected) return;
+      // A failed connect() already carries a precise code: keep it.
+      if (store.sipStatus === SIP_STATUS.FAILED) scheduleReconnect();
+      else failAndReconnect(registered ? 'transport' : 'registration');
+    }, HEALTH_CHECK_MS);
+  };
+
+  // TURN credentials expire: refresh the session before they do. Never mid-call
+  // (connect() drops the media): retry a bit later instead of losing the refresh.
+  const scheduleRefresh = delayMs => {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      if (lockHeldByOtherTab()) return;
+      if (sessionLive()) {
+        scheduleRefresh(REFRESH_RETRY_MS);
+        return;
+      }
+      // eslint-disable-next-line no-use-before-define
+      connect({ force: true });
+    }, delayMs);
   };
 
   // Standby tab: poll the lock and register once the active tab is gone.
@@ -218,8 +281,9 @@ export const useSipSession = () => {
     store.setSipStatus(SIP_STATUS.CONNECTING);
     try {
       const session = await TelephonyAPI.browserSession();
-      await disconnect();
-      userAgent = new UserAgent({
+      await disconnect(); // leaves the status IDLE
+      store.setSipStatus(SIP_STATUS.CONNECTING);
+      const ua = new UserAgent({
         uri: UserAgent.makeURI(session.sip.uri),
         // CRLF keep-alives keep the WebSocket alive through proxies while a call has no SIP traffic.
         transportOptions: {
@@ -234,38 +298,41 @@ export const useSipSession = () => {
         delegate: { onInvite },
         logLevel: 'error',
       });
-      userAgent.transport.stateChange.addListener(state => {
-        if (
-          state === 'Disconnected' &&
-          store.sipStatus === SIP_STATUS.REGISTERED
-        ) {
-          store.setSipStatus(SIP_STATUS.FAILED, 'transport');
-          scheduleReconnect();
+      userAgent = ua;
+      ua.transport.stateChange.addListener(state => {
+        if (userAgent !== ua) return; // replaced or torn down
+        if (state !== 'Disconnected') return;
+        if ([SIP_STATUS.IDLE, SIP_STATUS.STANDBY].includes(store.sipStatus))
+          return;
+        failAndReconnect('transport');
+      });
+      await ua.start();
+      const reg = new Registerer(ua, { expires: 120 });
+      registerer = reg;
+      reg.stateChange.addListener(state => {
+        if (registerer !== reg) return; // replaced or torn down
+        if (state === RegistererState.Registered) {
+          store.setSipStatus(SIP_STATUS.REGISTERED);
+          // Registration back while a call is up without audio: ask the PBX to ring us again.
+          if (store.needsReinvite) store.reinvite().catch(() => {});
+        } else if (state === RegistererState.Unregistered) {
+          // Refresh rejected / PBX dropped the contact: the widget would otherwise sit "registered".
+          failAndReconnect('registration');
+        } else if (state === RegistererState.Terminated) {
+          store.setSipStatus(SIP_STATUS.IDLE);
         }
       });
-      await userAgent.start();
-      registerer = new Registerer(userAgent, { expires: 120 });
-      registerer.stateChange.addListener(state => {
-        if (state === RegistererState.Registered)
-          store.setSipStatus(SIP_STATUS.REGISTERED);
-        else if (state === RegistererState.Terminated)
-          store.setSipStatus(SIP_STATUS.IDLE);
-      });
-      await registerer.register();
+      await reg.register();
       reconnectAttempts = 0;
       holdLock();
+      startHealthCheck();
       requestCallNotificationPermission();
       hookUnload(disconnect);
-      // TURN credentials expire: refresh the session before they do.
       const ttl = Math.max(
         60,
         (new Date(session.expires_at) - Date.now()) / 1000 - 120
       );
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => {
-        if (!store.hasActiveCall && !lockHeldByOtherTab())
-          connect({ force: true });
-      }, ttl * 1000);
+      scheduleRefresh(ttl * 1000);
       return true;
     } catch (error) {
       releaseLock();

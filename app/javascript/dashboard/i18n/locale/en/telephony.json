@@ -41,7 +41,8 @@
       "MISSED": "Missed (caller hung up)",
       "TO_IVR": "Sent to the PBX IVR",
       "TO_VOICEMAIL": "Sent to voicemail",
-      "UNROUTED": "Could not be routed"
+      "UNROUTED": "Could not be routed",
+      "LEFT": "The call continues without you"
     },
     "WIDGET": {
       "INVITATION": "Incoming audio for your call",
@@ -76,7 +77,11 @@
       "ADD_AGENT_TO": "Add an agent to the call",
       "LEAVE": "Leave",
       "TRANSFER": "Transfer",
-      "CALL_AGENT": "Call an agent"
+      "CALL_AGENT": "Call an agent",
+      "ORPHAN_AUDIO": "Audio still connected",
+      "LEFT_CALL": "You left the call",
+      "PEER_ON_HOLD": "Customer put the call on hold",
+      "ROUTED_BY_BOT": "Routed by the voice bot"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",
@@ -101,7 +106,11 @@
       "NOT_RINGING_YOU": "This call is no longer ringing you",
       "ALREADY_IN_CALL": "That agent is already on this call",
       "SAME_USER": "You cannot call yourself",
-      "TARGET_NO_ENDPOINT": "That agent has no SIP extension"
+      "TARGET_NO_ENDPOINT": "That agent has no SIP extension",
+      "REGISTRATION": "Softphone registration was lost"
+    },
+    "TRANSFER": {
+      "NOT_REGISTERED": "No Chatwoot open: softphone not connected"
     }
   }
 }

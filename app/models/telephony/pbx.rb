@@ -7,6 +7,8 @@
 #  ari_app                  :string           default("chatwoot"), not null
 #  ari_url                  :string           default(""), not null
 #  ari_user                 :string           default(""), not null
+#  bot_token_digest         :string
+#  bot_webhook_url          :string           default(""), not null
 #  has_ari_password         :boolean          default(FALSE), not null
 #  has_provision_token      :boolean          default(FALSE), not null
 #  has_turn_secret          :boolean          default(FALSE), not null
@@ -30,7 +32,8 @@
 #
 # Indexes
 #
-#  index_telephony_pbxes_on_account_id  (account_id) UNIQUE
+#  index_telephony_pbxes_on_account_id        (account_id) UNIQUE
+#  index_telephony_pbxes_on_bot_token_digest  (bot_token_digest) UNIQUE
 #
 
 # Conexión de la cuenta a su PBX (Asterisk/FreePBX). Los secretos (ARI, TURN, provisioner)
@@ -42,9 +45,9 @@ class Telephony::Pbx < ApplicationRecord
 
   EDITABLE_ATTRS = %i[ari_url ari_user ari_app sip_ws_url sip_domain stun_url turn_urls turn_ttl_seconds provision_url
                       test_dial agent_timeout transfer_timeout pstn_timeout max_call_seconds record_calls
-                      recording_retention_days].freeze
-  # Lo que viaja al controlador (la retención la aplica Chatwoot).
-  CONTROLLER_ATTRS = (EDITABLE_ATTRS - %i[recording_retention_days]).freeze
+                      recording_retention_days bot_webhook_url].freeze
+  # Lo que viaja al controlador (la retención y el webhook del bot los aplica Chatwoot).
+  CONTROLLER_ATTRS = (EDITABLE_ATTRS - %i[recording_retention_days bot_webhook_url]).freeze
   RECORD_MODES = %w[never inbound outbound all].freeze
   SECRET_ATTRS = %i[ari_password turn_secret provision_token].freeze
   MASK = '********'.freeze
@@ -55,7 +58,7 @@ class Telephony::Pbx < ApplicationRecord
   validates :ari_user, :sip_domain, presence: true
   validates :ari_app, format: { with: /\A[A-Za-z0-9_-]{1,40}\z/ }
   validates :sip_ws_url, format: { with: %r{\Awss?://\S+\z} }
-  validates :provision_url, format: { with: %r{\A(https?://\S+)?\z} }
+  validates :provision_url, :bot_webhook_url, format: { with: %r{\A(https?://\S+)?\z} }
   validates :turn_ttl_seconds, numericality: { only_integer: true, greater_than_or_equal_to: 300, less_than_or_equal_to: 86_400 }
   validates :agent_timeout, :transfer_timeout, numericality: { only_integer: true, greater_than_or_equal_to: 5, less_than_or_equal_to: 120 }
   validates :pstn_timeout, numericality: { only_integer: true, greater_than_or_equal_to: 10, less_than_or_equal_to: 180 }
@@ -64,6 +67,13 @@ class Telephony::Pbx < ApplicationRecord
   validates :recording_retention_days, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 3650 }
 
   before_validation :track_secrets
+
+  # Cuenta dueña del token de la API del bot (Authorization: Bearer <token>); nil si no coincide.
+  def self.authenticate_bot_token(token)
+    return nil if token.blank?
+
+    find_by(bot_token_digest: Digest::SHA256.hexdigest(token))
+  end
 
   def configured?
     ari_url.present? && sip_ws_url.present? && has_ari_password
@@ -75,6 +85,27 @@ class Telephony::Pbx < ApplicationRecord
     config = CONTROLLER_ATTRS.index_with { |a| public_send(a) }
     SECRET_ATTRS.each { |a| config[a] = public_send(a).nil? ? MASK : public_send(a) }
     { account_id: account_id, config: config }
+  end
+
+  # Token de la API del bot: se devuelve en claro una sola vez; aquí queda solo su SHA256.
+  def generate_bot_token!
+    token = SecureRandom.hex(32)
+    update!(bot_token_digest: Digest::SHA256.hexdigest(token))
+    token
+  end
+
+  def revoke_bot_token!
+    update!(bot_token_digest: nil)
+  end
+
+  def has_bot_token? # rubocop:disable Naming/PredicateName
+    bot_token_digest.present?
+  end
+
+  def bot_token_matches?(token)
+    return false if token.blank? || bot_token_digest.blank?
+
+    ActiveSupport::SecurityUtils.secure_compare(Digest::SHA256.hexdigest(token), bot_token_digest)
   end
 
   private

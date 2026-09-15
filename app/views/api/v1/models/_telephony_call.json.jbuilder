@@ -22,5 +22,8 @@ json.answered_by resource.answered_by
 json.contact_name resource.contact_name
 json.to_user_id resource.to_user_id
 json.participants resource.participants
+json.peer_on_hold resource.peer_on_hold
+json.routed_by resource.routed_by
+json.hint resource.hint
 json.owner_name resource.user&.available_name
 json.participant_names User.where(id: resource.participants).map(&:available_name)

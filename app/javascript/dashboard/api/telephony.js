@@ -41,6 +41,11 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  // Alias used by the store to re-read one call (404 = gone).
+  show(id) {
+    return this.call(id);
+  }
+
   hangup(id) {
     return axios
       .post(`${this.baseUrl()}/telephony_calls/${id}/hangup`)
@@ -130,6 +135,15 @@ class TelephonyAPI extends ApiClient {
 
   updatePbx(pbx) {
     return axios.put(`${this.url}/pbx`, { pbx }).then(r => r.data);
+  }
+
+  // Voice-bot API token: generated (or rotated) server-side and returned only once.
+  botToken() {
+    return axios.post(`${this.url}/pbx/bot_token`).then(r => r.data);
+  }
+
+  revokeBotToken() {
+    return axios.delete(`${this.url}/pbx/bot_token`);
   }
 
   purgeRecordings(before) {

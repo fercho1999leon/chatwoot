@@ -46,6 +46,8 @@ const isStandby = computed(() => store.sipStatus === SIP_STATUS.STANDBY);
 const hasAudioControls = computed(
   () => store.isAnswered && store.audioConnected && !isStandby.value
 );
+// A SIP leg is up or ringing in this tab: Hang up must always be reachable.
+const sessionLive = computed(() => store.audioConnected || store.hasInvitation);
 
 const isInternal = computed(() => call.value?.direction === 'internal');
 // Names of the other people on the call (owner + participants, minus me)
@@ -60,6 +62,12 @@ const agentNames = computed(() => {
 });
 
 const title = computed(() => {
+  if (store.hasOrphanAudio) return t('TELEPHONY.WIDGET.ORPHAN_AUDIO');
+  if (
+    state.value === TELEPHONY_STATES.ENDED &&
+    call.value?.end_reason === 'left'
+  )
+    return t('TELEPHONY.WIDGET.LEFT_CALL');
   if (store.isIncoming && store.isAnswered)
     return t('TELEPHONY.WIDGET.JOIN_INVITE');
   if (store.isIncoming)
@@ -110,7 +118,12 @@ const subtitle = computed(() => {
       ? `${call.value.contact_name} · ${call.value.destination_masked}`
       : call.value?.destination_masked || '';
   const others = call.value?.participant_names || [];
-  return others.length ? `${base} · +${others.join(', ')}` : base;
+  const parts = [others.length ? `${base} · +${others.join(', ')}` : base];
+  if (call.value?.peer_on_hold && store.isAnswered)
+    parts.unshift(t('TELEPHONY.WIDGET.PEER_ON_HOLD'));
+  if (call.value?.routed_by === 'bot')
+    parts.push(t('TELEPHONY.WIDGET.ROUTED_BY_BOT'));
+  return parts.filter(Boolean).join(' · ');
 });
 
 const formattedDuration = computed(() => {
@@ -200,11 +213,16 @@ const onDecline = () => {
   store.activeCall = null;
 };
 
+// Drop the SIP leg first (never leave audio behind), then tell the controller according to
+// the role; orphaned audio has no call to act on and just closes the card.
 const onHangup = async () => {
   isWorking.value = true;
+  const orphan = store.hasOrphanAudio;
   try {
-    if (store.hasActiveCall) await store.hangup();
     hangupLocal();
+    if (orphan || !store.hasActiveCall) store.dropOrphanAudio();
+    else if (store.isParticipant) await store.leaveCall();
+    else await store.hangup();
   } catch (e) {
     // the controller will close it on StasisEnd anyway
   } finally {
@@ -325,7 +343,10 @@ const onDtmf = async digit => {
   }
 };
 
+// The X never leaves audio behind: hang up the SIP leg if one is still live.
 const onDismiss = () => {
+  if (sessionLive.value) hangupLocal();
+  store.dropOrphanAudio();
   store.dismissEnded();
   if (store.sipStatus === SIP_STATUS.FAILED)
     store.setSipStatus(SIP_STATUS.IDLE);
@@ -424,19 +445,34 @@ onBeforeUnmount(stopTimer);
         :key="agent.user_id"
         class="flex items-center gap-1"
       >
-        <NextButton
-          sm
-          faded
-          slate
-          class="flex-1"
-          :disabled="
-            agent.busy ||
-            agent.availability === 'offline' ||
-            !agent.inbox_member
+        <span
+          v-tooltip="
+            agent.registered === false
+              ? t('TELEPHONY.TRANSFER.NOT_REGISTERED')
+              : null
           "
-          :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}${!agent.inbox_member ? ' · ' + t('TELEPHONY.WIDGET.NOT_INBOX_MEMBER') : ''}`"
-          @click="onPick(agent.user_id)"
-        />
+          class="flex-1 flex items-center gap-1.5 min-w-0"
+        >
+          <span
+            v-if="agent.registered != null"
+            class="size-2 rounded-full shrink-0"
+            :class="agent.registered ? 'bg-n-teal-9' : 'bg-n-slate-8'"
+          />
+          <NextButton
+            sm
+            faded
+            slate
+            class="flex-1 min-w-0"
+            :disabled="
+              agent.busy ||
+              agent.availability === 'offline' ||
+              agent.registered === false ||
+              !agent.inbox_member
+            "
+            :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}${!agent.inbox_member ? ' · ' + t('TELEPHONY.WIDGET.NOT_INBOX_MEMBER') : ''}`"
+            @click="onPick(agent.user_id)"
+          />
+        </span>
         <NextButton
           v-if="!agent.inbox_member && canAddMembers"
           sm
@@ -584,7 +620,7 @@ onBeforeUnmount(stopTimer);
         />
         <NextButton
           v-if="
-            (store.hasActiveCall || store.hasInvitation) &&
+            (store.hasActiveCall || sessionLive) &&
             !store.isIncoming &&
             !store.isParticipant
           "

@@ -46,6 +46,12 @@ Rails.application.routes.draw do
       namespace :telephony do
         resources :internal_events, only: [:create]
         resources :internal_inbound, only: [:create]
+        # API del bot de voz: Bearer por cuenta (Telephony::Pbx#bot_token), sin sesión de usuario.
+        namespace :bot do
+          resources :calls, only: [:show] do
+            member { post :route }
+          end
+        end
       end
       # ----------------------------------
       # start of account scoped api routes
@@ -224,6 +230,8 @@ Rails.application.routes.draw do
             resource :pbx, only: [:show, :update, :destroy], controller: :pbx do
               post :test
               post :purge_recordings
+              post :bot_token
+              delete :bot_token, action: :revoke_bot_token, as: :revoke_bot_token
             end
             resources :agents, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id

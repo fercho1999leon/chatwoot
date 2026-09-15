@@ -77,6 +77,17 @@ RSpec.describe Telephony::EventApplier do
       expect(projection.reload).to have_attributes(recording_name: 'call-x', recording_state: 'stored')
     end
 
+    it 'copies the peer hold, routing origin and dialplan hint' do
+      applier.apply_event(event(peer_on_hold: true, routed_by: 'bot', hint: 'ventas'))
+
+      expect(projection.reload).to have_attributes(peer_on_hold: true, routed_by: 'bot', hint: 'ventas')
+      expect(projection.push_event_data).to include(peer_on_hold: true, routed_by: 'bot', hint: 'ventas')
+      expect(projection.call_card_data).to include(peer_on_hold: true, routed_by: 'bot', hint: 'ventas')
+
+      applier.apply_event(event(state_version: 3))
+      expect(projection.reload.peer_on_hold).to be(false)
+    end
+
     it 'drops events without id or for unknown calls' do
       expect(applier.apply_event(event.except('event_id'))).to be(false)
       expect(applier.apply_event(event(call_id: SecureRandom.uuid))).to be(false)

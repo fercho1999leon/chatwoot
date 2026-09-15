@@ -76,6 +76,23 @@ const providerIcon = computed(() =>
     : getInboxVoiceIcon(props.call.inbox?.channelType, props.call.inbox?.medium)
 );
 
+// Discreet origin badge: routed by the voice bot, or the dialplan hint the call came in with.
+const routeBadge = computed(() => {
+  if (props.call.routedBy === 'bot')
+    return {
+      icon: 'i-lucide-bot',
+      label: t('CALLS_PAGE.ROW.ROUTED_BY_BOT'),
+      tooltip: t('CALLS_PAGE.ROW.ROUTED_BY_BOT_TOOLTIP'),
+    };
+  if (props.call.hint)
+    return {
+      icon: 'i-lucide-route',
+      label: props.call.hint,
+      tooltip: t('CALLS_PAGE.ROW.HINT_TOOLTIP', { hint: props.call.hint }),
+    };
+  return null;
+});
+
 const createdAtLabel = computed(() =>
   relativeDayTimestamp(props.call.createdAt, t('CALLS_PAGE.ROW.YESTERDAY'))
 );
@@ -106,6 +123,17 @@ const conversationRoute = computed(() => ({
         {{ contactName }}
       </span>
       <CallStatusBadge :kind="kind" class="ms-auto shrink-0" />
+      <span
+        v-if="routeBadge"
+        v-tooltip.top="{
+          content: routeBadge.tooltip,
+          delay: { show: 500, hide: 0 },
+        }"
+        class="inline-flex items-center h-5 gap-1 px-1.5 rounded text-label-small bg-n-alpha-2 text-n-slate-11 shrink-0 max-w-24"
+      >
+        <Icon :icon="routeBadge.icon" class="size-3 shrink-0" />
+        <span class="truncate">{{ routeBadge.label }}</span>
+      </span>
       <button
         v-if="canJoin && kind === 'ongoing' && call.provider === 'asterisk'"
         type="button"
@@ -192,6 +220,17 @@ const conversationRoute = computed(() => ({
     >
       <div class="flex items-center gap-x-2 min-w-0 lg:contents py-3.5">
         <CallStatusBadge :kind="kind" class="shrink-0" />
+        <span
+          v-if="routeBadge"
+          v-tooltip.top="{
+            content: routeBadge.tooltip,
+            delay: { show: 500, hide: 0 },
+          }"
+          class="inline-flex items-center h-5 gap-1 px-1.5 rounded text-label-small bg-n-alpha-2 text-n-slate-11 shrink-0 max-w-24"
+        >
+          <Icon :icon="routeBadge.icon" class="size-3 shrink-0" />
+          <span class="truncate">{{ routeBadge.label }}</span>
+        </span>
         <div
           v-if="agentActionLabel"
           class="gap-x-1.5 min-w-0 flex items-center"

@@ -24,6 +24,7 @@ export const EMPTY_PBX = {
   max_call_seconds: 3600,
   record_calls: 'never',
   recording_retention_days: 0,
+  bot_webhook_url: '',
 };
 
 export const useTelephonyPbx = () => {

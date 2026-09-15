@@ -8,7 +8,8 @@ class Api::V1::Telephony::InternalInboundController < ActionController::API
     return render json: { error: 'unknown_account' }, status: :not_found unless account
 
     render json: Telephony::InboundResolver.new(
-      account: account, call_id: payload['call_id'], caller_e164: payload['caller_e164'].to_s, did: payload['did'].to_s
+      account: account, call_id: payload['call_id'], caller_e164: payload['caller_e164'].to_s, did: payload['did'].to_s,
+      hint: payload['hint'].to_s
     ).resolve
   rescue JSON::ParserError
     head :unprocessable_entity

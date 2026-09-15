@@ -15,9 +15,9 @@ RSpec.describe Telephony::RoutingPlanner do
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(availability)
   end
 
-  def plan(did: '593000000000', caller: '+593987654321', known: contact)
+  def plan(did: '593000000000', caller: '+593987654321', known: contact, hint: nil)
     described_class.new(account: account, conversation: conversation, contact: known, did: did, caller_e164: caller,
-                        telephony_inbox: telephony_inbox).plan
+                        telephony_inbox: telephony_inbox, hint: hint).plan
   end
 
   it 'ends with a hangup when the account has no rules' do
@@ -86,5 +86,74 @@ RSpec.describe Telephony::RoutingPlanner do
     create(:telephony_routing_rule, account: account, enabled: false, destination: { 'type' => 'assignee' })
 
     expect(plan).to eq([{ type: 'hangup' }])
+  end
+
+  it 'matches the dialplan hint exactly and treats a blank hint condition as any' do
+    create(:telephony_routing_rule, account: account, position: 1, conditions: { 'hint' => 'ventas' },
+                                    destination: { 'type' => 'extension', 'extension' => '2000' })
+    create(:telephony_routing_rule, account: account, position: 2, conditions: { 'hint' => '' },
+                                    destination: { 'type' => 'voicemail', 'extension' => '1001' })
+
+    expect(plan(hint: 'ventas').first).to eq({ type: 'extension', extension: '2000', timeout: 20 })
+    expect(plan(hint: 'soporte')).to eq([{ type: 'voicemail', extension: '1001' }])
+    expect(plan).to eq([{ type: 'voicemail', extension: '1001' }])
+  end
+
+  it 'expands ring groups by default and honours expand: false' do
+    create(:telephony_routing_rule, account: account, position: 1, destination: { 'type' => 'ringgroup', 'number' => '600' })
+    create(:telephony_routing_rule, account: account, position: 2, destination: { 'type' => 'ringgroup', 'number' => '601', 'expand' => false })
+    create(:telephony_routing_rule, account: account, position: 3, destination: { 'type' => 'ringgroup', 'number' => '602', 'expand' => 'true' })
+
+    expect(plan.first(3)).to eq([
+                                  { type: 'ringgroup', number: '600', timeout: 20, expand: true },
+                                  { type: 'ringgroup', number: '601', timeout: 20, expand: false },
+                                  { type: 'ringgroup', number: '602', timeout: 20, expand: true }
+                                ])
+  end
+
+  describe '#steps_for_target' do
+    let(:planner) do
+      described_class.new(account: account, conversation: conversation, contact: contact, did: '593000000000',
+                          caller_e164: '+593987654321', telephony_inbox: telephony_inbox)
+    end
+    let(:team) { create(:team, account: account) }
+
+    before do
+      create(:team_member, team: team, user: agent)
+      create(:team_member, team: team, user: other)
+    end
+
+    it 'rings the online team members with an extension' do
+      expect(planner.steps_for_target({ 'type' => 'team', 'team_id' => team.id }, timeout: 30))
+        .to eq([{ type: 'agents', agents: [{ user_id: agent.id, extension: '1001' }], timeout: 30 }])
+    end
+
+    it 'rings the chosen agents and a single agent' do
+      expect(planner.steps_for_target({ 'type' => 'agents', 'user_ids' => [agent.id, other.id] }))
+        .to eq([{ type: 'agents', agents: [{ user_id: agent.id, extension: '1001' }], timeout: 20 }])
+      expect(planner.steps_for_target({ 'type' => 'agent', 'user_id' => agent.id.to_s }))
+        .to eq([{ type: 'agents', agents: [{ user_id: agent.id, extension: '1001' }], timeout: 20 }])
+    end
+
+    it 'returns no step when nobody eligible is online' do
+      expect(planner.steps_for_target({ 'type' => 'agents', 'user_ids' => [other.id] })).to eq([])
+    end
+
+    it 'builds PBX steps and clamps the timeout' do
+      expect(planner.steps_for_target({ 'type' => 'ringgroup', 'number' => '600' }, timeout: 500))
+        .to eq([{ type: 'ringgroup', number: '600', timeout: 120, expand: true }])
+      expect(planner.steps_for_target({ 'type' => 'extension', 'extension' => '2000' }, timeout: 1))
+        .to eq([{ type: 'extension', extension: '2000', timeout: 5 }])
+      expect(planner.steps_for_target({ 'type' => 'voicemail', 'extension' => '1001' })).to eq([{ type: 'voicemail', extension: '1001' }])
+      expect(planner.steps_for_target({ 'type' => 'hangup' })).to eq([{ type: 'hangup' }])
+    end
+
+    it 'rejects unknown types and missing fields' do
+      expect { planner.steps_for_target({ 'type' => 'ivr', 'ivr_id' => '1' }) }
+        .to raise_error(CustomExceptions::Telephony::Invalid, 'invalid_target')
+      expect { planner.steps_for_target({ 'type' => 'ringgroup' }) }.to raise_error(CustomExceptions::Telephony::Invalid, 'invalid_target')
+      expect { planner.steps_for_target({ 'type' => 'agents', 'user_ids' => [] }) }
+        .to raise_error(CustomExceptions::Telephony::Invalid, 'invalid_target')
+    end
   end
 end

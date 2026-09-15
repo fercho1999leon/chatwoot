@@ -55,14 +55,22 @@ const blankRule = () => ({
     business_hours: 'any',
     dids: '',
     caller_prefix: '',
+    hint: '',
   },
   destination: { type: 'assignee', timeout: DEFAULT_TIMEOUT },
 });
 
+// Ring group members ring in Chatwoot unless the rule says otherwise (expand: false = FreePBX rings them).
+const normalizeDestination = destination => {
+  const dest = { timeout: DEFAULT_TIMEOUT, ...(destination || {}) };
+  if (dest.type === 'ringgroup' && dest.expand == null) dest.expand = true;
+  return dest;
+};
+
 const normalize = rule => ({
   ...rule,
   conditions: { ...blankRule().conditions, ...(rule.conditions || {}) },
-  destination: { timeout: DEFAULT_TIMEOUT, ...(rule.destination || {}) },
+  destination: normalizeDestination(rule.destination),
 });
 
 const load = async () => {
@@ -138,7 +146,10 @@ const move = async (index, delta) => {
 
 const onTypeChange = rule => {
   const { type, timeout } = rule.destination;
-  rule.destination = { type, timeout: timeout || DEFAULT_TIMEOUT };
+  rule.destination = normalizeDestination({
+    type,
+    timeout: timeout || DEFAULT_TIMEOUT,
+  });
 };
 
 onMounted(async () => {
@@ -270,6 +281,13 @@ onMounted(async () => {
             class="!mb-0"
           />
         </label>
+        <label class="!mb-0">
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.COND.HINT') }}
+          <input v-model="rule.conditions.hint" type="text" class="!mb-0" />
+        </label>
+        <p class="col-span-full help-text !mb-0">
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.COND.HINT_HELP') }}
+        </p>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
@@ -346,6 +364,19 @@ onMounted(async () => {
             max="120"
             class="!mb-0 w-20"
           />
+        </label>
+        <label
+          v-if="rule.destination.type === 'ringgroup'"
+          class="!mb-0 col-span-full flex items-center gap-2"
+        >
+          <input
+            v-model="rule.destination.expand"
+            type="checkbox"
+            class="!mb-0 w-auto"
+          />
+          {{
+            t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.EXPAND_RINGGROUP')
+          }}
         </label>
       </div>
 

@@ -7,8 +7,8 @@ RSpec.describe Telephony::InboundResolver do
 
   before { allow(OnlineStatusTracker).to receive(:get_available_users).and_return({}) }
 
-  def resolve(caller: '+593987654321')
-    described_class.new(account: account, call_id: call_id, caller_e164: caller, did: did).resolve
+  def resolve(caller: '+593987654321', hint: '', id: call_id)
+    described_class.new(account: account, call_id: id, caller_e164: caller, did: did, hint: hint).resolve
   end
 
   context 'when the account has a telephony inbox' do
@@ -47,6 +47,27 @@ RSpec.describe Telephony::InboundResolver do
                                             destination_e164: '+593987654321', user_id: nil, inbox_id: telephony_inbox.id)
       expect(projection.conversation_id).to eq(result[:conversation_id])
       expect(result[:plan]).to eq([{ type: 'hangup' }])
+    end
+
+    it 'stores the dialplan hint and routes with it' do
+      create(:telephony_routing_rule, account: account, conditions: { 'hint' => 'ventas' },
+                                      destination: { 'type' => 'voicemail', 'extension' => '1001' })
+
+      result = resolve(hint: 'ventas')
+
+      expect(Telephony::CallProjection.find(result[:projection_id]).hint).to eq('ventas')
+      expect(result[:plan]).to eq([{ type: 'voicemail', extension: '1001' }])
+      expect(Telephony::CallProjection.find(resolve(hint: '', id: SecureRandom.uuid)[:projection_id]).hint).to be_nil
+    end
+
+    it 'notifies the bot webhook only when the PBX has one configured' do
+      create(:telephony_pbx, account: account)
+      expect { resolve(id: SecureRandom.uuid) }.not_to have_enqueued_job(Telephony::BotWebhookJob)
+
+      account.telephony_pbx.update!(bot_webhook_url: 'https://n8n.test/webhook/calls')
+      result = nil
+      expect { result = resolve }.to have_enqueued_job(Telephony::BotWebhookJob).on_queue('high')
+      expect(Telephony::BotWebhookJob).to have_been_enqueued.with(result[:projection_id])
     end
   end
 

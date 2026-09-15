@@ -1314,7 +1314,9 @@
             "YES": "yes",
             "NO": "no",
             "IN": "inside",
-            "OUT": "outside"
+            "OUT": "outside",
+            "HINT": "Hint",
+            "HINT_HELP": "Value of CHATWOOT_HINT set by the PBX dialplan / IVR custom destination, e.g. ventas or rg-600"
           },
           "DEST": {
             "ASSIGNEE": "Ring the assigned agent of the conversation",
@@ -1326,7 +1328,31 @@
             "VOICEMAIL": "Send to a voicemail",
             "HANGUP": "Hang up"
           },
-          "FREEPBX_HINT": "Extensions, ring groups and IVRs are managed in FreePBX; the lists below are read live from the PBX."
+          "FREEPBX_HINT": "Extensions, ring groups and IVRs are managed in FreePBX; the lists below are read live from the PBX.",
+          "EXPAND_RINGGROUP": "Ring its members in Chatwoot (agents with linked extensions ring in the browser)"
+        },
+        "BOT": {
+          "TITLE": "Voice bot",
+          "HELP": "An external voice agent (AI) registered as a FreePBX extension answers first and hands the call back to Chatwoot with a destination. Rule 1: ring the extension of the voice agent (e.g. 2000); the bot then reads the call context and calls the route endpoint with a team, agents, ring group, extension or voicemail. Chatwoot hangs up the bot, puts the customer on hold and rings the chosen agents in the browser.",
+          "API_TITLE": "API endpoints",
+          "CALLS_URL": "Call context (GET)",
+          "ROUTE_URL": "Route the call (POST)",
+          "AUTH_HELP": "Authenticate with the header Authorization: Bearer <token>. :id is the call id sent in the SIP header X-Chatwoot-Call-Id and in the webhook.",
+          "TOKEN_TITLE": "Bot token",
+          "TOKEN_ACTIVE": "A token is configured. Rotating replaces it: update the bot before rotating.",
+          "TOKEN_NONE": "No token yet: the bot API is disabled until you generate one.",
+          "GENERATE": "Generate token",
+          "ROTATE": "Rotate token",
+          "REVOKE": "Revoke",
+          "ROTATE_CONFIRM": "Rotate the bot token? The current token stops working immediately.",
+          "REVOKE_CONFIRM": "Revoke the bot token? The bot API stops working until a new token is generated.",
+          "TOKEN_ONCE": "Copy the token now: it is shown only once and cannot be recovered.",
+          "COPY": "Copy",
+          "COPIED": "Copied to clipboard",
+          "REVOKED": "Bot token revoked",
+          "ERROR": "Could not update the bot token",
+          "WEBHOOK_LABEL": "Webhook URL (optional)",
+          "WEBHOOK_HELP": "Every incoming call POSTs call.inbound (caller, DID, hint, contact, conversation, API URLs) to this URL, signed with X-Chatwoot-Telephony-Signature (HMAC-SHA256 with the bot token). Saved with the PBX connection."
         }
       }
     },

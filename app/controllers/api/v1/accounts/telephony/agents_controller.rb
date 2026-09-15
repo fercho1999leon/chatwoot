@@ -1,6 +1,7 @@
 # Agentes a los que se puede transferir: usuarios de la cuenta con extensión vinculada.
 # Con conversation_id indica si cada uno es colaborador del inbox de esa conversación
-# (si no lo es, no verá la conversación al recibir la llamada).
+# (si no lo es, no verá la conversación al recibir la llamada). `registered` = su softphone
+# está registrado en la PBX (sin él, la invitación no llega).
 class Api::V1::Accounts::Telephony::AgentsController < Api::V1::Accounts::Telephony::BaseController
   def index
     render json: {
@@ -34,9 +35,14 @@ class Api::V1::Accounts::Telephony::AgentsController < Api::V1::Accounts::Teleph
     @member_ids ||= conversation ? conversation.inbox.inbox_members.pluck(:user_id) : nil
   end
 
+  def registration
+    @registration ||= Telephony::RegistrationStatus.new(account: Current.account)
+  end
+
   def serialize(endpoint)
     { user_id: endpoint.user_id, name: endpoint.user&.name, extension: endpoint.endpoint,
       availability: availability[endpoint.user_id.to_s] || 'offline', busy: busy_ids.include?(endpoint.user_id),
+      registered: registration.registered?(endpoint.endpoint),
       inbox_member: member_ids.nil? || member_ids.include?(endpoint.user_id) }
   end
 end

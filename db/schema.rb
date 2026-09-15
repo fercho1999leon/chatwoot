@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120009) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_120010) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1558,6 +1558,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120009) do
     t.string "recording_state"
     t.integer "to_user_id"
     t.jsonb "participants", default: [], null: false
+    t.boolean "peer_on_hold", default: false, null: false
+    t.string "routed_by"
+    t.string "hint"
     t.index ["account_id", "created_at"], name: "index_telephony_call_projections_on_account_id_and_created_at"
     t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
     t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"
@@ -1613,7 +1616,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120009) do
     t.datetime "updated_at", null: false
     t.string "record_calls", default: "never", null: false
     t.integer "recording_retention_days", default: 0, null: false
+    t.string "bot_token_digest"
+    t.string "bot_webhook_url", default: "", null: false
     t.index ["account_id"], name: "index_telephony_pbxes_on_account_id", unique: true
+    t.index ["bot_token_digest"], name: "index_telephony_pbxes_on_bot_token_digest", unique: true
   end
 
   create_table "telephony_routing_rules", force: :cascade do |t|

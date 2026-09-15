@@ -1,11 +1,15 @@
 class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony::BaseController
   before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording, :answer, :join, :leave]
 
-  # Llamada viva del usuario: la suya o una entrante que le está sonando (ringing_user_ids).
+  # Llamada viva del usuario, por preferencia: la suya, una en la que participa (conferencia), una interna
+  # dirigida a él o una entrante que le está sonando (ringing_user_ids).
   def active
     scope = Telephony::CallProjection.active.where(account_id: Current.account.id)
-    @telephony_call = scope.find_by(user_id: Current.user.id) ||
-                      scope.where('ringing_user_ids @> ?', [Current.user.id].to_json).order(:id).last
+    me = Current.user.id
+    @telephony_call = scope.find_by(user_id: me) ||
+                      scope.where('participants @> ?', [me].to_json).order(:id).last ||
+                      scope.where(to_user_id: me).order(:id).last ||
+                      scope.where('ringing_user_ids @> ?', [me].to_json).order(:id).last
     return render json: nil unless @telephony_call
 
     refresh_from_controller
@@ -31,6 +35,7 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
       raise Pundit::NotAuthorizedError
     end
 
+    ensure_reachable!(target)
     apply_remote { telephony_client.join(@telephony_call.external_call_id, user_id: target.id) }
   end
 
@@ -72,12 +77,7 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
 
   def transfer
     to_user = Current.account.users.find(params.require(:to_user_id))
-    unless Telephony::Endpoint.exists?(account_id: Current.account.id, user_id: to_user.id, enabled: true)
-      raise CustomExceptions::Telephony::Invalid, 'no_endpoint'
-    end
-    # Sin acceso al inbox no vería la conversación (ConversationParticipant lo exige).
-    raise CustomExceptions::Telephony::Invalid, 'not_inbox_member' if @telephony_call.conversation.inbox.assignable_agents.exclude?(to_user)
-
+    ensure_reachable!(to_user)
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
   end
 
@@ -104,6 +104,17 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
   end
 
   private
+
+  # El destino necesita extensión vinculada y, si la llamada tiene conversación, acceso a su inbox
+  # (sin él no la vería: ConversationParticipant lo exige). Las internas no tienen conversación.
+  def ensure_reachable!(user)
+    unless Telephony::Endpoint.exists?(account_id: Current.account.id, user_id: user.id, enabled: true)
+      raise CustomExceptions::Telephony::Invalid, 'no_endpoint'
+    end
+
+    conversation = @telephony_call.conversation
+    raise CustomExceptions::Telephony::Invalid, 'not_inbox_member' if conversation && conversation.inbox.assignable_agents.exclude?(user)
+  end
 
   def apply_remote
     remote = yield

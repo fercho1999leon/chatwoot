@@ -43,12 +43,12 @@ class Telephony::EventApplier
   end
 
   COPIED_KEYS = %w[state end_reason answered_at ended_at duration_seconds transfer_to_user_id transfer_state previous_user_id
-                   answered_by].freeze
+                   answered_by routed_by hint].freeze
 
   def projection_attrs(data)
     attrs = data.slice(*COPIED_KEYS).symbolize_keys.merge(
       state_version: data['state_version'].to_i, last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
-      ringing_user_ids: Array(data['ringing_user_ids']), participants: Array(data['participants'])
+      peer_on_hold: data['peer_on_hold'] || false, ringing_user_ids: Array(data['ringing_user_ids']), participants: Array(data['participants'])
     )
     attrs[:contact_name] = data['contact_name'] if data['contact_name'].present?
     attrs

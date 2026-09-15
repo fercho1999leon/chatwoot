@@ -125,7 +125,8 @@
       "JOIN_CALL": "Join call",
       "CALL_BACK": "Call back",
       "TRANSCRIPT_SHOW_MORE": "Show more",
-      "TRANSCRIPT_SHOW_LESS": "Show less"
+      "TRANSCRIPT_SHOW_LESS": "Show less",
+      "ROUTED_BY_BOT": "Routed by bot"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Resolve",

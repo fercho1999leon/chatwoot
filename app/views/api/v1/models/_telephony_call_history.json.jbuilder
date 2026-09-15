@@ -14,6 +14,9 @@ json.recording_state call.recording_state
 json.transcript nil
 json.answered_by call.answered_by
 json.previous_user_id call.previous_user_id
+json.routed_by call.routed_by
+json.hint call.hint
+json.peer_on_hold call.peer_on_hold
 
 if call.conversation
   json.conversation do

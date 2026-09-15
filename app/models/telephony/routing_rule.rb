@@ -29,8 +29,12 @@ class Telephony::RoutingRule < ApplicationRecord
   HOURS = %w[any in out].freeze
   DESTINATIONS = %w[assignee agent team extension ringgroup ivr voicemail hangup].freeze
   TERMINAL = %w[ivr voicemail hangup].freeze
-  CONDITION_KEYS = %w[contact_known open_conversation assignee_online business_hours dids caller_prefix].freeze
-  DESTINATION_KEYS = %w[type user_id team_id extension number ivr_id timeout].freeze
+  CONDITION_KEYS = %w[contact_known open_conversation assignee_online business_hours dids caller_prefix hint].freeze
+  DESTINATION_KEYS = %w[type user_id team_id extension number ivr_id timeout expand].freeze
+  # Campo obligatorio de cada tipo de destino (también lo usa la API del bot).
+  REQUIRED_FIELD = { 'agent' => 'user_id', 'team' => 'team_id', 'extension' => 'extension', 'ringgroup' => 'number',
+                     'ivr' => 'ivr_id', 'voicemail' => 'extension' }.freeze
+  BOOLEANS = [true, false, 'true', 'false', nil].freeze
 
   validates :name, length: { maximum: 80 }
   validate :conditions_are_valid
@@ -51,10 +55,15 @@ class Telephony::RoutingRule < ApplicationRecord
   def conditions_are_valid
     c = conditions.to_h.stringify_keys
     errors.add(:conditions, 'unknown key') if (c.keys - CONDITION_KEYS).any?
-    errors.add(:conditions, 'contact_known') unless TRISTATE.include?(c.fetch('contact_known', 'any'))
-    errors.add(:conditions, 'open_conversation') unless TRISTATE.include?(c.fetch('open_conversation', 'any'))
-    errors.add(:conditions, 'assignee_online') unless TRISTATE.include?(c.fetch('assignee_online', 'any'))
+    %w[contact_known open_conversation assignee_online].each do |key|
+      errors.add(:conditions, key) unless TRISTATE.include?(c.fetch(key, 'any'))
+    end
     errors.add(:conditions, 'business_hours') unless HOURS.include?(c.fetch('business_hours', 'any'))
+    errors.add(:conditions, 'hint') unless valid_hint?(c['hint'])
+  end
+
+  def valid_hint?(value)
+    value.nil? || (value.is_a?(String) && value.length <= 80)
   end
 
   def destination_is_valid
@@ -62,8 +71,8 @@ class Telephony::RoutingRule < ApplicationRecord
     errors.add(:destination, 'unknown key') if (d.keys - DESTINATION_KEYS).any?
     return errors.add(:destination, 'type') unless DESTINATIONS.include?(d['type'])
 
-    required = { 'agent' => 'user_id', 'team' => 'team_id', 'extension' => 'extension', 'ringgroup' => 'number',
-                 'ivr' => 'ivr_id', 'voicemail' => 'extension' }[d['type']]
+    required = REQUIRED_FIELD[d['type']]
     errors.add(:destination, "#{required} required") if required && d[required].blank?
+    errors.add(:destination, 'expand') unless BOOLEANS.include?(d['expand'])
   end
 end

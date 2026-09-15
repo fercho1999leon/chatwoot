@@ -5,6 +5,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
+import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import TelephonyAPI from 'dashboard/api/telephony';
 import SettingsFieldSection from 'dashboard/components-next/Settings/SettingsFieldSection.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
@@ -41,6 +42,64 @@ const onPurge = () => {
   )
     purgeRecordings(before.toISOString());
 };
+// Bot de voz: token por cuenta (se muestra una sola vez) + URLs de la API que consume.
+const botToken = ref(null);
+const botBusy = ref(false);
+const botCallsUrl = `${window.location.origin}/api/v1/telephony/bot/calls/:id`;
+const botRouteUrl = `${botCallsUrl}/route`;
+const botApiRows = [
+  { key: 'CALLS_URL', url: botCallsUrl },
+  { key: 'ROUTE_URL', url: botRouteUrl },
+];
+const hasBotToken = computed(() => Boolean(pbx.value?.has_bot_token));
+
+const copyText = async text => {
+  await copyTextToClipboard(text);
+  useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.COPIED'));
+};
+
+const generateBotToken = async (rotate = false) => {
+  if (
+    rotate &&
+    // eslint-disable-next-line no-alert
+    !window.confirm(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.ROTATE_CONFIRM'))
+  )
+    return;
+  botBusy.value = true;
+  try {
+    const { token } = await TelephonyAPI.botToken();
+    botToken.value = token;
+    pbx.value = { ...pbx.value, has_bot_token: true };
+  } catch (e) {
+    useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.ERROR'));
+  } finally {
+    botBusy.value = false;
+  }
+};
+
+const revokeBotToken = async () => {
+  // eslint-disable-next-line no-alert
+  if (
+    !window.confirm(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.REVOKE_CONFIRM'))
+  )
+    return;
+  botBusy.value = true;
+  try {
+    await TelephonyAPI.revokeBotToken();
+    botToken.value = null;
+    pbx.value = { ...pbx.value, has_bot_token: false };
+    useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.REVOKED'));
+  } catch (e) {
+    useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.ERROR'));
+  } finally {
+    botBusy.value = false;
+  }
+};
+
+const setWebhookUrl = value => {
+  pbx.value = { ...pbx.value, bot_webhook_url: value };
+};
+
 const trunk = ref({});
 const saving = ref(false);
 const status = ref(null);
@@ -299,6 +358,133 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
             :is-loading="pbxPurging"
             :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.PURGE.BUTTON')"
             @click="onPurge"
+          />
+        </div>
+      </div>
+    </SettingsFieldSection>
+
+    <!-- Bot de voz (IA) -->
+    <SettingsFieldSection
+      v-if="pbxConfigured"
+      :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.TITLE')"
+    >
+      <p class="help-text mb-3">
+        {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.HELP') }}
+      </p>
+      <div class="flex flex-col gap-5">
+        <div class="flex flex-col gap-2">
+          <h4 class="text-sm font-medium text-n-slate-12">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.API_TITLE') }}
+          </h4>
+          <div
+            v-for="row in botApiRows"
+            :key="row.key"
+            class="flex flex-wrap items-center gap-2 text-sm"
+          >
+            <span class="text-n-slate-11 w-44 shrink-0">
+              {{ t(`INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.${row.key}`) }}
+            </span>
+            <code
+              class="flex-1 min-w-0 rounded bg-n-alpha-2 px-2 py-1 text-xs text-n-slate-12 truncate"
+            >
+              {{ row.url }}
+            </code>
+            <NextButton
+              sm
+              ghost
+              slate
+              icon="i-lucide-copy"
+              @click="copyText(row.url)"
+            />
+          </div>
+          <p class="help-text">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.AUTH_HELP') }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <h4 class="text-sm font-medium text-n-slate-12">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.TOKEN_TITLE') }}
+          </h4>
+          <p
+            class="text-sm"
+            :class="hasBotToken ? 'text-n-teal-11' : 'text-n-slate-11'"
+          >
+            {{
+              hasBotToken
+                ? t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.TOKEN_ACTIVE')
+                : t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.TOKEN_NONE')
+            }}
+          </p>
+          <div
+            v-if="botToken"
+            class="rounded-lg border border-n-amber-5 bg-n-amber-2 p-3 flex flex-col gap-2"
+          >
+            <p class="text-sm text-n-amber-11">
+              {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.TOKEN_ONCE') }}
+            </p>
+            <div class="flex flex-wrap items-center gap-2">
+              <code
+                class="flex-1 min-w-0 break-all rounded bg-n-alpha-2 px-2 py-1 text-xs text-n-slate-12 select-all"
+              >
+                {{ botToken }}
+              </code>
+              <NextButton
+                sm
+                faded
+                slate
+                icon="i-lucide-copy"
+                :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.COPY')"
+                @click="copyText(botToken)"
+              />
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <NextButton
+              v-if="!hasBotToken"
+              solid
+              blue
+              :is-loading="botBusy"
+              :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.GENERATE')"
+              @click="generateBotToken(false)"
+            />
+            <template v-else>
+              <NextButton
+                faded
+                slate
+                :is-loading="botBusy"
+                :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.ROTATE')"
+                @click="generateBotToken(true)"
+              />
+              <NextButton
+                faded
+                ruby
+                :is-loading="botBusy"
+                :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.REVOKE')"
+                @click="revokeBotToken"
+              />
+            </template>
+          </div>
+        </div>
+
+        <label class="!mb-0">
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.WEBHOOK_LABEL') }}
+          <input
+            :value="pbx.bot_webhook_url"
+            type="url"
+            @input="setWebhookUrl($event.target.value)"
+          />
+          <p class="help-text">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.BOT.WEBHOOK_HELP') }}
+          </p>
+        </label>
+        <div>
+          <NextButton
+            solid
+            blue
+            :is-loading="pbxSaving"
+            :label="t('INBOX_MGMT.ADD.TELEPHONY.PBX.SAVE')"
+            @click="onSavePbx"
           />
         </div>
       </div>

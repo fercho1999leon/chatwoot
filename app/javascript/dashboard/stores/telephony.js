@@ -35,6 +35,9 @@ export const useTelephonyStore = defineStore('telephony', {
     hasInvitation: false, // agent leg ringing in the browser: show "Connect audio"
     autoAcceptInvitation: false, // agent already pressed Answer: accept the next INVITE without asking
     audioConnected: false,
+    // SIP audio still up in this tab although the controller no longer lists us on the call
+    // (participant dropped from the snapshot, lost event…): keep the card so Hang up is reachable.
+    orphanAudio: false,
     isMuted: false,
     isCreating: false,
     idempotencyKey: null,
@@ -78,6 +81,10 @@ export const useTelephonyStore = defineStore('telephony', {
       (state.activeCall.participants || []).includes(state.currentUserId),
     isOwner: state =>
       !!state.activeCall && state.activeCall.user_id === state.currentUserId,
+    // Audio without a call to control it: the widget offers Hang up only.
+    hasOrphanAudio() {
+      return this.audioConnected && (!this.hasActiveCall || this.orphanAudio);
+    },
     // Callee of an internal call: a peer (can hang up), not a conference participant
     isInternalPeer: state =>
       !!state.activeCall &&
@@ -87,6 +94,7 @@ export const useTelephonyStore = defineStore('telephony', {
       return (
         this.hasActiveCall ||
         this.hasInvitation ||
+        this.audioConnected ||
         this.sipStatus === SIP_STATUS.CONNECTING ||
         this.sipStatus === SIP_STATUS.FAILED ||
         !!this.lastEndedCall
@@ -116,6 +124,7 @@ export const useTelephonyStore = defineStore('telephony', {
       if (!call?.id) return;
       if (currentUserId) this.currentUserId = currentUserId;
       const me = currentUserId || this.currentUserId;
+      let involved = true;
       if (me) {
         const ringingMe = (call.ringing_user_ids || []).includes(me);
         const participant = (call.participants || []).includes(me);
@@ -124,11 +133,20 @@ export const useTelephonyStore = defineStore('telephony', {
         const internalPeer =
           call.direction === 'internal' && call.to_user_id === me;
         const wasMine = this.activeCall?.id === call.id;
-        const involved =
+        involved =
           mine || ringingMe || participant || transferTarget || internalPeer;
         // Someone else answered / I left the conference / this step stopped ringing me: drop it silently.
         if (!involved && wasMine && call.state !== TELEPHONY_STATES.ENDED) {
           if (call.transfer_state !== 'completed') {
+            // The SIP leg is still up in this tab: never leave audio without a Hang up button.
+            if (this.audioConnected) {
+              this.orphanAudio = true;
+              if (
+                (call.state_version ?? 0) > (this.activeCall.state_version ?? 0)
+              )
+                this.activeCall = call;
+              return;
+            }
             this.activeCall = null;
             this.hasInvitation = false;
             this.audioConnected = false;
@@ -154,6 +172,7 @@ export const useTelephonyStore = defineStore('telephony', {
         this.hasInvitation = false;
         this.audioConnected = false;
         this.isMuted = false;
+        this.orphanAudio = false;
         this.idempotencyKey = null;
         return;
       }
@@ -178,11 +197,15 @@ export const useTelephonyStore = defineStore('telephony', {
         this.hasInvitation = false;
         this.audioConnected = false;
         this.isMuted = false;
+        this.orphanAudio = false;
         this.idempotencyKey = null;
         this.autoAcceptInvitation = false;
         return;
       }
       this.lastEndedCall = null;
+      // A fresh call, or one we are involved in again: the audio is no longer orphaned.
+      if (involved || !current || current.id !== call.id)
+        this.orphanAudio = false;
       this.activeCall = call;
     },
 
@@ -205,13 +228,30 @@ export const useTelephonyStore = defineStore('telephony', {
 
     async refreshActive() {
       const call = await TelephonyAPI.activeCall();
-      if (call) this.applyCall(call);
-      else if (this.activeCall)
-        this.applyCall({
-          ...this.activeCall,
-          state: TELEPHONY_STATES.ENDED,
-          state_version: 1e9,
-        });
+      if (call) {
+        this.applyCall(call);
+        return;
+      }
+      if (!this.activeCall) return;
+      // `active` may not list this tab's leg (participant not yet indexed, stale
+      // snapshot) while the SIP session is up: trust the call itself before ending.
+      if (this.audioConnected || this.hasInvitation) {
+        let snapshot = null;
+        try {
+          snapshot = await TelephonyAPI.show(this.activeCall.id);
+        } catch (error) {
+          if (error?.response?.status !== 404) return; // transient: keep the card
+        }
+        if (snapshot?.id && snapshot.state !== TELEPHONY_STATES.ENDED) {
+          this.applyCall(snapshot);
+          return;
+        }
+      }
+      this.applyCall({
+        ...this.activeCall,
+        state: TELEPHONY_STATES.ENDED,
+        state_version: 1e9,
+      });
     },
 
     async callAgent(toUserId) {
@@ -246,10 +286,21 @@ export const useTelephonyStore = defineStore('telephony', {
 
     async leaveCall() {
       if (!this.activeCall) return;
-      await TelephonyAPI.leave(this.activeCall.id);
+      const call = this.activeCall;
+      const snapshot = await TelephonyAPI.leave(call.id);
+      if (snapshot?.id) this.applyCall(snapshot); // bookkeeping (versions, ended calls)
+      // Closing card for the agent who left; the call itself goes on without them.
+      this.lastEndedCall = {
+        ...(snapshot?.id ? snapshot : call),
+        state: TELEPHONY_STATES.ENDED,
+        end_reason: 'left',
+      };
       this.activeCall = null;
       this.hasInvitation = false;
       this.audioConnected = false;
+      this.isMuted = false;
+      this.orphanAudio = false;
+      this.autoAcceptInvitation = false;
     },
 
     // Audio needed but no SIP invitation (page reload / network drop): ask the PBX to invite us again.
@@ -307,6 +358,21 @@ export const useTelephonyStore = defineStore('telephony', {
 
     dismissEnded() {
       this.lastEndedCall = null;
+    },
+
+    // Orphaned audio is gone (agent hung up locally or the PBX sent BYE): close the card.
+    dropOrphanAudio() {
+      if (!this.orphanAudio) return;
+      if (this.activeCall)
+        this.lastEndedCall = {
+          ...this.activeCall,
+          state: TELEPHONY_STATES.ENDED,
+        };
+      this.activeCall = null;
+      this.orphanAudio = false;
+      this.hasInvitation = false;
+      this.audioConnected = false;
+      this.isMuted = false;
     },
 
     setSipStatus(status, error = null) {

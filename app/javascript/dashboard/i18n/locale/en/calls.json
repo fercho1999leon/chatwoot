@@ -44,7 +44,10 @@
       "DELETED_CONTACT": "Deleted contact",
       "INTERNAL_CALL": "Internal call · {name}",
       "JOIN": "Join",
-      "INTERNAL": "Internal"
+      "INTERNAL": "Internal",
+      "ROUTED_BY_BOT": "bot",
+      "ROUTED_BY_BOT_TOOLTIP": "Routed by the voice bot",
+      "HINT_TOOLTIP": "Dialplan hint: {hint}"
     },
     "CALL_AGENT": {
       "PLACEHOLDER": "Call an agent…",

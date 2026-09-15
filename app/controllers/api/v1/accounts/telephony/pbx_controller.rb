@@ -33,6 +33,18 @@ class Api::V1::Accounts::Telephony::PbxController < Api::V1::Accounts::Telephony
     head :accepted
   end
 
+  # POST telephony/pbx/bot_token — genera (o rota) el token de la API del bot; se devuelve UNA sola vez.
+  def bot_token
+    raise CustomExceptions::Telephony::Invalid, 'pbx_not_configured' unless @pbx.persisted?
+
+    render json: { token: @pbx.generate_bot_token! }
+  end
+
+  def revoke_bot_token
+    @pbx.revoke_bot_token! if @pbx.persisted?
+    head :no_content
+  end
+
   def destroy
     telephony_client.delete_pbx(account_id: Current.account.id) if @pbx.persisted?
     @pbx.destroy! if @pbx.persisted?
@@ -62,7 +74,7 @@ class Api::V1::Accounts::Telephony::PbxController < Api::V1::Accounts::Telephony
   def serialize(pbx)
     attrs = pbx.attributes.slice(*Telephony::Pbx::EDITABLE_ATTRS.map(&:to_s), 'synced_at', 'sync_error')
     Telephony::Pbx::SECRET_ATTRS.each { |a| attrs[a.to_s] = pbx.public_send(:"has_#{a}") ? Telephony::Pbx::MASK : '' }
-    attrs.merge('configured' => pbx.configured?, 'persisted' => pbx.persisted?)
+    attrs.merge('configured' => pbx.configured?, 'persisted' => pbx.persisted?, 'has_bot_token' => pbx.has_bot_token?)
   end
 
   def check_authorization

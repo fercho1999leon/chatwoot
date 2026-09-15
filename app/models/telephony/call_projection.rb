@@ -12,12 +12,15 @@
 #  duration_seconds    :integer
 #  end_reason          :string
 #  ended_at            :datetime
+#  hint                :string
 #  on_hold             :boolean          default(FALSE), not null
 #  participants        :jsonb            not null
+#  peer_on_hold        :boolean          default(FALSE), not null
 #  recording_name      :string
 #  recording_state     :string
 #  requested_at        :datetime
 #  ringing_user_ids    :jsonb            not null
+#  routed_by           :string
 #  state               :string           default("requested"), not null
 #  state_version       :integer          default(0), not null
 #  transfer_state      :string
@@ -97,7 +100,8 @@ class Telephony::CallProjection < ApplicationRecord
       duration_seconds: duration_seconds, end_reason: end_reason, accepted_by_agent_id: user_id,
       accepted_by_agent_name: user&.available_name, started_at: answered_at&.to_i, ended_at: ended_at,
       from_number: inbound? ? destination_e164 : did, to_number: inbound? ? did : destination_e164, participants: participants,
-      recording_url: recording_url, recording_state: recording_state, transcript: nil, previous_user_id: previous_user_id
+      recording_url: recording_url, recording_state: recording_state, transcript: nil, previous_user_id: previous_user_id,
+      peer_on_hold: peer_on_hold, routed_by: routed_by, hint: hint
     }
   end
 
@@ -118,7 +122,7 @@ class Telephony::CallProjection < ApplicationRecord
 
   PUSH_ATTRIBUTES = %i[state state_version end_reason inbox_id requested_at answered_at ended_at duration_seconds message_id
                        user_id previous_user_id on_hold transfer_to_user_id transfer_state direction did ringing_user_ids
-                       answered_by contact_name to_user_id participants].freeze
+                       answered_by contact_name to_user_id participants peer_on_hold routed_by hint].freeze
 
   def push_event_data
     PUSH_ATTRIBUTES.index_with { |attr| public_send(attr) }.merge(
