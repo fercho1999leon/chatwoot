@@ -83,7 +83,7 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
 
   # La invitación SIP se perdió (recarga/red): volver a invitar. Entrante que me suena o mi propia llamada.
   def answer
-    mine = @telephony_call.user_id == Current.user.id || @telephony_call.ringing_user_ids.include?(Current.user.id)
+    mine = [@telephony_call.user_id, @telephony_call.to_user_id, *@telephony_call.ringing_user_ids].include?(Current.user.id)
     raise CustomExceptions::Telephony::Invalid, 'not_ringing_you' unless mine
 
     apply_remote { telephony_client.ring_me(@telephony_call.external_call_id, user_id: Current.user.id) }

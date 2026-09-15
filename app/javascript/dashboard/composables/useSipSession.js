@@ -170,6 +170,7 @@ export const useSipSession = () => {
 
   const acceptInvitation = async () => {
     if (!invitation) return false;
+    if (invitation.state !== SessionState.Initial) return true; // accept already in progress
     try {
       await invitation.accept({
         sessionDescriptionHandlerOptions: {

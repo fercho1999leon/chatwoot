@@ -47,22 +47,29 @@ export const useTelephonyStore = defineStore('telephony', {
     isTransferring: state => state.activeCall?.transfer_state === 'ringing',
     // Inbound call that ended without this agent (or anyone) answering it
     // Live call but this tab has no SIP leg (page reload / network drop)
-    needsReinvite: state =>
-      !!state.activeCall &&
-      state.activeCall.state !== TELEPHONY_STATES.ENDED &&
-      !state.hasInvitation &&
-      !state.audioConnected,
+    needsReinvite() {
+      return (
+        !!this.activeCall &&
+        this.activeCall.state !== TELEPHONY_STATES.ENDED &&
+        !this.hasInvitation &&
+        !this.audioConnected &&
+        !this.isIncoming
+      );
+    },
     isMissedInbound: state =>
       !state.activeCall &&
       state.lastEndedCall?.direction === 'inbound' &&
       !state.lastEndedCall?.answered_at,
-    // A call ringing this agent: inbound from a customer, an internal call, or an invitation to join
-    isIncoming: state =>
-      !!state.activeCall &&
-      state.activeCall.state !== TELEPHONY_STATES.ENDED &&
-      state.activeCall.user_id !== state.currentUserId &&
-      (state.activeCall.ringing_user_ids || []).includes(state.currentUserId) &&
-      !(state.activeCall.participants || []).includes(state.currentUserId),
+    // A call ringing this agent: inbound from a customer, an internal call, or an invitation to join.
+    // The callee of an internal call is "incoming" from creation (the caller's audio is still connecting).
+    isIncoming() {
+      const call = this.activeCall;
+      if (!call || call.state === TELEPHONY_STATES.ENDED) return false;
+      if (call.user_id === this.currentUserId) return false;
+      if ((call.participants || []).includes(this.currentUserId)) return false;
+      if (this.isInternalPeer) return call.state !== TELEPHONY_STATES.ANSWERED;
+      return (call.ringing_user_ids || []).includes(this.currentUserId);
+    },
     // This agent joined someone else's call (conference)
     isParticipant: state =>
       !!state.activeCall &&
@@ -248,8 +255,22 @@ export const useTelephonyStore = defineStore('telephony', {
     async reinvite() {
       if (!this.activeCall) return;
       this.autoAcceptInvitation = true;
-      const call = await TelephonyAPI.answer(this.activeCall.id);
-      this.applyCall(call);
+      // Internal callee before the PBX rings them (caller still connecting): the INVITE is on its way.
+      if (
+        this.isInternalPeer &&
+        [
+          TELEPHONY_STATES.REQUESTED,
+          TELEPHONY_STATES.AGENT_CONNECTING,
+        ].includes(this.activeCall.state)
+      )
+        return;
+      try {
+        const call = await TelephonyAPI.answer(this.activeCall.id);
+        this.applyCall(call);
+      } catch (error) {
+        this.autoAcceptInvitation = false;
+        throw error;
+      }
     },
 
     async hangup() {
