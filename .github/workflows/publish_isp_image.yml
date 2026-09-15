@@ -5,7 +5,8 @@
 #   - tags inmutables `sha-<7hex>` y, en tags git `v*-isp.*`, el nombre del tag;
 #     nunca `latest`;
 #   - solo linux/amd64 (el clúster es amd64; arm64 duplica el tiempo sin uso);
-#   - el digest queda en el resumen del job para copiarlo al PR de GitOps.
+#   - el digest queda en el resumen del job para copiarlo al PR de GitOps;
+#   - caché de capas en GHCR (`:buildcache`), compartida entre ramas y tags.
 # No hace bump automático en ISP-K8s-Platform: la imagen de Chatwoot se cambia
 # a mano en platform/apps/chatwoot/values.yaml y producción exige autorización.
 #
@@ -212,8 +213,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ github.ref_name }}
             org.opencontainers.image.description=Chatwoot CE (ISP build, sin enterprise/)
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Registry cache in GHCR: unlike type=gha it is shared across branches AND tags
+          # (GHA cache is scoped to the ref and the default branch, so tag builds started cold:
+          # bundle install ~19 min + pnpm install ~7 min every release).
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Summary
         run: |
