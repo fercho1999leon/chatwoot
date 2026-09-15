@@ -209,6 +209,9 @@ class ActionCableListener < BaseListener
   def contact_tokens(contact_inbox, message)
     return [] if message.private?
     return [] if message.activity?
+    # La tarjeta voice_call es un indicador interno de llamada (su payload lleva la grabación firmada):
+    # nunca sale al widget del contacto, igual que Base::SendOnChannelService la descarta.
+    return [] if message.content_type == 'voice_call'
     return [] if contact_inbox.nil?
 
     contact_inbox_tokens(contact_inbox)

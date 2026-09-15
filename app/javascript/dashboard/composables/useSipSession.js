@@ -3,6 +3,7 @@
 // an INVITE originated by the telephony-controller via ARI; we never auto-accept:
 // the agent must click "Connect audio". Mute is local (track.enabled). DTMF goes
 // through the controller (single path), not from the browser.
+import { watch } from 'vue';
 import { Registerer, RegistererState, SessionState, UserAgent } from 'sip.js';
 import TelephonyAPI from 'dashboard/api/telephony';
 import { useTelephonyStore, SIP_STATUS } from 'dashboard/stores/telephony';
@@ -16,6 +17,7 @@ let invitation = null;
 let remoteAudio = null;
 let refreshTimer = null;
 let unloadHooked = false;
+let hangupWatchHooked = false;
 let lockTimer = null;
 let reconnectTimer = null;
 let healthTimer = null;
@@ -101,7 +103,12 @@ export const useSipSession = () => {
   const callsStore = useCallsStore();
 
   const teardownSession = () => {
-    if (invitation && invitation.state !== SessionState.Terminated) {
+    if (
+      invitation &&
+      ![SessionState.Terminated, SessionState.Terminating].includes(
+        invitation.state
+      )
+    ) {
       try {
         if (invitation.state === SessionState.Established) invitation.bye();
         else invitation.reject();
@@ -114,6 +121,14 @@ export const useSipSession = () => {
     store.audioConnected = false;
     store.isMuted = false;
   };
+
+  // The controller closed the call for this tab (ended, transferred, answered elsewhere)
+  // but may have failed to hang up the agent's leg: send BYE/reject ourselves. Orphaned
+  // audio keeps its Hang up button instead: the store never requests a hangup for it.
+  if (!hangupWatchHooked) {
+    hangupWatchHooked = true;
+    watch(() => store.localHangupRequests, teardownSession);
+  }
 
   const onInvite = inv => {
     // Only one owner of the microphone: never take a SIP call while a

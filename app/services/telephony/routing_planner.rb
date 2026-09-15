@@ -6,7 +6,8 @@ class Telephony::RoutingPlanner
 
   def plan
     steps = []
-    account.telephony_routing_rules.ordered.where(enabled: true).find_each do |rule|
+    # find_each ignora el ORDER BY (itera por id): son pocas reglas por cuenta, se cargan en memoria.
+    account.telephony_routing_rules.ordered.where(enabled: true).to_a.each do |rule|
       next unless matches?(rule)
 
       step = build_step(rule)

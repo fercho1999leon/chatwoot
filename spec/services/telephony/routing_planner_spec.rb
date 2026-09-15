@@ -35,6 +35,13 @@ RSpec.describe Telephony::RoutingPlanner do
                        ])
   end
 
+  it 'evaluates the rules by position, not by insertion order' do
+    create(:telephony_routing_rule, account: account, position: 2, destination: { 'type' => 'extension', 'extension' => '2000' })
+    create(:telephony_routing_rule, account: account, position: 1, destination: { 'type' => 'extension', 'extension' => '1000' })
+
+    expect(plan.map { |s| s[:extension] }).to eq(['1000', '2000', nil])
+  end
+
   it 'skips agents that are offline or without an extension' do
     create(:telephony_routing_rule, account: account, position: 1, destination: { 'type' => 'agent', 'user_id' => other.id })
     create(:telephony_routing_rule, account: account, position: 2, destination: { 'type' => 'voicemail', 'extension' => '1001' })

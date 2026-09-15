@@ -23,12 +23,20 @@ const uuid = () =>
   globalThis.crypto?.randomUUID?.() ||
   `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+// Terminal versions remembered so a late/out-of-order snapshot cannot resurrect a call.
+const ENDED_VERSIONS_LIMIT = 20;
+
 export const useTelephonyStore = defineStore('telephony', {
   state: () => ({
     // Per-conversation capabilities cache: { [displayId]: { enabled, can_call, reason, ... } }
     capabilities: {},
     activeCall: null, // { id, state, state_version, end_reason, conversation_display_id, ... }
     lastEndedCall: null,
+    // Last `ended` version seen per call id (insertion-ordered, capped): older snapshots are ignored.
+    endedVersions: {},
+    // Bumped whenever the call is gone for this tab but the SIP leg may still be up:
+    // the SIP composable watches it and sends BYE/reject.
+    localHangupRequests: 0,
     sipStatus: SIP_STATUS.IDLE,
     sipError: null,
     currentUserId: null,
@@ -123,6 +131,19 @@ export const useTelephonyStore = defineStore('telephony', {
     applyCall(call, currentUserId = null) {
       if (!call?.id) return;
       if (currentUserId) this.currentUserId = currentUserId;
+      const current = this.activeCall;
+      const wasMine = current?.id === call.id;
+      const version = call.state_version ?? 0;
+      // Version gates come first: a stale snapshot must not touch anything.
+      if (wasMine && version <= (current.state_version ?? 0)) return;
+      if (version <= (this.endedVersions[call.id] ?? -1)) return; // already ended at this version
+      if (current && !wasMine) {
+        if (call.state === TELEPHONY_STATES.ENDED) return; // late event for an older call
+        // Established audio in this tab belongs to the current call: another call must not
+        // take its controls. A pending INVITE is not enough to block: it may be the new call's.
+        if (current.state !== TELEPHONY_STATES.ENDED && this.audioConnected)
+          return;
+      }
       const me = currentUserId || this.currentUserId;
       let involved = true;
       if (me) {
@@ -132,7 +153,6 @@ export const useTelephonyStore = defineStore('telephony', {
         const transferTarget = call.transfer_to_user_id === me;
         const internalPeer =
           call.direction === 'internal' && call.to_user_id === me;
-        const wasMine = this.activeCall?.id === call.id;
         involved =
           mine || ringingMe || participant || transferTarget || internalPeer;
         // Someone else answered / I left the conference / this step stopped ringing me: drop it silently.
@@ -141,15 +161,13 @@ export const useTelephonyStore = defineStore('telephony', {
             // The SIP leg is still up in this tab: never leave audio without a Hang up button.
             if (this.audioConnected) {
               this.orphanAudio = true;
-              if (
-                (call.state_version ?? 0) > (this.activeCall.state_version ?? 0)
-              )
-                this.activeCall = call;
+              this.activeCall = call;
               return;
             }
             this.activeCall = null;
             this.hasInvitation = false;
             this.audioConnected = false;
+            this.requestLocalHangup();
             return;
           }
         }
@@ -161,7 +179,7 @@ export const useTelephonyStore = defineStore('telephony', {
         call.user_id &&
         call.user_id !== currentUserId &&
         call.transfer_state === 'completed' &&
-        this.activeCall?.id === call.id
+        wasMine
       ) {
         this.lastEndedCall = {
           ...call,
@@ -174,24 +192,11 @@ export const useTelephonyStore = defineStore('telephony', {
         this.isMuted = false;
         this.orphanAudio = false;
         this.idempotencyKey = null;
+        this.requestLocalHangup();
         return;
-      }
-      const current = this.activeCall;
-      if (
-        current &&
-        current.id === call.id &&
-        (call.state_version ?? 0) <= (current.state_version ?? 0)
-      ) {
-        return;
-      }
-      if (
-        current &&
-        current.id !== call.id &&
-        call.state === TELEPHONY_STATES.ENDED
-      ) {
-        return; // late event for an older call
       }
       if (call.state === TELEPHONY_STATES.ENDED) {
+        this.rememberEnded(call.id, version);
         this.lastEndedCall = call;
         this.activeCall = null;
         this.hasInvitation = false;
@@ -200,13 +205,29 @@ export const useTelephonyStore = defineStore('telephony', {
         this.orphanAudio = false;
         this.idempotencyKey = null;
         this.autoAcceptInvitation = false;
+        this.requestLocalHangup();
         return;
       }
       this.lastEndedCall = null;
       // A fresh call, or one we are involved in again: the audio is no longer orphaned.
-      if (involved || !current || current.id !== call.id)
-        this.orphanAudio = false;
+      if (involved || !wasMine) this.orphanAudio = false;
       this.activeCall = call;
+    },
+
+    rememberEnded(callId, version) {
+      const entries = Object.entries(this.endedVersions).filter(
+        ([id]) => id !== callId
+      );
+      entries.push([callId, version]);
+      this.endedVersions = Object.fromEntries(
+        entries.slice(-ENDED_VERSIONS_LIMIT)
+      );
+    },
+
+    // The call is gone for this tab (ended, transferred, answered elsewhere) but the
+    // SIP leg may still be up: ask the SIP composable to send BYE/reject.
+    requestLocalHangup() {
+      this.localHangupRequests += 1;
     },
 
     async createCall(displayId) {
@@ -247,10 +268,11 @@ export const useTelephonyStore = defineStore('telephony', {
           return;
         }
       }
+      // Local verdict, one version ahead: a newer snapshot from the controller still wins.
       this.applyCall({
         ...this.activeCall,
         state: TELEPHONY_STATES.ENDED,
-        state_version: 1e9,
+        state_version: (this.activeCall.state_version ?? 0) + 1,
       });
     },
 

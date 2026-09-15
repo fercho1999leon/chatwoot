@@ -1,5 +1,12 @@
 class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony::BaseController
+  # Ver (show?) no equivale a controlar: cada acción exige su propia habilidad sobre la llamada.
+  ACTION_ABILITIES = {
+    hangup: :control?, dtmf: :control?, hold: :control?, unhold: :control?, transfer: :control?, cancel_transfer: :control?,
+    answer: :answer?, leave: :leave?, recording: :destroy_recording?
+  }.freeze
+
   before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording, :answer, :join, :leave]
+  before_action :authorize_call_action, only: ACTION_ABILITIES.keys
 
   # Llamada viva del usuario, por preferencia: la suya, una en la que participa (conferencia), una interna
   # dirigida a él o una entrante que le está sonando (ringing_user_ids).
@@ -28,12 +35,10 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     render :show, status: :created
   end
 
-  # Unirse (yo) o invitar (a otro) a una llamada en curso: conferencia.
+  # Unirse (yo) o invitar (a otro) a una llamada en curso: conferencia. Invitar exige controlar la llamada.
   def join
     target = params[:user_id].present? ? Current.account.users.find(params[:user_id]) : Current.user
-    unless target == Current.user || @telephony_call.user_id == Current.user.id || Current.account_user.administrator?
-      raise Pundit::NotAuthorizedError
-    end
+    authorize @telephony_call, :control? unless target == Current.user
 
     ensure_reachable!(target)
     apply_remote { telephony_client.join(@telephony_call.external_call_id, user_id: target.id) }
@@ -81,18 +86,13 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
     apply_remote { telephony_client.transfer(@telephony_call.external_call_id, to_user_id: to_user.id) }
   end
 
-  # La invitación SIP se perdió (recarga/red): volver a invitar. Entrante que me suena o mi propia llamada.
+  # La invitación SIP se perdió (recarga/red): volver a invitar. Quién puede: CallProjectionPolicy#answer?.
   def answer
-    mine = [@telephony_call.user_id, @telephony_call.to_user_id, *@telephony_call.ringing_user_ids].include?(Current.user.id)
-    raise CustomExceptions::Telephony::Invalid, 'not_ringing_you' unless mine
-
     apply_remote { telephony_client.ring_me(@telephony_call.external_call_id, user_id: Current.user.id) }
   end
 
-  # Borra la grabación de una llamada (administradores).
+  # Borra la grabación de una llamada (administrador o dueño: CallProjectionPolicy#destroy_recording?).
   def recording
-    raise Pundit::NotAuthorizedError unless Current.account_user.administrator?
-
     @telephony_call.recording.purge_later if @telephony_call.recording.attached?
     @telephony_call.update!(recording_state: 'purged')
     @telephony_call.message&.touch # rubocop:disable Rails/SkipsModelValidations
@@ -131,6 +131,10 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
   def fetch_call
     @telephony_call = Telephony::CallProjection.find_by!(account_id: Current.account.id, external_call_id: params[:id])
     authorize @telephony_call, :show?
+  end
+
+  def authorize_call_action
+    authorize @telephony_call, ACTION_ABILITIES.fetch(action_name.to_sym)
   end
 
   # Snapshot del controlador para recuperar la UI tras reconexión (aplica solo versiones nuevas).

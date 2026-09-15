@@ -3,21 +3,28 @@
 class Telephony::EventApplier
   pattr_initialize [:account!]
 
+  DuplicateEvent = Class.new(StandardError)
+
   # Callback firmado (controlador → Rails). Devuelve true si aplicó, false si descartó.
+  # El registro del event_id y la aplicación van en UNA transacción: si aplicar falla, el id no queda
+  # marcado y el reintento del controlador vuelve a aplicarlo. Los broadcasts salen tras el commit.
   def apply_event(payload)
     event_id = payload['event_id']
     return false if event_id.blank?
 
-    begin
-      Telephony::ProcessedEvent.create!(event_id: event_id, created_at: Time.current)
-    rescue ActiveRecord::RecordNotUnique
-      return false
+    applied = ActiveRecord::Base.transaction(requires_new: true) do
+      register_event!(event_id)
+      apply_snapshot(payload, deferred_broadcast: true)
     end
-    apply_snapshot(payload)
+    flush_broadcasts
+    applied
+  rescue DuplicateEvent
+    false
   end
 
-  # Snapshot (respuesta de la API del controlador o cuerpo del callback).
-  def apply_snapshot(data)
+  # Snapshot (respuesta de la API del controlador o cuerpo del callback). Con deferred_broadcast: true
+  # los eventos se acumulan y los emite flush_broadcasts (después del commit de la transacción envolvente).
+  def apply_snapshot(data, deferred_broadcast: false)
     data = data.to_h.stringify_keys
     projection = Telephony::CallProjection.find_by(account_id: account.id, external_call_id: data['call_id'] || data['id'])
     return false unless projection
@@ -29,11 +36,29 @@ class Telephony::EventApplier
       update_projection(projection, data)
       applied = true
     end
-    broadcast(projection) if applied
+    pending_broadcasts << projection if applied
+    flush_broadcasts unless deferred_broadcast
     applied
   end
 
   private
+
+  # Un event_id repetido (índice único) aborta la transacción envolvente y se descarta como duplicado.
+  def register_event!(event_id)
+    Telephony::ProcessedEvent.create!(event_id: event_id, created_at: Time.current)
+  rescue ActiveRecord::RecordNotUnique
+    raise DuplicateEvent, event_id
+  end
+
+  def pending_broadcasts
+    @pending_broadcasts ||= []
+  end
+
+  def flush_broadcasts
+    pending = pending_broadcasts.dup
+    pending_broadcasts.clear
+    pending.each { |projection| broadcast(projection) }
+  end
 
   def applicable?(projection, data)
     return false if data['state_version'].to_i <= projection.state_version

@@ -140,6 +140,140 @@ describe('telephony store', () => {
       expect(store.orphanAudio).toBe(false);
       expect(store.hasOrphanAudio).toBe(false);
     });
+
+    describe('version gates', () => {
+      it('does not resurrect a call from a snapshot older than its ended version', () => {
+        const ended = joinedCall({
+          state: TELEPHONY_STATES.ENDED,
+          state_version: 11,
+          end_reason: 'hangup',
+        });
+        store.applyCall(ended, ME);
+        store.applyCall(joinedCall({ state_version: 10 }), ME);
+
+        expect(store.activeCall).toBeNull();
+        expect(store.hasActiveCall).toBe(false);
+        expect(store.endedVersions['call-1']).toBe(11);
+        expect(store.lastEndedCall).toEqual(ended);
+      });
+
+      it('keeps the newest ended snapshot when an older ended one arrives late', () => {
+        const ended = joinedCall({
+          state: TELEPHONY_STATES.ENDED,
+          state_version: 11,
+          end_reason: 'hangup',
+        });
+        store.applyCall(ended, ME);
+        store.applyCall(
+          joinedCall({ state: TELEPHONY_STATES.ENDED, state_version: 9 }),
+          ME
+        );
+
+        expect(store.lastEndedCall).toEqual(ended);
+        expect(store.endedVersions['call-1']).toBe(11);
+      });
+
+      it('ignores a stale snapshot of the current call even when it drops this agent', () => {
+        store.applyCall(joinedCall({ state_version: 5 }), ME);
+        const requests = store.localHangupRequests;
+
+        store.applyCall(joinedCall({ state_version: 3, participants: [] }), ME);
+
+        expect(store.activeCall.state_version).toBe(5);
+        expect(store.activeCall.participants).toEqual([ME]);
+        expect(store.orphanAudio).toBe(false);
+        expect(store.audioConnected).toBe(true);
+        expect(store.localHangupRequests).toBe(requests);
+      });
+
+      it('does not let another call replace the one holding the SIP leg', () => {
+        store.applyCall(
+          joinedCall({ id: 'call-2', state_version: 1, user_id: ME }),
+          ME
+        );
+
+        expect(store.activeCall.id).toBe('call-1');
+        expect(store.orphanAudio).toBe(false);
+      });
+
+      it('lets another call replace the current one once no SIP leg is up', () => {
+        store.audioConnected = false;
+
+        store.applyCall(
+          joinedCall({ id: 'call-2', state_version: 1, user_id: ME }),
+          ME
+        );
+
+        expect(store.activeCall.id).toBe('call-2');
+      });
+
+      it('keeps at most 20 ended versions', () => {
+        store.audioConnected = false;
+        for (let i = 1; i <= 25; i += 1) {
+          store.applyCall(
+            joinedCall({ id: `call-${i}`, state_version: 1 }),
+            ME
+          );
+          store.applyCall(
+            joinedCall({
+              id: `call-${i}`,
+              state: TELEPHONY_STATES.ENDED,
+              state_version: 2,
+            }),
+            ME
+          );
+        }
+
+        const ids = Object.keys(store.endedVersions);
+        expect(ids).toHaveLength(20);
+        expect(ids[0]).toBe('call-6');
+        expect(ids[19]).toBe('call-25');
+        expect(store.endedVersions['call-1']).toBeUndefined();
+      });
+    });
+
+    describe('local hangup requests', () => {
+      it('asks the SIP leg to hang up when the call ends', () => {
+        store.applyCall(
+          joinedCall({ state: TELEPHONY_STATES.ENDED, state_version: 6 }),
+          ME
+        );
+
+        expect(store.localHangupRequests).toBe(1);
+      });
+
+      it('asks the SIP leg to hang up when the transfer completes elsewhere', () => {
+        store.applyCall(
+          joinedCall({
+            state_version: 6,
+            participants: [],
+            transfer_state: 'completed',
+          }),
+          ME
+        );
+
+        expect(store.activeCall).toBeNull();
+        expect(store.lastEndedCall?.end_reason).toBe('transferred');
+        expect(store.localHangupRequests).toBe(1);
+      });
+
+      it('rejects the ringing leg when someone else answered', () => {
+        store.audioConnected = false;
+        store.hasInvitation = true;
+
+        store.applyCall(joinedCall({ state_version: 6, participants: [] }), ME);
+
+        expect(store.activeCall).toBeNull();
+        expect(store.localHangupRequests).toBe(1);
+      });
+
+      it('never hangs up orphaned audio automatically', () => {
+        store.applyCall(joinedCall({ state_version: 6, participants: [] }), ME);
+
+        expect(store.orphanAudio).toBe(true);
+        expect(store.localHangupRequests).toBe(0);
+      });
+    });
   });
 
   describe('leaveCall', () => {

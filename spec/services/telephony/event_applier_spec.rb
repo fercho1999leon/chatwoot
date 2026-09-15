@@ -88,6 +88,45 @@ RSpec.describe Telephony::EventApplier do
       expect(projection.reload.peer_on_hold).to be(false)
     end
 
+    it 'does not mark the event as processed when applying it fails, so a retry applies it' do
+      payload = event
+      allow(Telephony::NoteProjector).to receive(:new).and_raise(ActiveRecord::StatementInvalid, 'boom')
+
+      expect { applier.apply_event(payload) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(Telephony::ProcessedEvent.exists?(event_id: payload['event_id'])).to be(false)
+      expect(projection.reload.state).to eq('requested')
+      expect(dispatcher).not_to have_received(:dispatch)
+
+      allow(Telephony::NoteProjector).to receive(:new).and_call_original
+      expect(described_class.new(account: account).apply_event(payload)).to be(true)
+      expect(Telephony::ProcessedEvent.exists?(event_id: payload['event_id'])).to be(true)
+      expect(projection.reload.state).to eq('answered')
+    end
+
+    it 'treats an already processed event id as a duplicate without touching the projection' do
+      payload = event
+      Telephony::ProcessedEvent.create!(event_id: payload['event_id'], created_at: Time.current)
+
+      expect(applier.apply_event(payload)).to be(false)
+      expect(projection.reload.state).to eq('requested')
+      expect(dispatcher).not_to have_received(:dispatch)
+      # La transacción quedó limpia: la sesión sigue usable.
+      expect(Telephony::ProcessedEvent.count).to eq(1)
+    end
+
+    it 'broadcasts only after the whole event has been persisted' do
+      order = []
+      allow(dispatcher).to receive(:dispatch) { |name, *| order << :dispatch if name.to_s.start_with?('telephony') }
+      allow(Telephony::NoteProjector).to receive(:new).and_wrap_original do |m, *args, **kwargs|
+        order << :note
+        m.call(*args, **kwargs)
+      end
+
+      applier.apply_event(event)
+
+      expect(order).to eq(%i[note dispatch])
+    end
+
     it 'drops events without id or for unknown calls' do
       expect(applier.apply_event(event.except('event_id'))).to be(false)
       expect(applier.apply_event(event(call_id: SecureRandom.uuid))).to be(false)

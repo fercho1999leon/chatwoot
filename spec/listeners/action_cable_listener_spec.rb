@@ -78,6 +78,36 @@ describe ActionCableListener do
     end
   end
 
+  describe 'voice_call messages' do
+    let!(:message) do
+      create(:message, message_type: 'outgoing', content_type: 'voice_call', account: account, inbox: inbox, conversation: conversation,
+                       content_attributes: { 'data' => { 'call_id' => 1, 'status' => 'in-progress' } })
+    end
+
+    it 'never sends the call card to the contact on message.created' do
+      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
+
+      expect(ActionCableBroadcastJob).to receive(:perform_later).with(
+        a_collection_containing_exactly(agent.pubsub_token, admin.pubsub_token),
+        'message.created',
+        message.push_event_data.merge(account_id: account.id)
+      )
+      listener.message_created(Events::Base.new(:'message.created', Time.zone.now, message: message))
+    end
+
+    it 'never sends the call card to the contact on message.updated, even when hmac verified' do
+      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
+      conversation.contact_inbox.update(hmac_verified: true)
+
+      expect(ActionCableBroadcastJob).to receive(:perform_later).with(
+        a_collection_containing_exactly(agent.pubsub_token, admin.pubsub_token),
+        'message.updated',
+        message.push_event_data.merge(previous_changes: {}, account_id: account.id)
+      )
+      listener.message_updated(Events::Base.new(:'message.updated', Time.zone.now, message: message, previous_changes: {}))
+    end
+  end
+
   describe '#typing_on' do
     let(:event_name) { :'conversation.typing_on' }
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: agent, is_private: false) }
