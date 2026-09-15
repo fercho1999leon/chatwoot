@@ -7,7 +7,7 @@ class Telephony::InternalCallCreator
     projection = Telephony::CallProjection.create!(
       account: account, user: user, to_user: to_user, external_call_id: SecureRandom.uuid, state: 'requested', state_version: 0,
       destination_e164: to_endpoint.endpoint, direction: 'internal', contact_name: user.available_name,
-      ringing_user_ids: [to_user.id], requested_at: Time.current
+      requested_at: Time.current
     )
     remote = Telephony::ControllerClient.new.create_call(
       call_id: projection.external_call_id, account_id: account.id, user_id: user.id, conversation_id: 0, conversation_display_id: 0,
