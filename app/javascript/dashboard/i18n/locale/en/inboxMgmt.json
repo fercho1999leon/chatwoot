@@ -831,7 +831,39 @@
       "CSAT": "CSAT",
       "VOICE": "Voice",
       "TELEPHONY": "Telephony",
-      "CALLS": "Calls"
+      "CALLS": "Calls",
+      "WHATSAPP_SIP_CALLING": "SIP calling"
+    },
+    "WHATSAPP_SIP_CALLING": {
+      "TITLE": "WhatsApp calling through your PBX",
+      "HELP": "Meta sends WhatsApp calls to your Asterisk/FreePBX over SIP (TLS) instead of the browser API. Incoming calls follow the telephony routing rules and land in the contact's WhatsApp conversation; agents call WhatsApp users from the same call button.",
+      "LOADING": "Reading the calling settings from Meta…",
+      "SAVED": "WhatsApp SIP calling updated",
+      "ERROR": "Could not update WhatsApp SIP calling",
+      "ENABLE": "Enable SIP calling",
+      "RESYNC": "Re-sync password",
+      "DISABLE": "Disable",
+      "HOSTNAME": {
+        "LABEL": "SIP server hostname (your PBX)",
+        "PLACEHOLDER": "pbx.example.com",
+        "HELP": "Public name of the PBX with SIP over TLS on port 5061; its certificate must cover this name. Prefilled with the SIP domain of the PBX connection."
+      },
+      "STATUS": {
+        "NUMBER": "Number",
+        "PBX": "PBX trunk",
+        "ENABLED": "provisioned",
+        "DISABLED": "not provisioned",
+        "META_CALLING": "Calling at Meta",
+        "META_SIP": "SIP at Meta",
+        "SYNCED_AT": "Last sync",
+        "PROVISION_ERROR": "PBX provisioning error"
+      },
+      "REQUIREMENTS": {
+        "TOKEN": "The access token of this inbox needs whatsapp_business_management (advanced access) to read the SIP password Meta generates.",
+        "TLS": "The PBX must expose SIP over TLS on 5061 with a valid certificate, plus ICE, DTLS-SRTP and the Opus codec (the Chatwoot overlay for FreePBX does this).",
+        "ROUTING": "Enabling creates a trunk wa-<phone number id> and an Inbound Route for the number pointing to Chatwoot; incoming WhatsApp calls then use the routing rules of the Telephony inbox.",
+        "PERMISSION": "Meta only connects business-initiated calls to users who granted call permission (or called you recently)."
+      }
     },
     "VOICE_CONFIGURATION": {
       "ENABLE_VOICE": {

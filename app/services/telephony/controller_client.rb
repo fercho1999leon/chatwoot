@@ -26,7 +26,7 @@ class Telephony::ControllerClient
   end
 
   def create_call(payload)
-    post('/internal/calls', payload)
+    post('/internal/calls', payload.compact) # los opcionales ausentes no viajan como null
   end
 
   def call(id)
@@ -120,6 +120,15 @@ class Telephony::ControllerClient
 
   def upsert_trunk(payload)
     request(:put, '/internal/trunk', body: payload)
+  end
+
+  # WhatsApp Business Calling por SIP: troncal wa-<phone_number_id> en la PBX.
+  def upsert_whatsapp_trunk(payload)
+    request(:put, '/internal/whatsapp_trunks', body: payload)
+  end
+
+  def delete_whatsapp_trunk(account_id:, phone_number_id:)
+    request(:delete, '/internal/whatsapp_trunks', query: { account_id: account_id, phone_number_id: phone_number_id })
   end
 
   def status(account_id:)

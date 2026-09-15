@@ -14,7 +14,21 @@ class Telephony::CapabilityResolver
   end
 
   def feature_enabled?
-    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? && pbx_configured? && telephony_channel&.configured?
+    account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured? && pbx_configured? &&
+      (whatsapp_sip? || telephony_channel&.configured?)
+  end
+
+  # Conversación de un inbox WhatsApp Cloud con Business Calling por SIP: la llamada va por la
+  # troncal wa-<phone_number_id> de la PBX, no por el carrier ni por la lista de inboxes permitidos.
+  def whatsapp_sip?
+    return @whatsapp_sip if defined?(@whatsapp_sip)
+
+    channel = conversation.inbox&.channel
+    @whatsapp_sip = channel.is_a?(Channel::Whatsapp) && channel.provider_config.dig('sip_calling', 'enabled') == true
+  end
+
+  def whatsapp_phone_number_id
+    whatsapp_sip? ? conversation.inbox.channel.provider_config['phone_number_id'].to_s : nil
   end
 
   def pbx_configured?
@@ -27,7 +41,7 @@ class Telephony::CapabilityResolver
   end
 
   def inbox_enabled?
-    telephony_channel&.allows_inbox?(conversation.inbox_id) || false
+    whatsapp_sip? || telephony_channel&.allows_inbox?(conversation.inbox_id) || false
   end
 
   # El agente debe ser colaborador del inbox Telephony y tener extensión provisionada.
@@ -53,7 +67,7 @@ class Telephony::CapabilityResolver
     {
       'feature_disabled' => account.feature_enabled?('telephony_calls') && Telephony::ControllerClient.configured?,
       'no_pbx' => pbx_configured?,
-      'no_trunk' => telephony_channel&.configured?,
+      'no_trunk' => whatsapp_sip? || telephony_channel&.configured?,
       'inbox_not_enabled' => inbox_enabled?,
       'no_endpoint' => endpoint.present?,
       'no_phone' => destination.present?

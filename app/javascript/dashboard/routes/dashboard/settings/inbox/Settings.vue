@@ -26,6 +26,7 @@ import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
 import TelephonyConfigurationPage from './settingsPage/TelephonyConfigurationPage.vue';
+import WhatsappSipCallingPage from './settingsPage/WhatsappSipCallingPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
 import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
@@ -58,6 +59,7 @@ export default {
     VoiceConfigurationPage,
     WhatsappCallingPage,
     TelephonyConfigurationPage,
+    WhatsappSipCallingPage,
     CustomerSatisfactionPage,
     FacebookReauthorize,
     GreetingsEditor,
@@ -286,6 +288,23 @@ export default {
           {
             key: 'telephony-configuration',
             name: this.$t('INBOX_MGMT.TABS.TELEPHONY'),
+          },
+        ];
+      }
+
+      // WhatsApp Cloud + telefonía SIP (CE): las llamadas de WhatsApp las atiende la PBX.
+      if (
+        this.isAWhatsAppCloudChannel &&
+        this.isFeatureEnabledonAccount(
+          this.accountId,
+          FEATURE_FLAGS.TELEPHONY_CALLS
+        )
+      ) {
+        visibleToAllChannelTabs = [
+          ...visibleToAllChannelTabs,
+          {
+            key: 'whatsapp-sip-calling',
+            name: this.$t('INBOX_MGMT.TABS.WHATSAPP_SIP_CALLING'),
           },
         ];
       }
@@ -1432,6 +1451,12 @@ export default {
           class="mx-6 max-w-4xl"
         >
           <TelephonyConfigurationPage :inbox="inbox" />
+        </div>
+        <div
+          v-if="selectedTabKey === 'whatsapp-sip-calling'"
+          class="mx-6 max-w-4xl"
+        >
+          <WhatsappSipCallingPage :inbox="inbox" />
         </div>
         <div v-if="selectedTabKey === 'csat'">
           <CustomerSatisfactionPage :inbox="inbox" />

@@ -64,7 +64,8 @@ class Telephony::CallCreator
     remote = Telephony::ControllerClient.new.create_call(
       call_id: projection.external_call_id, account_id: account.id, user_id: user.id,
       conversation_id: conversation.id, conversation_display_id: conversation.display_id,
-      inbox_id: conversation.inbox_id, contact_id: conversation.contact_id, destination_e164: destination
+      inbox_id: conversation.inbox_id, contact_id: conversation.contact_id, destination_e164: destination,
+      whatsapp_phone_number_id: resolver.whatsapp_phone_number_id
     )
     Telephony::EventApplier.new(account: account).apply_snapshot(remote)
   rescue Telephony::ControllerClient::Error => e

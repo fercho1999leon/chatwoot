@@ -77,6 +77,22 @@ class Inboxes extends CacheEnabledApiClient {
     return axios.post(`${this.url}/${inboxId}/disable_whatsapp_calling`);
   }
 
+  // WhatsApp Business Calling por SIP (telefonía CE): la PBX atiende las llamadas de WhatsApp
+  whatsappSipCalling(inboxId) {
+    return axios.get(`${this.url}/${inboxId}/whatsapp_sip_calling`);
+  }
+
+  enableWhatsappSipCalling(inboxId, { hostname, resync = false } = {}) {
+    return axios.post(`${this.url}/${inboxId}/whatsapp_sip_calling`, {
+      hostname,
+      resync: resync || undefined,
+    });
+  }
+
+  disableWhatsappSipCalling(inboxId) {
+    return axios.delete(`${this.url}/${inboxId}/whatsapp_sip_calling`);
+  }
+
   setInboundCalls(inboxId, enabled) {
     return axios.post(`${this.url}/${inboxId}/set_inbound_calls`, {
       inbound_calls_enabled: enabled,

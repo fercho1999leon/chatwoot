@@ -398,6 +398,8 @@ Rails.application.routes.draw do
 
           resources :inboxes, only: [] do
             resource :assignment_policy, only: [:show, :create, :destroy], module: :inboxes
+            # Telefonía SIP (CE): WhatsApp Business Calling cursado por la PBX
+            resource :whatsapp_sip_calling, only: [:show, :create, :destroy], module: :inboxes
           end
 
           namespace :twitter do

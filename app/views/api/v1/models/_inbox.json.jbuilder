@@ -190,5 +190,6 @@ end
 ## Voice attribute for WhatsApp Cloud (only embedded-signup channels surface true)
 if resource.channel_type == 'Channel::Whatsapp' && resource.channel.respond_to?(:voice_enabled?)
   json.voice_enabled resource.channel.voice_enabled?
+  json.whatsapp_sip_calling resource.channel.provider_config['sip_calling'] || {}
   json.inbound_calls_enabled resource.channel.inbound_calls_enabled?
 end
