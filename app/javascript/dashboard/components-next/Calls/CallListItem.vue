@@ -73,7 +73,7 @@ const resultLabel = computed(() => {
 const providerIcon = computed(() =>
   props.call.provider === 'asterisk'
     ? 'i-ri-phone-line'
-    : getInboxVoiceIcon(props.call.inbox.channelType, props.call.inbox.medium)
+    : getInboxVoiceIcon(props.call.inbox?.channelType, props.call.inbox?.medium)
 );
 
 const createdAtLabel = computed(() =>
@@ -235,7 +235,7 @@ const conversationRoute = computed(() => ({
     </div>
     <div
       v-tooltip.top="{
-        content: call.inbox.name,
+        content: call.inbox?.name,
         delay: { show: 500, hide: 0 },
       }"
       class="flex items-center gap-1 justify-end w-40 min-w-4 shrink-[100] py-3.5"
