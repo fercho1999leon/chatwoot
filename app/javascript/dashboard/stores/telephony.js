@@ -70,6 +70,11 @@ export const useTelephonyStore = defineStore('telephony', {
       (state.activeCall.participants || []).includes(state.currentUserId),
     isOwner: state =>
       !!state.activeCall && state.activeCall.user_id === state.currentUserId,
+    // Callee of an internal call: a peer (can hang up), not a conference participant
+    isInternalPeer: state =>
+      !!state.activeCall &&
+      state.activeCall.direction === 'internal' &&
+      state.activeCall.to_user_id === state.currentUserId,
     showWidget() {
       return (
         this.hasActiveCall ||
@@ -108,8 +113,9 @@ export const useTelephonyStore = defineStore('telephony', {
         const participant = (call.participants || []).includes(me);
         const mine = call.user_id === me;
         const transferTarget = call.transfer_to_user_id === me;
+        const internalPeer = call.direction === 'internal' && call.to_user_id === me;
         const wasMine = this.activeCall?.id === call.id;
-        const involved = mine || ringingMe || participant || transferTarget;
+        const involved = mine || ringingMe || participant || transferTarget || internalPeer;
         // Someone else answered / I left the conference / this step stopped ringing me: drop it silently.
         if (!involved && wasMine && call.state !== TELEPHONY_STATES.ENDED) {
           if (call.transfer_state !== 'completed') {
