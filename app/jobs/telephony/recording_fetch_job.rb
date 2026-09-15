@@ -6,7 +6,7 @@ class Telephony::RecordingFetchJob < ApplicationJob
 
   def perform(projection_id)
     projection = Telephony::CallProjection.find_by(id: projection_id)
-    return unless projection&.recording_name.present?
+    return if projection&.recording_name.blank?
     return if projection.recording_state == 'purged'
 
     attach!(projection) unless projection.recording.attached?

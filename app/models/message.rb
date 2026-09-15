@@ -132,7 +132,7 @@ class Message < ApplicationRecord
   belongs_to :sender, polymorphic: true, optional: true
 
   # Telefonía SIP (CE): tarjeta de llamada asociada a un mensaje voice_call.
-  has_one :telephony_call, class_name: 'Telephony::CallProjection', foreign_key: :message_id, dependent: :nullify, inverse_of: :message
+  has_one :telephony_call, class_name: 'Telephony::CallProjection', dependent: :nullify, inverse_of: :message
   has_many :attachments, dependent: :destroy, autosave: true, before_add: :validate_attachments_limit
   has_one :csat_survey_response, dependent: :destroy_async
   has_many :notifications, as: :primary_actor, dependent: :destroy_async
@@ -155,8 +155,14 @@ class Message < ApplicationRecord
     )
     data[:echo_id] = echo_id if echo_id.present?
     data[:attachments] = attachments.map(&:push_event_data) if attachments.present?
-    data[:call] = telephony_call.call_card_data if content_type == 'voice_call' && telephony_call.present?
+    merge_telephony_call(data)
     merge_sender_attributes(data)
+  end
+
+  # Telefonía SIP (CE): la tarjeta de llamada viaja con el mensaje voice_call.
+  def merge_telephony_call(data)
+    data[:call] = telephony_call.call_card_data if content_type == 'voice_call' && telephony_call.present?
+    data
   end
 
   def conversation_push_event_data

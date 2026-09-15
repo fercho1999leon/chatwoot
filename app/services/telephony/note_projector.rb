@@ -11,18 +11,23 @@ class Telephony::NoteProjector
       return message
     end
 
-    # Directo (sin MessageBuilder): las entrantes llevan al contacto como remitente y el builder
-    # solo admite mensajes "incoming" en inboxes API. voice_call nunca se envía al canal.
-    message = projection.conversation.messages.create!(
-      account: projection.account, inbox: projection.conversation.inbox, sender: sender, content: content,
-      message_type: projection.inbound? ? 'incoming' : 'outgoing', content_type: 'voice_call',
-      content_attributes: { 'data' => data_payload }
-    )
+    message = create_message(content)
     projection.update_column(:message_id, message.id) # rubocop:disable Rails/SkipsModelValidations
     message
   end
 
   private
+
+  # Directo (sin MessageBuilder): las entrantes llevan al contacto como remitente y el builder
+  # solo admite mensajes "incoming" en inboxes API. voice_call nunca se envía al canal.
+  def create_message(content)
+    conversation = projection.conversation
+    conversation.messages.create!(
+      account: projection.account, inbox: conversation.inbox, sender: sender, content: content,
+      message_type: projection.inbound? ? 'incoming' : 'outgoing', content_type: 'voice_call',
+      content_attributes: { 'data' => data_payload }
+    )
+  end
 
   def sender
     projection.inbound? ? projection.conversation.contact : projection.user

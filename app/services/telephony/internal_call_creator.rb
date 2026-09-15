@@ -4,16 +4,8 @@ class Telephony::InternalCallCreator
 
   def perform
     ensure_allowed!
-    projection = Telephony::CallProjection.create!(
-      account: account, user: user, to_user: to_user, external_call_id: SecureRandom.uuid, state: 'requested', state_version: 0,
-      destination_e164: to_endpoint.endpoint, direction: 'internal', contact_name: user.available_name,
-      requested_at: Time.current
-    )
-    remote = Telephony::ControllerClient.new.create_call(
-      call_id: projection.external_call_id, account_id: account.id, user_id: user.id, conversation_id: 0, conversation_display_id: 0,
-      destination_e164: to_endpoint.endpoint, direction: 'internal', to_user_id: to_user.id, contact_name: user.available_name
-    )
-    Telephony::EventApplier.new(account: account).apply_snapshot(remote)
+    projection = create_projection
+    Telephony::EventApplier.new(account: account).apply_snapshot(request_remote(projection))
     projection.reload
   rescue Telephony::ControllerClient::Error => e
     projection&.update!(state: 'ended', end_reason: 'policy_denied', ended_at: Time.current)
@@ -25,13 +17,32 @@ class Telephony::InternalCallCreator
 
   private
 
+  def create_projection
+    Telephony::CallProjection.create!(
+      account: account, user: user, to_user: to_user, external_call_id: SecureRandom.uuid, state: 'requested', state_version: 0,
+      destination_e164: to_endpoint.endpoint, direction: 'internal', contact_name: user.available_name,
+      requested_at: Time.current
+    )
+  end
+
+  def request_remote(projection)
+    Telephony::ControllerClient.new.create_call(
+      call_id: projection.external_call_id, account_id: account.id, user_id: user.id, conversation_id: 0, conversation_display_id: 0,
+      destination_e164: to_endpoint.endpoint, direction: 'internal', to_user_id: to_user.id, contact_name: user.available_name
+    )
+  end
+
+  def own_endpoint?
+    Telephony::Endpoint.exists?(account_id: account.id, user_id: user.id, enabled: true)
+  end
+
   def to_endpoint
     @to_endpoint ||= Telephony::Endpoint.find_by(account_id: account.id, user_id: to_user.id, enabled: true)
   end
 
   def ensure_allowed!
     raise CustomExceptions::Telephony::Invalid, 'same_user' if to_user.id == user.id
-    raise CustomExceptions::Telephony::Invalid, 'no_endpoint' unless Telephony::Endpoint.exists?(account_id: account.id, user_id: user.id, enabled: true)
+    raise CustomExceptions::Telephony::Invalid, 'no_endpoint' unless own_endpoint?
     raise CustomExceptions::Telephony::Invalid, 'target_no_endpoint' unless to_endpoint
     raise CustomExceptions::Telephony::Conflict, 'agent_busy' if Telephony::CallProjection.active.exists?(account_id: account.id, user_id: user.id)
   end
