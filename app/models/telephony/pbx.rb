@@ -2,31 +2,31 @@
 #
 # Table name: telephony_pbxes
 #
-#  id                  :bigint           not null, primary key
-#  agent_timeout       :integer          default(30), not null
-#  ari_app             :string           default("chatwoot"), not null
-#  ari_url             :string           default(""), not null
-#  ari_user            :string           default(""), not null
-#  has_ari_password    :boolean          default(FALSE), not null
-#  has_provision_token :boolean          default(FALSE), not null
-#  has_turn_secret     :boolean          default(FALSE), not null
-#  max_call_seconds    :integer          default(3600), not null
-#  provision_url       :string           default(""), not null
-#  pstn_timeout        :integer          default(45), not null
-#  record_calls        :string           default("never"), not null
-#  recording_retention_days :integer     default(0), not null
-#  sip_domain          :string           default(""), not null
-#  sip_ws_url          :string           default(""), not null
-#  stun_url            :string           default(""), not null
-#  sync_error          :string
-#  synced_at           :datetime
-#  test_dial           :string           default(""), not null
-#  transfer_timeout    :integer          default(30), not null
-#  turn_ttl_seconds    :integer          default(3600), not null
-#  turn_urls           :string           default(""), not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  account_id          :bigint           not null
+#  id                       :bigint           not null, primary key
+#  agent_timeout            :integer          default(30), not null
+#  ari_app                  :string           default("chatwoot"), not null
+#  ari_url                  :string           default(""), not null
+#  ari_user                 :string           default(""), not null
+#  has_ari_password         :boolean          default(FALSE), not null
+#  has_provision_token      :boolean          default(FALSE), not null
+#  has_turn_secret          :boolean          default(FALSE), not null
+#  max_call_seconds         :integer          default(3600), not null
+#  provision_url            :string           default(""), not null
+#  pstn_timeout             :integer          default(45), not null
+#  record_calls             :string           default("never"), not null
+#  recording_retention_days :integer          default(0), not null
+#  sip_domain               :string           default(""), not null
+#  sip_ws_url               :string           default(""), not null
+#  stun_url                 :string           default(""), not null
+#  sync_error               :string
+#  synced_at                :datetime
+#  test_dial                :string           default(""), not null
+#  transfer_timeout         :integer          default(30), not null
+#  turn_ttl_seconds         :integer          default(3600), not null
+#  turn_urls                :string           default(""), not null
+#  created_at               :datetime         not null
+#  updated_at               :datetime         not null
+#  account_id               :bigint           not null
 #
 # Indexes
 #

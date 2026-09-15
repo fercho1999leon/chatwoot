@@ -201,7 +201,7 @@ Rails.application.routes.draw do
           end
 
           # Telefonía SIP/WebRTC (CE). `active` va ANTES de `:id`.
-          resources :telephony_calls, only: [:show] do
+          resources :telephony_calls, only: [:show, :create] do
             collection { get :active }
             member do
               post :hangup
@@ -211,6 +211,8 @@ Rails.application.routes.draw do
               post :transfer
               post :cancel_transfer
               post :answer
+              post :join
+              post :leave
               delete :recording
             end
           end

@@ -9,6 +9,9 @@ import { useAdmin } from 'dashboard/composables/useAdmin';
 import { isVoiceCallEnabled, INBOX_TYPES } from 'dashboard/helper/inbox';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useCallHistoryStore } from 'dashboard/stores/callHistory';
+import { useTelephonyStore } from 'dashboard/stores/telephony';
+import TelephonyAPI from 'dashboard/api/telephony';
+import NextButton from 'dashboard/components-next/button/Button.vue';
 
 import CallListItem from 'dashboard/components-next/Calls/CallListItem.vue';
 import CallsEmptyState from 'dashboard/components-next/Calls/CallsEmptyState.vue';
@@ -24,6 +27,42 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const callHistoryStore = useCallHistoryStore();
+const telephonyStore = useTelephonyStore();
+// SIP telephony: call a colleague directly, or (admins) join a live call.
+const telephonyAgents = ref([]);
+const callAgentId = ref(null);
+const isCallingAgent = ref(false);
+const telephonyError = error => {
+  const code = error?.response?.data?.code || 'unknown';
+  useAlert(
+    t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))
+  );
+};
+const loadTelephonyAgents = async () => {
+  try {
+    telephonyAgents.value = (await TelephonyAPI.agents()).agents || [];
+  } catch (e) {
+    telephonyAgents.value = [];
+  }
+};
+const onCallAgent = async () => {
+  if (!callAgentId.value) return;
+  isCallingAgent.value = true;
+  try {
+    await telephonyStore.callAgent(callAgentId.value);
+  } catch (error) {
+    telephonyError(error);
+  } finally {
+    isCallingAgent.value = false;
+  }
+};
+const onJoin = async call => {
+  try {
+    await telephonyStore.joinCall(call.callId);
+  } catch (error) {
+    telephonyError(error);
+  }
+};
 
 const inboxes = useMapGetter('inboxes/getInboxes');
 const accountId = useMapGetter('getCurrentAccountId');
@@ -120,6 +159,7 @@ onMounted(async () => {
     if (!isVoiceEnabled.value) return;
     // Only admins see the assignee filter, so only they need the agent list.
     if (isAdmin.value) store.dispatch('agents/get');
+    if (telephonyInboxes.value.length) loadTelephonyAgents();
     await fetchCalls();
   } finally {
     isInitializing.value = false;
@@ -140,10 +180,35 @@ onMounted(async () => {
     class="flex flex-col w-full h-full overflow-hidden bg-n-surface-1"
   >
     <header class="shrink-0">
-      <div class="w-full px-6 pt-6">
+      <div class="w-full px-6 pt-6 flex items-center justify-between gap-3">
         <h1 class="text-xl font-medium text-n-slate-12">
           {{ t('CALLS_PAGE.HEADER') }}
         </h1>
+        <div v-if="telephonyAgents.length" class="flex items-center gap-2">
+          <select v-model="callAgentId" class="!mb-0 !w-56">
+            <option :value="null">
+              {{ t('CALLS_PAGE.CALL_AGENT.PLACEHOLDER') }}
+            </option>
+            <option
+              v-for="agent in telephonyAgents"
+              :key="agent.user_id"
+              :value="agent.user_id"
+              :disabled="agent.busy"
+            >
+              {{ agent.name }} ({{ agent.extension }})
+            </option>
+          </select>
+          <NextButton
+            sm
+            solid
+            blue
+            icon="i-lucide-phone"
+            :label="t('CALLS_PAGE.CALL_AGENT.BUTTON')"
+            :disabled="!callAgentId"
+            :is-loading="isCallingAgent"
+            @click="onCallAgent"
+          />
+        </div>
       </div>
       <CallsFilterBar
         v-model:activity="activity"
@@ -170,7 +235,13 @@ onMounted(async () => {
           </span>
         </div>
         <template v-else>
-          <CallListItem v-for="call in calls" :key="call.id" :call="call" />
+          <CallListItem
+            v-for="call in calls"
+            :key="call.id"
+            :call="call"
+            :can-join="isAdmin"
+            @join="onJoin"
+          />
         </template>
       </div>
     </main>

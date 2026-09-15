@@ -1,5 +1,5 @@
 class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony::BaseController
-  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording, :answer]
+  before_action :fetch_call, only: [:show, :hangup, :dtmf, :hold, :unhold, :transfer, :cancel_transfer, :recording, :answer, :join, :leave]
 
   # Llamada viva del usuario: la suya o una entrante que le está sonando (ringing_user_ids).
   def active
@@ -15,6 +15,27 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
   def show
     refresh_from_controller unless @telephony_call.ended?
     render :show
+  end
+
+  # POST telephony_calls { to_user_id } — llamada interna a otro agente.
+  def create
+    to_user = Current.account.users.find(params.require(:to_user_id))
+    @telephony_call = Telephony::InternalCallCreator.new(account: Current.account, user: Current.user, to_user: to_user).perform
+    render :show, status: :created
+  end
+
+  # Unirse (yo) o invitar (a otro) a una llamada en curso: conferencia.
+  def join
+    target = params[:user_id].present? ? Current.account.users.find(params[:user_id]) : Current.user
+    unless target == Current.user || @telephony_call.user_id == Current.user.id || Current.account_user.administrator?
+      raise Pundit::NotAuthorizedError
+    end
+
+    apply_remote { telephony_client.join(@telephony_call.external_call_id, user_id: target.id) }
+  end
+
+  def leave
+    apply_remote { telephony_client.leave(@telephony_call.external_call_id, user_id: Current.user.id) }
   end
 
   def hangup

@@ -19,14 +19,22 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  canJoin: { type: Boolean, default: false },
 });
+const emit = defineEmits(['join']);
 
 const { t } = useI18n();
 const route = useRoute();
 
 const kind = computed(() => getCallKind(props.call));
 
+const isInternal = computed(() => props.call.direction === 'internal');
+
 const contactName = computed(() => {
+  if (isInternal.value)
+    return t('CALLS_PAGE.ROW.INTERNAL_CALL', {
+      name: props.call.toUser?.name || '',
+    });
   if (!props.call.contact) return t('CALLS_PAGE.ROW.DELETED_CONTACT');
   return (
     props.call.contact.name ||
@@ -76,7 +84,7 @@ const conversationRoute = computed(() => ({
   name: 'inbox_conversation',
   params: {
     accountId: route.params.accountId,
-    conversation_id: props.call.conversation.displayId,
+    conversation_id: props.call.conversation?.displayId,
   },
   query: { messageId: props.call.messageId },
 }));
@@ -98,7 +106,17 @@ const conversationRoute = computed(() => ({
         {{ contactName }}
       </span>
       <CallStatusBadge :kind="kind" class="ms-auto shrink-0" />
+      <button
+        v-if="canJoin && kind === 'ongoing' && call.provider === 'asterisk'"
+        type="button"
+        class="inline-flex items-center h-6 gap-1 px-2 text-label-small rounded-md bg-n-teal-3 text-n-teal-11 hover:bg-n-teal-4 shrink-0"
+        @click="emit('join', call)"
+      >
+        <Icon icon="i-lucide-phone-incoming" class="size-3.5" />
+        {{ t('CALLS_PAGE.ROW.JOIN') }}
+      </button>
       <RouterLink
+        v-if="call.conversation"
         :to="conversationRoute"
         class="inline-flex items-center h-6 gap-1 px-2 text-label-small outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0"
       >

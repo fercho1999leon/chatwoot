@@ -26,6 +26,7 @@ const ringtone = useRingtone();
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const showKeypad = ref(false);
 const showTransfer = ref(false);
+const pickerMode = ref('transfer'); // 'transfer' | 'add'
 const transferAgents = ref([]);
 const transferInboxId = ref(null);
 const canAddMembers = ref(false);
@@ -38,8 +39,26 @@ let timer = null;
 const call = computed(() => store.activeCall || store.lastEndedCall);
 const state = computed(() => call.value?.state);
 
+const isInternal = computed(() => call.value?.direction === 'internal');
+// Names of the other people on the call (owner + participants, minus me)
+const agentNames = computed(() => {
+  const names = [];
+  if (!store.isOwner && call.value?.owner_name)
+    names.push(call.value.owner_name);
+  (call.value?.participant_names || []).forEach(n => names.push(n));
+  if (isInternal.value && store.isOwner && call.value?.to_user_name)
+    names.push(call.value.to_user_name);
+  return names.join(', ');
+});
+
 const title = computed(() => {
-  if (store.isIncoming) return t('TELEPHONY.WIDGET.INCOMING');
+  if (store.isIncoming && store.isAnswered)
+    return t('TELEPHONY.WIDGET.JOIN_INVITE');
+  if (store.isIncoming)
+    return isInternal.value
+      ? t('TELEPHONY.WIDGET.INTERNAL_INCOMING')
+      : t('TELEPHONY.WIDGET.INCOMING');
+  if (store.isParticipant) return t('TELEPHONY.WIDGET.JOINED');
   if (store.isMissedInbound) return t('TELEPHONY.WIDGET.MISSED');
   if (store.isTransferring) return t('TELEPHONY.WIDGET.TRANSFERRING');
   if (store.isOnHold && store.isAnswered) return t('TELEPHONY.WIDGET.ON_HOLD');
@@ -70,9 +89,19 @@ const subtitle = computed(() => {
       store.sipError
     );
   }
-  if (call.value?.direction === 'inbound' && call.value?.contact_name)
-    return `${call.value.contact_name} · ${call.value.destination_masked}`;
-  return call.value?.destination_masked || '';
+  if (isInternal.value) {
+    return store.isOwner
+      ? t('TELEPHONY.WIDGET.CALLING_AGENT', { name: agentNames.value })
+      : call.value?.contact_name || '';
+  }
+  if (store.isParticipant || (store.isIncoming && store.isAnswered))
+    return t('TELEPHONY.WIDGET.WITH', { names: agentNames.value });
+  const base =
+    call.value?.direction === 'inbound' && call.value?.contact_name
+      ? `${call.value.contact_name} · ${call.value.destination_masked}`
+      : call.value?.destination_masked || '';
+  const others = call.value?.participant_names || [];
+  return others.length ? `${base} · +${others.join(', ')}` : base;
 });
 
 const formattedDuration = computed(() => {
@@ -169,8 +198,10 @@ const onToggleHold = async () => {
   }
 };
 
-const openTransfer = async () => {
-  showTransfer.value = !showTransfer.value;
+const openTransfer = async (mode = 'transfer') => {
+  const reopen = !showTransfer.value || pickerMode.value !== mode;
+  pickerMode.value = mode;
+  showTransfer.value = reopen;
   if (!showTransfer.value) return;
   transferLoading.value = true;
   try {
@@ -205,6 +236,33 @@ const onAddToInbox = async agent => {
   }
 };
 
+const onAddAgent = async userId => {
+  isWorking.value = true;
+  try {
+    await store.addAgent(userId);
+    showTransfer.value = false;
+  } catch (error) {
+    const code = error?.response?.data?.code || 'unknown';
+    useAlert(
+      t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))
+    );
+  } finally {
+    isWorking.value = false;
+  }
+};
+
+const onLeave = async () => {
+  isWorking.value = true;
+  try {
+    hangupLocal();
+    await store.leaveCall();
+  } catch (e) {
+    // the leg is already gone; the controller drops us from the bridge
+  } finally {
+    isWorking.value = false;
+  }
+};
+
 const onTransfer = async userId => {
   isWorking.value = true;
   try {
@@ -219,6 +277,9 @@ const onTransfer = async userId => {
     isWorking.value = false;
   }
 };
+
+const onPick = userId =>
+  pickerMode.value === 'add' ? onAddAgent(userId) : onTransfer(userId);
 
 const onCancelTransfer = async () => {
   isWorking.value = true;
@@ -302,7 +363,11 @@ onBeforeUnmount(stopTimer);
 
     <div v-if="showTransfer && store.isAnswered" class="flex flex-col gap-1">
       <p class="text-xs text-n-slate-11">
-        {{ t('TELEPHONY.WIDGET.TRANSFER_TO') }}
+        {{
+          pickerMode === 'add'
+            ? t('TELEPHONY.WIDGET.ADD_AGENT_TO')
+            : t('TELEPHONY.WIDGET.TRANSFER_TO')
+        }}
       </p>
       <p v-if="transferLoading" class="text-xs text-n-slate-11">
         {{ t('TELEPHONY.WIDGET.LOADING') }}
@@ -326,7 +391,7 @@ onBeforeUnmount(stopTimer);
             !agent.inbox_member
           "
           :label="`${agent.name} (${agent.extension})${agent.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}${!agent.inbox_member ? ' · ' + t('TELEPHONY.WIDGET.NOT_INBOX_MEMBER') : ''}`"
-          @click="onTransfer(agent.user_id)"
+          @click="onPick(agent.user_id)"
         />
         <NextButton
           v-if="!agent.inbox_member && canAddMembers"
@@ -420,7 +485,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleMute"
         />
         <NextButton
-          v-if="store.isAnswered"
+          v-if="store.isAnswered && store.isOwner"
           sm
           ghost
           slate
@@ -428,7 +493,7 @@ onBeforeUnmount(stopTimer);
           @click="showKeypad = !showKeypad"
         />
         <NextButton
-          v-if="store.isAnswered && !store.isTransferring"
+          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
           sm
           ghost
           slate
@@ -437,16 +502,38 @@ onBeforeUnmount(stopTimer);
           @click="onToggleHold"
         />
         <NextButton
-          v-if="store.isAnswered && !store.isTransferring"
+          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
+          v-tooltip="t('TELEPHONY.WIDGET.TRANSFER')"
           sm
           ghost
           slate
           icon="i-lucide-phone-forwarded"
-          @click="openTransfer"
+          @click="openTransfer('transfer')"
+        />
+        <NextButton
+          v-if="store.isAnswered && store.isOwner && !store.isTransferring"
+          v-tooltip="t('TELEPHONY.WIDGET.ADD_AGENT')"
+          sm
+          ghost
+          slate
+          icon="i-lucide-user-plus"
+          @click="openTransfer('add')"
+        />
+        <NextButton
+          v-if="store.isParticipant"
+          sm
+          solid
+          ruby
+          icon="i-lucide-log-out"
+          :label="t('TELEPHONY.WIDGET.LEAVE')"
+          :is-loading="isWorking"
+          @click="onLeave"
         />
         <NextButton
           v-if="
-            (store.hasActiveCall || store.hasInvitation) && !store.isIncoming
+            (store.hasActiveCall || store.hasInvitation) &&
+            !store.isIncoming &&
+            !store.isParticipant
           "
           sm
           solid

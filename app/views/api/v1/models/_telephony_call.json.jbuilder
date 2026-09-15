@@ -2,7 +2,7 @@ json.id resource.external_call_id
 json.state resource.state
 json.state_version resource.state_version
 json.end_reason resource.end_reason
-json.conversation_display_id resource.conversation.display_id
+json.conversation_display_id resource.conversation&.display_id
 json.inbox_id resource.inbox_id
 json.user_id resource.user_id
 json.destination_masked resource.destination_masked
@@ -20,3 +20,7 @@ json.did resource.did
 json.ringing_user_ids resource.ringing_user_ids
 json.answered_by resource.answered_by
 json.contact_name resource.contact_name
+json.to_user_id resource.to_user_id
+json.participants resource.participants
+json.owner_name resource.user&.available_name
+json.participant_names User.where(id: resource.participants).map(&:available_name)

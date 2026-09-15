@@ -30,6 +30,7 @@ export const useTelephonyStore = defineStore('telephony', {
     lastEndedCall: null,
     sipStatus: SIP_STATUS.IDLE,
     sipError: null,
+    currentUserId: null,
     hasInvitation: false, // agent leg ringing in the browser: show "Connect audio"
     autoAcceptInvitation: false, // agent already pressed Answer: accept the next INVITE without asking
     audioConnected: false,
@@ -55,11 +56,20 @@ export const useTelephonyStore = defineStore('telephony', {
       !state.activeCall &&
       state.lastEndedCall?.direction === 'inbound' &&
       !state.lastEndedCall?.answered_at,
-    // Inbound call ringing this agent (nobody has answered yet)
+    // A call ringing this agent: inbound from a customer, an internal call, or an invitation to join
     isIncoming: state =>
-      state.activeCall?.direction === 'inbound' &&
-      !state.activeCall?.user_id &&
-      state.activeCall?.state !== TELEPHONY_STATES.ENDED,
+      !!state.activeCall &&
+      state.activeCall.state !== TELEPHONY_STATES.ENDED &&
+      state.activeCall.user_id !== state.currentUserId &&
+      (state.activeCall.ringing_user_ids || []).includes(state.currentUserId) &&
+      !(state.activeCall.participants || []).includes(state.currentUserId),
+    // This agent joined someone else's call (conference)
+    isParticipant: state =>
+      !!state.activeCall &&
+      state.activeCall.user_id !== state.currentUserId &&
+      (state.activeCall.participants || []).includes(state.currentUserId),
+    isOwner: state =>
+      !!state.activeCall && state.activeCall.user_id === state.currentUserId,
     showWidget() {
       return (
         this.hasActiveCall ||
@@ -91,22 +101,25 @@ export const useTelephonyStore = defineStore('telephony', {
     // `currentUserId` lets a tab drop a call that was transferred away from it.
     applyCall(call, currentUserId = null) {
       if (!call?.id) return;
-      if (call.direction === 'inbound' && currentUserId) {
-        const ringingMe = (call.ringing_user_ids || []).includes(currentUserId);
-        const mine = call.user_id === currentUserId;
+      if (currentUserId) this.currentUserId = currentUserId;
+      const me = currentUserId || this.currentUserId;
+      if (me) {
+        const ringingMe = (call.ringing_user_ids || []).includes(me);
+        const participant = (call.participants || []).includes(me);
+        const mine = call.user_id === me;
+        const transferTarget = call.transfer_to_user_id === me;
         const wasMine = this.activeCall?.id === call.id;
-        // Someone else answered, or this step stopped ringing me: drop it silently.
-        if (
-          !ringingMe &&
-          !mine &&
-          wasMine &&
-          call.state !== TELEPHONY_STATES.ENDED
-        ) {
-          this.activeCall = null;
-          this.hasInvitation = false;
-          return;
+        const involved = mine || ringingMe || participant || transferTarget;
+        // Someone else answered / I left the conference / this step stopped ringing me: drop it silently.
+        if (!involved && wasMine && call.state !== TELEPHONY_STATES.ENDED) {
+          if (call.transfer_state !== 'completed') {
+            this.activeCall = null;
+            this.hasInvitation = false;
+            this.audioConnected = false;
+            return;
+          }
         }
-        if (!ringingMe && !mine && !wasMine) return; // not for this agent
+        if (!involved && !wasMine) return; // not for this agent
         if (call.state === TELEPHONY_STATES.ENDED && !wasMine) return;
       }
       if (
@@ -127,14 +140,6 @@ export const useTelephonyStore = defineStore('telephony', {
         this.isMuted = false;
         this.idempotencyKey = null;
         return;
-      }
-      if (
-        currentUserId &&
-        call.user_id &&
-        call.user_id !== currentUserId &&
-        call.transfer_to_user_id !== currentUserId
-      ) {
-        return; // event for another agent (broadcast to previous owner after completion)
       }
       const current = this.activeCall;
       if (
@@ -191,6 +196,44 @@ export const useTelephonyStore = defineStore('telephony', {
           state: TELEPHONY_STATES.ENDED,
           state_version: 1e9,
         });
+    },
+
+    async callAgent(toUserId) {
+      this.autoAcceptInvitation = true;
+      try {
+        const call = await TelephonyAPI.createInternal(toUserId);
+        this.applyCall(call, this.currentUserId);
+        return call;
+      } catch (error) {
+        this.autoAcceptInvitation = false;
+        throw error;
+      }
+    },
+
+    // Owner adds a colleague to the call (conference); admins can also join themselves.
+    async addAgent(userId) {
+      if (!this.activeCall) return;
+      const call = await TelephonyAPI.join(this.activeCall.id, userId);
+      this.applyCall(call, this.currentUserId);
+    },
+
+    async joinCall(callId) {
+      this.autoAcceptInvitation = true;
+      try {
+        const call = await TelephonyAPI.join(callId);
+        this.applyCall(call, this.currentUserId);
+      } catch (error) {
+        this.autoAcceptInvitation = false;
+        throw error;
+      }
+    },
+
+    async leaveCall() {
+      if (!this.activeCall) return;
+      await TelephonyAPI.leave(this.activeCall.id);
+      this.activeCall = null;
+      this.hasInvitation = false;
+      this.audioConnected = false;
     },
 
     // Audio needed but no SIP invitation (page reload / network drop): ask the PBX to invite us again.

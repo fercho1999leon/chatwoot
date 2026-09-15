@@ -7,6 +7,7 @@ import AddAccountModal from 'dashboard/components/app/AddAccountModal.vue';
 import UpgradePage from 'dashboard/routes/dashboard/upgrade/UpgradePage.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useMapGetter } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useWindowSize } from '@vueuse/core';
 
@@ -54,6 +55,7 @@ export default {
     const callsStore = useCallsStore();
     const telephonyStore = useTelephonyStore();
     const { connect: connectSip } = useSipSession();
+    const currentUserId = useMapGetter('getCurrentUserID');
 
     // Register the softphone as soon as the account (and its feature flags) is
     // loaded, so the agent can receive transfers (and later inbound calls)
@@ -67,6 +69,7 @@ export default {
       telephonyEnabled,
       enabled => {
         if (!enabled) return;
+        telephonyStore.currentUserId = currentUserId.value;
         connectSip({ quiet: true });
         // A call may still be live (or ringing us) after a reload.
         telephonyStore.refreshActive().catch(() => {});

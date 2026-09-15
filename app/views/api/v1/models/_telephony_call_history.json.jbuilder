@@ -14,10 +14,16 @@ json.transcript nil
 json.answered_by call.answered_by
 json.previous_user_id call.previous_user_id
 
-json.conversation do
-  json.id call.conversation_id
-  json.display_id call.conversation.display_id
+if call.conversation
+  json.conversation do
+    json.id call.conversation_id
+    json.display_id call.conversation.display_id
+  end
+else
+  json.conversation nil
 end
+json.to_user(call.to_user ? { id: call.to_user.id, name: call.to_user.available_name } : nil)
+json.participants call.participants
 
 json.inbox do
   json.id call.inbox_id
@@ -36,7 +42,7 @@ else
   json.agent nil
 end
 
-contact = call.conversation.contact
+contact = call.conversation&.contact
 if contact
   json.contact do
     json.id contact.id

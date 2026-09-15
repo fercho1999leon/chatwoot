@@ -48,7 +48,7 @@ class Telephony::EventApplier
   def projection_attrs(data)
     attrs = data.slice(*COPIED_KEYS).symbolize_keys.merge(
       state_version: data['state_version'].to_i, last_event_id: data['event_id'], on_hold: data['on_hold'] || false,
-      ringing_user_ids: Array(data['ringing_user_ids'])
+      ringing_user_ids: Array(data['ringing_user_ids']), participants: Array(data['participants'])
     )
     attrs[:contact_name] = data['contact_name'] if data['contact_name'].present?
     attrs
@@ -60,10 +60,10 @@ class Telephony::EventApplier
     owner_changed = data['user_id'].present? && data['user_id'].to_i != projection.user_id
     attrs[:user_id] = data['user_id'].to_i if owner_changed
     # Los agentes que sonaban y no contestaron deben cerrar su widget: se les avisa una última vez.
-    @previously_ringing = projection.ringing_user_ids
+    @previously_ringing = projection.ringing_user_ids + projection.participants
     projection.update!(attrs)
-    hand_over_conversation(projection) if owner_changed
-    Telephony::NoteProjector.new(projection: projection).upsert!
+    hand_over_conversation(projection) if owner_changed && projection.conversation
+    Telephony::NoteProjector.new(projection: projection).upsert! if projection.conversation
     fetch_recording(projection, data)
   end
 

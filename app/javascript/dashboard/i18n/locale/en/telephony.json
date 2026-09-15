@@ -64,7 +64,17 @@
       "DECLINE": "Decline",
       "MISSED": "Missed call",
       "CALL_BACK": "Call back",
-      "RECONNECT_AUDIO": "Reconnect audio"
+      "RECONNECT_AUDIO": "Reconnect audio",
+      "INTERNAL_INCOMING": "Internal call",
+      "JOIN_INVITE": "Invited to join a call",
+      "JOINED": "In call (joined)",
+      "CALLING_AGENT": "Calling {name}",
+      "WITH": "With {names}",
+      "ADD_AGENT": "Add agent",
+      "ADD_AGENT_TO": "Add an agent to the call",
+      "LEAVE": "Leave",
+      "TRANSFER": "Transfer",
+      "CALL_AGENT": "Call an agent"
     },
     "ERROR": {
       "REGISTER": "Could not register the softphone: {reason}",
@@ -86,7 +96,10 @@
       "NOT_INBOX_MEMBER": "That agent is not a collaborator of this inbox",
       "NOT_ANSWERED": "The call is not connected yet",
       "UNKNOWN": "Could not start the call",
-      "NOT_RINGING_YOU": "This call is no longer ringing you"
+      "NOT_RINGING_YOU": "This call is no longer ringing you",
+      "ALREADY_IN_CALL": "That agent is already on this call",
+      "SAME_USER": "You cannot call yourself",
+      "TARGET_NO_ENDPOINT": "That agent has no SIP extension"
     }
   }
 }

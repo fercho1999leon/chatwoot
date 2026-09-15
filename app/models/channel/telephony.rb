@@ -5,7 +5,6 @@
 #  id                :bigint           not null, primary key
 #  allowed_inbox_ids :jsonb            not null
 #  auth_mode         :string           default("register"), not null
-#  caller_id         :string           default(""), not null
 #  carrier_ips       :jsonb            not null
 #  codecs            :jsonb            not null
 #  default_country   :string           default(""), not null
@@ -19,10 +18,13 @@
 #  provisioned_at    :datetime
 #  register          :boolean          default(TRUE), not null
 #  transport         :string           default("udp"), not null
+#  trunk_mode        :string           default("custom"), not null
+#  trunk_name        :string           default(""), not null
 #  username          :string           default(""), not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :integer          not null
+#  caller_id         :string           default(""), not null
 #
 # Indexes
 #

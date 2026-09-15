@@ -53,6 +53,27 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  createInternal(toUserId) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls`, { to_user_id: toUserId })
+      .then(r => r.data);
+  }
+
+  join(id, userId = null) {
+    return axios
+      .post(
+        `${this.baseUrl()}/telephony_calls/${id}/join`,
+        userId ? { user_id: userId } : {}
+      )
+      .then(r => r.data);
+  }
+
+  leave(id) {
+    return axios
+      .post(`${this.baseUrl()}/telephony_calls/${id}/leave`)
+      .then(r => r.data);
+  }
+
   answer(id) {
     return axios
       .post(`${this.baseUrl()}/telephony_calls/${id}/answer`)

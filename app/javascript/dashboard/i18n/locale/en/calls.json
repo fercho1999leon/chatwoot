@@ -40,7 +40,13 @@
       "NO_CONTACT_ANSWER": "Contact did not answer",
       "FAILED": "This call could not be connected",
       "YESTERDAY": "Yesterday",
-      "DELETED_CONTACT": "Deleted contact"
+      "DELETED_CONTACT": "Deleted contact",
+      "INTERNAL_CALL": "Internal call · {name}",
+      "JOIN": "Join"
+    },
+    "CALL_AGENT": {
+      "PLACEHOLDER": "Call an agent…",
+      "BUTTON": "Call"
     }
   }
 }
