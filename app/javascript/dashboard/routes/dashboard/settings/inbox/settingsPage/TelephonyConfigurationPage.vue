@@ -227,7 +227,12 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
           "
         >
           {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TRUNK') }}:
-          {{ status.trunk.name }} · {{ status.trunk.endpoint_state || '—' }}
+          <template v-if="status.trunk.mode === 'routes'">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TRUNK_ROUTES') }}
+          </template>
+          <template v-else>
+            {{ status.trunk.name }} · {{ status.trunk.endpoint_state || '—' }}
+          </template>
           <template v-if="status.trunk.registration">
             · {{ status.trunk.registration }}</template
           >

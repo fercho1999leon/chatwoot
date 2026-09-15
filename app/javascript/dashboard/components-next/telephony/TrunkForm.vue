@@ -41,6 +41,8 @@ const carrierIpsText = computed({
     ),
 });
 const isGui = computed(() => form.value.trunk_mode === 'gui');
+const isRoutes = computed(() => form.value.trunk_mode === 'routes');
+const isCustom = computed(() => !isGui.value && !isRoutes.value);
 </script>
 
 <template>
@@ -56,6 +58,9 @@ const isGui = computed(() => form.value.trunk_mode === 'gui');
         </option>
         <option value="gui">
           {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.GUI') }}
+        </option>
+        <option value="routes">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.ROUTES') }}
         </option>
       </select>
       <p class="help-text">
@@ -76,7 +81,11 @@ const isGui = computed(() => form.value.trunk_mode === 'gui');
       </p>
     </label>
 
-    <template v-else>
+    <p v-if="isRoutes" class="help-text">
+      {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.ROUTES_HELP') }}
+    </p>
+
+    <template v-if="isCustom">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label class="md:col-span-2">
           {{ t('INBOX_MGMT.ADD.TELEPHONY.HOST.LABEL') }}
@@ -167,28 +176,7 @@ const isGui = computed(() => form.value.trunk_mode === 'gui');
           {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.HELP') }}
         </p>
       </label>
-      <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.LABEL') }}
-        <input
-          :value="form.dids"
-          type="text"
-          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.DIDS.PLACEHOLDER')"
-          @input="set('dids', $event.target.value)"
-        />
-        <p class="help-text">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.HELP') }}
-        </p>
-      </label>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label>
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.LABEL') }}
-          <input
-            :value="form.caller_id"
-            type="text"
-            :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.PLACEHOLDER')"
-            @input="set('caller_id', $event.target.value)"
-          />
-        </label>
         <label>
           {{ t('INBOX_MGMT.ADD.TELEPHONY.DTMF.LABEL') }}
           <select :value="form.dtmf" @change="set('dtmf', $event.target.value)">
@@ -216,6 +204,31 @@ const isGui = computed(() => form.value.trunk_mode === 'gui');
         </div>
       </div>
     </template>
+
+    <!-- Común a todos los modos: entrantes (DIDs) y Caller ID saliente -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.LABEL') }}
+        <input
+          :value="form.dids"
+          type="text"
+          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.DIDS.PLACEHOLDER')"
+          @input="set('dids', $event.target.value)"
+        />
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.HELP') }}
+        </p>
+      </label>
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.LABEL') }}
+        <input
+          :value="form.caller_id"
+          type="text"
+          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.PLACEHOLDER')"
+          @input="set('caller_id', $event.target.value)"
+        />
+      </label>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label>

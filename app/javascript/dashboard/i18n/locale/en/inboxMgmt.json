@@ -570,7 +570,9 @@
           "LABEL": "Trunk",
           "CUSTOM": "Configure here (Chatwoot provisions it in the PBX)",
           "GUI": "Already exists in FreePBX (use its name)",
-          "HELP": "Choose \"Configure here\" unless your trunk is already created in the FreePBX admin."
+          "ROUTES": "FreePBX outbound routes (one or more carriers)",
+          "ROUTES_HELP": "Calls leave through FreePBX's Outbound Routes (Connectivity → Outbound Routes): dial patterns, failover and several carriers are managed there. Chatwoot only needs the caller ID and your DIDs.",
+          "HELP": "Choose \"Configure here\" unless your trunks live in the FreePBX admin. With several carriers use \"FreePBX outbound routes\"."
         },
         "TRUNK_NAME": {
           "LABEL": "FreePBX trunk name",
@@ -1223,6 +1225,7 @@
           "CONNECTED": "connected",
           "DISCONNECTED": "disconnected",
           "TRUNK": "Trunk",
+          "TRUNK_ROUTES": "FreePBX outbound routes",
           "ACTIVE_CALLS": "Active calls: {count}",
           "PBX": "PBX",
           "NOT_CONFIGURED": "not configured",

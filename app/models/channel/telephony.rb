@@ -40,7 +40,8 @@ class Channel::Telephony < ApplicationRecord
   EDITABLE_ATTRS = [:trunk_mode, :trunk_name, :host, :port, :transport, :auth_mode, :username, :password, :caller_id, :dtmf, :register,
                     :default_country, :max_call_seconds, :dids, { carrier_ips: [], codecs: [], allowed_inbox_ids: [] }].freeze
 
-  TRUNK_MODES = %w[custom gui].freeze
+  # custom: Chatwoot escribe la troncal; gui: troncal fija de FreePBX; routes: Outbound Routes de FreePBX (varios carriers)
+  TRUNK_MODES = %w[custom gui routes].freeze
   TRANSPORTS = %w[udp tcp tls].freeze
   AUTH_MODES = %w[register ip].freeze
   CODECS = %w[ulaw alaw g722 opus g729 gsm].freeze
@@ -68,12 +69,20 @@ class Channel::Telephony < ApplicationRecord
   end
 
   def configured?
-    trunk_mode == 'gui' ? trunk_name.present? : host.present?
+    case trunk_mode
+    when 'gui' then trunk_name.present?
+    when 'routes' then true
+    else host.present?
+    end
   end
 
   # Nombre PJSIP con el que marca el controlador.
   def dial_trunk_name
-    trunk_mode == 'gui' ? trunk_name : "trunk-#{account_id}"
+    case trunk_mode
+    when 'gui' then trunk_name
+    when 'routes' then 'from-internal'
+    else "trunk-#{account_id}"
+    end
   end
 
   # Un inbox puede llamar si la lista está vacía (todos) o lo incluye.

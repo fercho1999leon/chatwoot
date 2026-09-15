@@ -51,9 +51,10 @@ const uiFlags = computed(() => store.getters['inboxes/getUIFlags']);
 const isValid = computed(
   () =>
     channelName.value.trim() &&
-    (trunk.value.trunk_mode === 'gui'
-      ? trunk.value.trunk_name
-      : trunk.value.host)
+    (trunk.value.trunk_mode === 'routes' ||
+      (trunk.value.trunk_mode === 'gui'
+        ? trunk.value.trunk_name
+        : trunk.value.host))
 );
 
 const onSavePbx = async () => {
