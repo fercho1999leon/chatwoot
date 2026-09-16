@@ -13,6 +13,7 @@ import TrunkForm from 'dashboard/components-next/telephony/TrunkForm.vue';
 import PbxForm from 'dashboard/components-next/telephony/PbxForm.vue';
 import RoutingRules from 'dashboard/components-next/telephony/RoutingRules.vue';
 import PbxTestResult from 'dashboard/components-next/telephony/PbxTestResult.vue';
+import HealthPanel from 'dashboard/components-next/telephony/HealthPanel.vue';
 import { useTelephonyPbx } from 'dashboard/composables/useTelephonyPbx';
 
 const props = defineProps({ inbox: { type: Object, required: true } });
@@ -146,6 +147,19 @@ const loadTrunk = () => {
     max_call_seconds: tconf.max_call_seconds || 3600,
     allowed_inbox_ids: tconf.allowed_inbox_ids || [],
   };
+};
+
+const retryingRecordings = ref(false);
+const onRetryRecordings = async () => {
+  retryingRecordings.value = true;
+  try {
+    await TelephonyAPI.retryRecordings();
+    useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.HEALTH.RETRY_QUEUED'));
+  } catch (e) {
+    useAlert(e?.response?.data?.code || 'unavailable');
+  } finally {
+    retryingRecordings.value = false;
+  }
 };
 
 let provisioningTimer = null;
@@ -325,6 +339,22 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
           @click="loadStatus"
         />
       </div>
+    </SettingsFieldSection>
+
+    <!-- Salud del controlador -->
+    <SettingsFieldSection
+      v-if="status?.health"
+      :label="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.HEALTH.TITLE')"
+    >
+      <p class="help-text mb-3">
+        {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.HEALTH.HELP') }}
+      </p>
+      <HealthPanel
+        :health="status.health"
+        :recordings="status.recordings"
+        :retrying="retryingRecordings"
+        @retry-recordings="onRetryRecordings"
+      />
     </SettingsFieldSection>
 
     <!-- Conexión PBX -->

@@ -94,6 +94,7 @@ class Api::V1::Accounts::TelephonyCallsController < Api::V1::Accounts::Telephony
   # Borra la grabación de una llamada (administrador o dueño: CallProjectionPolicy#destroy_recording?).
   def recording
     @telephony_call.recording.purge_later if @telephony_call.recording.attached?
+    Telephony::RecordingRemote.delete(@telephony_call) # si nunca se recogió, que tampoco quede en la PBX
     @telephony_call.update!(recording_state: 'purged')
     @telephony_call.message&.touch # rubocop:disable Rails/SkipsModelValidations
     head :no_content

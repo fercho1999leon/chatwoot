@@ -33,6 +33,12 @@ class Api::V1::Accounts::Telephony::PbxController < Api::V1::Accounts::Telephony
     head :accepted
   end
 
+  # POST telephony/pbx/retry_recordings — vuelve a encolar ahora la recogida de las grabaciones pendientes/fallidas.
+  def retry_recordings
+    Telephony::RecordingSweepJob.perform_later(account_id: Current.account.id)
+    head :accepted
+  end
+
   # POST telephony/pbx/bot_token — genera (o rota) el token de la API del bot; se devuelve UNA sola vez.
   def bot_token
     raise CustomExceptions::Telephony::Invalid, 'pbx_not_configured' unless @pbx.persisted?

@@ -85,15 +85,16 @@ class Telephony::ControllerClient
   def download_recording(id, to:)
     raise Error.new(503, 'not_configured') unless self.class.configured?
 
-    File.open(to, 'wb') do |file|
-      response = HTTParty.get("#{self.class.base_url.chomp('/')}/internal/calls/#{id}/recording",
-                              headers: { 'Authorization' => "Bearer #{self.class.token}" }, timeout: 120, stream_body: true) do |chunk|
+    response = File.open(to, 'wb') do |file|
+      HTTParty.get("#{self.class.base_url.chomp('/')}/internal/calls/#{id}/recording",
+                   headers: { 'Authorization' => "Bearer #{self.class.token}" }, timeout: 120, stream_body: true) do |chunk|
         file.write(chunk)
       end
-      raise Error.new(response.code, 'recording_unavailable') unless response.success?
-
-      response.headers['content-type']
     end
+    # El cuerpo de un error también se escribió al archivo: de ahí sale el código (no_recording, pbx_recording_404…).
+    raise Error.new(response.code, error_code(safe_json(File.read(to))) || 'recording_unavailable') unless response.success?
+
+    response.headers['content-type']
   rescue *NETWORK_ERRORS
     raise Error.new(503, 'pbx_unreachable')
   end
@@ -199,5 +200,11 @@ class Telephony::ControllerClient
 
   def error_code(parsed)
     parsed.is_a?(Hash) ? (parsed['error'] || 'error') : 'error'
+  end
+
+  def safe_json(text)
+    JSON.parse(text)
+  rescue JSON::ParserError
+    nil
   end
 end

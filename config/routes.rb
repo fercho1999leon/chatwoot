@@ -230,6 +230,7 @@ Rails.application.routes.draw do
             resource :pbx, only: [:show, :update, :destroy], controller: :pbx do
               post :test
               post :purge_recordings
+              post :retry_recordings
               post :bot_token
               delete :bot_token, action: :revoke_bot_token, as: :revoke_bot_token
             end

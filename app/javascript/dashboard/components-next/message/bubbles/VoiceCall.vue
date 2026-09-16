@@ -252,7 +252,8 @@ const recordingAttachment = computed(() => {
   };
 });
 
-// PBX recordings arrive a few seconds after hangup; 'stored' = still being fetched, 'failed' = gave up.
+// PBX recordings arrive a few seconds after hangup; 'stored' = still being fetched,
+// 'failed' = this pass gave up (the hourly sweep retries), 'missing' = the PBX no longer has the file.
 const recordingState = computed(
   () => call.value?.recordingState || call.value?.recording_state || null
 );
@@ -260,7 +261,9 @@ const recordingPending = computed(
   () => !recordingAttachment.value && recordingState.value === 'stored'
 );
 const recordingFailed = computed(
-  () => !recordingAttachment.value && recordingState.value === 'failed'
+  () =>
+    !recordingAttachment.value &&
+    ['failed', 'missing'].includes(recordingState.value)
 );
 
 const handleJoinCall = async () => {

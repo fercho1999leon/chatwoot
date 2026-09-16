@@ -150,6 +150,10 @@ class TelephonyAPI extends ApiClient {
     return axios.post(`${this.url}/pbx/purge_recordings`, { before });
   }
 
+  retryRecordings() {
+    return axios.post(`${this.url}/pbx/retry_recordings`);
+  }
+
   testPbx(pbx) {
     return axios.post(`${this.url}/pbx/test`, { pbx }).then(r => r.data);
   }
