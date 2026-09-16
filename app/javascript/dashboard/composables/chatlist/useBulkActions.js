@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
 import wootConstants from 'dashboard/constants/globals';
+import types from 'dashboard/store/mutation-types';
 
 export function useBulkActions() {
   const store = useStore();
@@ -219,6 +220,42 @@ export function useBulkActions() {
     }
   }
 
+  // Bulk priority (bar and right-click menu on a multi-selection). `priority` null = none.
+  async function onAssignPriority(priority) {
+    if (selectedConversations.value.length === 0) return;
+    try {
+      await store.dispatch('bulkActions/process', {
+        type: 'Conversation',
+        ids: selectedConversations.value,
+        fields: { priority },
+      });
+      store.dispatch('bulkActions/clearSelectedConversationIds');
+      useAlert(t('BULK_ACTION.PRIORITY.ASSIGN_SUCCESFUL'));
+    } catch (err) {
+      useAlert(t('BULK_ACTION.PRIORITY.ASSIGN_FAILED'));
+    }
+  }
+
+  // Bulk delete (administrators): the server deletes in the background through the same service as a
+  // single delete; the rows leave the list right away so the user does not wait for the job.
+  async function onDeleteConversations() {
+    const ids = [...selectedConversations.value];
+    if (ids.length === 0) return;
+    try {
+      await store.dispatch('bulkActions/process', {
+        type: 'Conversation',
+        action_name: 'delete',
+        ids,
+      });
+      store.dispatch('bulkActions/clearSelectedConversationIds');
+      ids.forEach(id => store.commit(types.DELETE_CONVERSATION, id));
+      store.dispatch('conversationStats/get', {});
+      useAlert(t('BULK_ACTION.DELETE.SUCCESFUL', { count: ids.length }));
+    } catch (err) {
+      useAlert(t('BULK_ACTION.DELETE.FAILED'));
+    }
+  }
+
   return {
     selectedConversations,
     selectedInboxes,
@@ -232,5 +269,7 @@ export function useBulkActions() {
     onRemoveLabels,
     onAssignTeamsForBulk,
     onUpdateConversations,
+    onAssignPriority,
+    onDeleteConversations,
   };
 }

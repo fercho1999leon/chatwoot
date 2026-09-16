@@ -70,6 +70,12 @@ export default {
       type: Array,
       default: () => [],
     },
+    // > 1: the menu acts on a multi-selection that includes this conversation. Per-conversation
+    // entries (read/unread, open in tab, copy link) hide; status/priority show every option.
+    bulkCount: {
+      type: Number,
+      default: 0,
+    },
   },
   emits: [
     'updateConversation',
@@ -218,9 +224,26 @@ export default {
         ...this.filteredAgentOnAvailability,
       ];
     },
+    isBulk() {
+      return this.bulkCount > 1;
+    },
+    bulkHeader() {
+      return this.$t('CONVERSATION.CARD_CONTEXT_MENU.BULK_HEADER', {
+        count: this.bulkCount,
+      });
+    },
+    deleteMenuOption() {
+      if (!this.isBulk) return this.deleteOption;
+      return {
+        ...this.deleteOption,
+        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.BULK_DELETE', {
+          count: this.bulkCount,
+        }),
+      };
+    },
     showSnooze() {
       // Don't show snooze if the conversation is already snoozed/resolved/pending
-      return this.status === wootConstants.STATUS_TYPE.OPEN;
+      return this.isBulk || this.status === wootConstants.STATUS_TYPE.OPEN;
     },
     filteredLabels() {
       const labels = this.labelSearchQuery
@@ -274,7 +297,8 @@ export default {
     show(key) {
       // If the conversation status is same as the action, then don't display the option
       // i.e.: Don't show an option to resolve if the conversation is already resolved.
-      return this.status !== key;
+      // A multi-selection mixes statuses, so every option stays available.
+      return this.isBulk || this.status !== key;
     },
     generateMenuLabelConfig(option, type = 'text') {
       return {
@@ -297,7 +321,15 @@ export default {
   <div
     class="p-1 rounded-md shadow-xl bg-n-alpha-3/50 backdrop-blur-[100px] outline-1 outline outline-n-weak/50"
   >
-    <template v-if="isAllowed([MENU.MARK_AS_READ, MENU.MARK_AS_UNREAD])">
+    <div
+      v-if="isBulk"
+      class="px-2 py-1 mb-1 text-xs font-medium rounded bg-n-alpha-2 text-n-slate-11"
+    >
+      {{ bulkHeader }}
+    </div>
+    <template
+      v-if="!isBulk && isAllowed([MENU.MARK_AS_READ, MENU.MARK_AS_UNREAD])"
+    >
       <MenuItem
         v-if="!hasUnreadMessages"
         :option="unreadOption"
@@ -423,7 +455,7 @@ export default {
       </MenuItemWithSubmenu>
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>
-    <template v-if="isAllowed([MENU.OPEN_NEW_TAB, MENU.COPY_LINK])">
+    <template v-if="!isBulk && isAllowed([MENU.OPEN_NEW_TAB, MENU.COPY_LINK])">
       <MenuItem
         v-if="isAllowed([MENU.OPEN_NEW_TAB])"
         :option="openInNewTabOption"
@@ -440,7 +472,7 @@ export default {
     <template v-if="isAdmin && isAllowed([MENU.DELETE])">
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
       <MenuItem
-        :option="deleteOption"
+        :option="deleteMenuOption"
         variant="icon"
         @click.stop="deleteConversation"
       />

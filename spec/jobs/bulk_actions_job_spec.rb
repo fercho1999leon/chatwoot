@@ -91,5 +91,29 @@ RSpec.describe BulkActionsJob do
       expect(conversation_1.reload.status).to eq('resolved')
       expect(forbidden_conversation.reload.status).to eq('open')
     end
+
+    it 'bulk updates the priority, including clearing it' do
+      conversation_1.update!(priority: :low)
+      described_class.perform_now(account: account, params: { type: 'Conversation', fields: { priority: 'urgent' }, ids: conversation_ids },
+                                  user: agent)
+      expect([conversation_1, conversation_2, conversation_3].map { |c| c.reload.priority }).to all(eq('urgent'))
+
+      described_class.perform_now(account: account, params: { type: 'Conversation', fields: { priority: nil }, ids: [conversation_1.display_id] },
+                                  user: agent)
+      expect(conversation_1.reload.priority).to be_nil
+      expect(conversation_2.reload.priority).to eq('urgent')
+    end
+
+    it 'bulk deletes through the same service as a single delete, only for reachable conversations' do
+      forbidden_conversation = create(:conversation, account_id: account.id, status: :open)
+      params = { type: 'Conversation', action_name: 'delete', ids: conversation_ids + [forbidden_conversation.display_id] }
+
+      perform_enqueued_jobs(only: DeleteObjectJob) do
+        described_class.perform_now(account: account, params: params, user: agent)
+      end
+
+      expect(Conversation.where(id: [conversation_1.id, conversation_2.id, conversation_3.id])).to be_empty
+      expect(forbidden_conversation.reload).to be_present
+    end
   end
 end

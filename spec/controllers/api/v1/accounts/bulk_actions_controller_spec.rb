@@ -38,6 +38,33 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
         Conversation.all.find_each { |conversation| create(:inbox_member, inbox: conversation.inbox, user: agent) }
       end
 
+      it 'Refuses a bulk delete to a non-administrator and lets an administrator delete' do
+        post "/api/v1/accounts/#{account.id}/bulk_actions",
+             headers: agent.create_new_auth_token,
+             params: { type: 'Conversation', action_name: 'delete', ids: Conversation.first(2).pluck(:display_id) }
+        expect(response).to have_http_status(:unauthorized)
+
+        administrator = create(:user, account: account, role: :administrator)
+        expect do
+          post "/api/v1/accounts/#{account.id}/bulk_actions",
+               headers: administrator.create_new_auth_token,
+               params: { type: 'Conversation', action_name: 'delete', ids: Conversation.first(2).pluck(:display_id) }
+        end.to have_enqueued_job(BulkActionsJob)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'Bulk update conversation priority' do
+        perform_enqueued_jobs do
+          post "/api/v1/accounts/#{account.id}/bulk_actions",
+               headers: agent.create_new_auth_token,
+               params: { type: 'Conversation', fields: { priority: 'high' }, ids: Conversation.first(2).pluck(:display_id) }
+          expect(response).to have_http_status(:success)
+        end
+
+        expect(Conversation.first(2).map(&:priority)).to all(eq('high'))
+        expect(Conversation.last.priority).to be_nil
+      end
+
       it 'Ignores bulk_actions for wrong type' do
         post "/api/v1/accounts/#{account.id}/bulk_actions",
              headers: agent.create_new_auth_token,

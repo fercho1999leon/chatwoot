@@ -34,6 +34,8 @@ const markAsRead = inject('markAsRead');
 const assignPriority = inject('assignPriority');
 const isConversationSelected = inject('isConversationSelected');
 const deleteConversation = inject('deleteConversation');
+// Multi-selection: right-clicking a selected row applies the action to every selected conversation.
+const bulk = inject('bulkContext', null);
 
 // --- Context menu state (shared by both layouts) ---
 const showContextMenu = ref(false);
@@ -134,26 +136,43 @@ const closeContextMenu = () => {
   contextMenu.value.y = null;
 };
 
+const bulkCount = computed(() => {
+  if (!bulk) return 0;
+  const selected = bulk.selectedConversations.value || [];
+  return selected.length > 1 && selected.includes(props.source.id)
+    ? selected.length
+    : 0;
+});
+const isBulk = computed(() => bulkCount.value > 1);
+
 const onUpdateConversation = (status, snoozedUntil) => {
   closeContextMenu();
+  if (isBulk.value) {
+    bulk.onUpdateConversations(status, snoozedUntil);
+    return;
+  }
   updateConversationStatus(props.source.id, status, snoozedUntil);
 };
 
 const onAssignAgent = agent => {
-  assignAgent(agent, [props.source.id]);
+  if (isBulk.value) bulk.onAssignAgent(agent);
+  else assignAgent(agent, [props.source.id]);
   closeContextMenu();
 };
 
 const onAssignLabel = label => {
-  assignLabels([label.title], [props.source.id]);
+  if (isBulk.value) bulk.onAssignLabels([label.title]);
+  else assignLabels([label.title], [props.source.id]);
 };
 
 const onRemoveLabel = label => {
-  removeLabels([label.title], [props.source.id]);
+  if (isBulk.value) bulk.onRemoveLabels([label.title]);
+  else removeLabels([label.title], [props.source.id]);
 };
 
 const onAssignTeam = team => {
-  assignTeam(team, props.source.id);
+  if (isBulk.value) bulk.onAssignTeamsForBulk(team);
+  else assignTeam(team, props.source.id);
   closeContextMenu();
 };
 
@@ -168,12 +187,14 @@ const onMarkAsRead = () => {
 };
 
 const onAssignPriority = priority => {
-  assignPriority(priority, props.source.id);
+  if (isBulk.value) bulk.onAssignPriority(priority);
+  else assignPriority(priority, props.source.id);
   closeContextMenu();
 };
 
 const onDeleteConversation = () => {
-  deleteConversation(props.source.id);
+  if (isBulk.value) bulk.confirmDeleteSelected();
+  else deleteConversation(props.source.id);
   closeContextMenu();
 };
 </script>
@@ -229,6 +250,7 @@ const onDeleteConversation = () => {
       :has-unread-messages="source.unread_count > 0"
       :conversation-labels="source.labels"
       :conversation-url="conversationPath"
+      :bulk-count="bulkCount"
       @update-conversation="onUpdateConversation"
       @assign-agent="onAssignAgent"
       @assign-label="onAssignLabel"

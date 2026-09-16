@@ -122,6 +122,10 @@ const {
   onAssignAgent,
   onAssignLabels,
   onRemoveLabels,
+  onAssignTeamsForBulk,
+  onUpdateConversations,
+  onAssignPriority,
+  onDeleteConversations,
 } = useBulkActions();
 
 const {
@@ -853,6 +857,23 @@ provide('assignPriority', assignPriority);
 provide('isConversationSelected', isConversationSelected);
 provide('deleteConversation', handleDelete);
 
+// Right-click on a row that belongs to a multi-selection: the context menu acts on the whole selection.
+const bulkDeleteDialogRef = ref(null);
+const confirmBulkDelete = async () => {
+  await onDeleteConversations();
+  bulkDeleteDialogRef.value?.close();
+};
+provide('bulkContext', {
+  selectedConversations,
+  onUpdateConversations,
+  onAssignAgent,
+  onAssignLabels,
+  onRemoveLabels,
+  onAssignTeamsForBulk,
+  onAssignPriority,
+  confirmDeleteSelected: () => bulkDeleteDialogRef.value?.open(),
+});
+
 watch(activeTeam, () => resetAndFetchData());
 
 watch(
@@ -979,6 +1000,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
       @confirm="deleteConversation"
       @close="selectedConversationId = null"
+    />
+    <Dialog
+      ref="bulkDeleteDialogRef"
+      type="alert"
+      :title="$t('BULK_ACTION.DELETE.TITLE', selectedConversations.length)"
+      :description="$t('BULK_ACTION.DELETE.DESCRIPTION')"
+      :confirm-button-label="$t('BULK_ACTION.DELETE.CONFIRM')"
+      @confirm="confirmBulkDelete"
     />
     <TeleportWithDirection
       v-if="showAdvancedFilters"

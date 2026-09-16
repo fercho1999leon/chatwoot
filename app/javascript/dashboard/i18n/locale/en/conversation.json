@@ -243,6 +243,8 @@
       "AGENTS_LOADING": "Loading agents...",
       "ASSIGN_TEAM": "Assign team",
       "DELETE": "Delete conversation",
+      "BULK_HEADER": "Apply to {count} selected conversations",
+      "BULK_DELETE": "Delete {count} conversations",
       "OPEN_IN_NEW_TAB": "Open in new tab",
       "COPY_LINK": "Copy conversation link",
       "COPY_LINK_SUCCESS": "Conversation link copied to clipboard",

@@ -41,6 +41,19 @@
       "UNASSIGN_TEAM_CONFIRMATION_LABEL": "Are you sure you want to unassign {n} conversation? | Are you sure you want to unassign {n} conversations?",
       "ASSIGN_SUCCESFUL": "Teams assigned successfully.",
       "ASSIGN_FAILED": "Failed to assign team. Please try again."
+    },
+    "PRIORITY": {
+      "CHANGE_PRIORITY": "Set priority",
+      "ASSIGN_SUCCESFUL": "Priority updated successfully.",
+      "ASSIGN_FAILED": "Failed to update the priority. Please try again."
+    },
+    "DELETE": {
+      "BUTTON": "Delete",
+      "TITLE": "Delete {count} conversation | Delete {count} conversations",
+      "DESCRIPTION": "This permanently deletes the selected conversations with their messages and attachments. This cannot be undone.",
+      "CONFIRM": "Delete",
+      "SUCCESFUL": "{count} conversation deleted. | {count} conversations deleted.",
+      "FAILED": "Failed to delete the conversations. Please try again."
     }
   }
 }

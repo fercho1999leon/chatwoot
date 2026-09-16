@@ -2,6 +2,7 @@ class Api::V1::Accounts::BulkActionsController < Api::V1::Accounts::BaseControll
   def create
     case normalized_type
     when 'Conversation'
+      check_authorization_for_conversation_action
       enqueue_conversation_job
       head :ok
     when 'Contact'
@@ -43,12 +44,17 @@ class Api::V1::Accounts::BulkActionsController < Api::V1::Accounts::BaseControll
     authorize(Contact, :destroy?) if delete_contact_action?
   end
 
+  # Borrado masivo: misma regla que borrar una conversación (solo administradores).
+  def check_authorization_for_conversation_action
+    authorize(Conversation, :destroy?) if params[:action_name] == 'delete'
+  end
+
   def conversation_params
     # TODO: Align conversation payloads with the `{ action_name, action_attributes }`
     # and then remove this method in favor of a common params method.
     base = params.permit(
       :snoozed_until,
-      fields: [:status, :assignee_id, :team_id]
+      fields: [:status, :assignee_id, :team_id, :priority]
     )
     append_common_bulk_attributes(base)
   end

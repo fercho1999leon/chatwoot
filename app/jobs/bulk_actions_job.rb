@@ -18,8 +18,18 @@ class BulkActionsJob < ApplicationJob
   end
 
   def bulk_update
+    return bulk_delete if @params[:action_name] == 'delete'
+
     bulk_remove_labels
     bulk_conversation_update
+  end
+
+  # Cada conversación pasa por el mismo servicio que el borrado individual (rastro de correos IMAP,
+  # DeleteObjectJob con el usuario que lo pidió). El controlador ya comprobó destroy? (administrador).
+  def bulk_delete
+    records.each do |conversation|
+      ::Conversations::DeleteService.new(conversation: conversation, user: @user, ip: nil).perform
+    end
   end
 
   def bulk_conversation_update
@@ -37,6 +47,7 @@ class BulkActionsJob < ApplicationJob
     end
   end
 
+  # status en blanco = «sin cambio»; priority en blanco = «sin prioridad» (None), por eso se conserva.
   def available_params(params)
     return unless params[:fields]
 

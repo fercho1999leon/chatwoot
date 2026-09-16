@@ -19,7 +19,10 @@ import BulkAgentActions from './BulkAgentActions.vue';
 import BulkUpdateActions from './BulkUpdateActions.vue';
 import BulkLabelActions from './BulkLabelActions.vue';
 import BulkTeamActions from './BulkTeamActions.vue';
+import BulkPriorityActions from './BulkPriorityActions.vue';
 import CustomSnoozeModal from 'dashboard/components/CustomSnoozeModal.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 const props = defineProps({
   conversations: {
@@ -64,7 +67,18 @@ const {
   onRemoveLabels,
   onAssignTeamsForBulk: onAssignTeam,
   onUpdateConversations,
+  onAssignPriority,
+  onDeleteConversations,
 } = useBulkActions();
+
+// Deleting is an administrator-only action (ConversationPolicy#destroy?), confirmed in a dialog.
+const { isAdmin } = useAdmin();
+const deleteDialogRef = ref(null);
+const openDeleteDialog = () => deleteDialogRef.value?.open();
+const confirmDelete = async () => {
+  await onDeleteConversations();
+  deleteDialogRef.value?.close();
+};
 
 const getConversationById = useMapGetter('getConversationById');
 
@@ -200,10 +214,28 @@ onUnmounted(() => {
             :conversation-count="conversations.length"
             @select="onAssignTeam"
           />
+          <BulkPriorityActions @select="onAssignPriority" />
+          <NextButton
+            v-if="isAdmin"
+            v-tooltip="$t('BULK_ACTION.DELETE.BUTTON')"
+            icon="i-lucide-trash-2"
+            ruby
+            xs
+            ghost
+            @click="openDeleteDialog"
+          />
         </div>
       </div>
     </div>
   </Transition>
+  <Dialog
+    ref="deleteDialogRef"
+    type="alert"
+    :title="$t('BULK_ACTION.DELETE.TITLE', conversations.length)"
+    :description="$t('BULK_ACTION.DELETE.DESCRIPTION')"
+    :confirm-button-label="$t('BULK_ACTION.DELETE.CONFIRM')"
+    @confirm="confirmDelete"
+  />
   <woot-modal
     v-model:show="showCustomTimeSnoozeModal"
     :on-close="hideCustomSnoozeModal"
