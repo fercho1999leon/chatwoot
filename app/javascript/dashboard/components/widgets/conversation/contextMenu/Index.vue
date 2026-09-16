@@ -76,6 +76,10 @@ export default {
       type: Number,
       default: 0,
     },
+    selected: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     'updateConversation',
@@ -87,6 +91,8 @@ export default {
     'assignLabel',
     'removeLabel',
     'deleteConversation',
+    'select',
+    'selectAll',
     'close',
   ],
   setup() {
@@ -107,6 +113,14 @@ export default {
       unreadOption: {
         label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.MARK_AS_UNREAD'),
         icon: 'mail-unread',
+      },
+      selectOption: {
+        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.SELECT'),
+        icon: 'checkmark-circle',
+      },
+      selectAllOption: {
+        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.SELECT_ALL'),
+        icon: 'checkmark-double',
       },
       statusMenuConfig: [
         {
@@ -327,6 +341,19 @@ export default {
     >
       {{ bulkHeader }}
     </div>
+    <template v-if="!isBulk && !selected && !allowedOptions.length">
+      <MenuItem
+        :option="selectOption"
+        variant="icon"
+        @click.stop="$emit('select')"
+      />
+      <MenuItem
+        :option="selectAllOption"
+        variant="icon"
+        @click.stop="$emit('selectAll')"
+      />
+      <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
+    </template>
     <template
       v-if="!isBulk && isAllowed([MENU.MARK_AS_READ, MENU.MARK_AS_UNREAD])"
     >

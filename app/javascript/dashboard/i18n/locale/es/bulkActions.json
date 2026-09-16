@@ -54,6 +54,10 @@
       "CONFIRM": "Eliminar",
       "SUCCESFUL": "{count} conversación eliminada. | {count} conversaciones eliminadas.",
       "FAILED": "No se pudieron eliminar las conversaciones. Inténtalo de nuevo."
+    },
+    "SELECTION_MODE": {
+      "ENTER": "Seleccionar conversaciones",
+      "EXIT": "Salir de la selección"
     }
   }
 }

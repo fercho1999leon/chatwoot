@@ -136,6 +136,8 @@ const closeContextMenu = () => {
   contextMenu.value.y = null;
 };
 
+const selectionMode = computed(() => Boolean(bulk?.selectionMode.value));
+
 const bulkCount = computed(() => {
   if (!bulk) return 0;
   const selected = bulk.selectedConversations.value || [];
@@ -192,6 +194,17 @@ const onAssignPriority = priority => {
   closeContextMenu();
 };
 
+const onSelect = () => {
+  bulk?.setSelectionMode(true);
+  selectConversation(props.source.id, inbox.value.id);
+  closeContextMenu();
+};
+
+const onSelectAll = () => {
+  bulk?.selectAllVisible();
+  closeContextMenu();
+};
+
 const onDeleteConversation = () => {
   if (isBulk.value) bulk.confirmDeleteSelected();
   else deleteConversation(props.source.id);
@@ -226,6 +239,7 @@ const onDeleteConversation = () => {
     :assignee="assignee"
     :inbox="inbox"
     :selected="isConversationSelected(source.id)"
+    :selectable="selectionMode"
     :is-active-chat="isActiveChat"
     :show-assignee="showAssignee"
     :show-inbox-name="showInboxName"
@@ -251,6 +265,9 @@ const onDeleteConversation = () => {
       :conversation-labels="source.labels"
       :conversation-url="conversationPath"
       :bulk-count="bulkCount"
+      :selected="isConversationSelected(source.id)"
+      @select="onSelect"
+      @select-all="onSelectAll"
       @update-conversation="onUpdateConversation"
       @assign-agent="onAssignAgent"
       @assign-label="onAssignLabel"

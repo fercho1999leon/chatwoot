@@ -3,6 +3,8 @@ import BulkActionsAPI from '../../api/bulkActions';
 
 export const state = {
   selectedConversationIds: [],
+  // Explicit multi-select mode: every card shows its checkbox (not only on avatar hover).
+  selectionMode: false,
   uiFlags: {
     isUpdating: false,
   },
@@ -14,6 +16,9 @@ export const getters = {
   },
   getSelectedConversationIds(_state) {
     return _state.selectedConversationIds;
+  },
+  getSelectionMode(_state) {
+    return _state.selectionMode;
   },
 };
 
@@ -36,6 +41,10 @@ export const actions = {
   },
   clearSelectedConversationIds({ commit }) {
     commit(types.CLEAR_SELECTED_CONVERSATION_IDS);
+  },
+  setSelectionMode({ commit }, enabled) {
+    commit(types.SET_CONVERSATION_SELECTION_MODE, enabled);
+    if (!enabled) commit(types.CLEAR_SELECTED_CONVERSATION_IDS);
   },
 };
 
@@ -62,6 +71,9 @@ export const mutations = {
   },
   [types.CLEAR_SELECTED_CONVERSATION_IDS](_state) {
     _state.selectedConversationIds = [];
+  },
+  [types.SET_CONVERSATION_SELECTION_MODE](_state, enabled) {
+    _state.selectionMode = Boolean(enabled);
   },
 };
 

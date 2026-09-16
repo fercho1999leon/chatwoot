@@ -19,6 +19,7 @@ const props = defineProps({
   assignee: { type: Object, default: () => ({}) },
   inbox: { type: Object, default: () => ({}) },
   selected: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: false }, // selection mode: checkbox always visible
   isActiveChat: { type: Boolean, default: false },
   showAssignee: { type: Boolean, default: false },
   showInboxName: { type: Boolean, default: false },
@@ -139,7 +140,7 @@ watch(
       >
         <template #overlay="{ size }">
           <label
-            v-if="hovered || selected"
+            v-if="hovered || selected || selectable"
             class="flex items-center justify-center rounded-full cursor-pointer absolute inset-0 z-10 backdrop-blur-[2px]"
             :style="{ width: `${size}px`, height: `${size}px` }"
             @click.stop

@@ -54,6 +54,10 @@
       "CONFIRM": "Delete",
       "SUCCESFUL": "{count} conversation deleted. | {count} conversations deleted.",
       "FAILED": "Failed to delete the conversations. Please try again."
+    },
+    "SELECTION_MODE": {
+      "ENTER": "Select conversations",
+      "EXIT": "Exit selection"
     }
   }
 }

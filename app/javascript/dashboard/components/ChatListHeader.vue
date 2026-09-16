@@ -16,6 +16,7 @@ const props = defineProps({
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
   isListLoading: { type: Boolean, required: true },
+  selectionMode: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -24,6 +25,7 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'toggleSelectionMode',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -158,6 +160,20 @@ const toggleConversationLayout = () => {
         v-if="!hasAppliedFiltersOrActiveFolders"
         :is-on-expanded-layout="isOnExpandedLayout"
         @change-filter="onBasicFilterChange"
+      />
+      <NextButton
+        v-tooltip.top-end="
+          selectionMode
+            ? $t('BULK_ACTION.SELECTION_MODE.EXIT')
+            : $t('BULK_ACTION.SELECTION_MODE.ENTER')
+        "
+        icon="i-lucide-list-checks"
+        :slate="!selectionMode"
+        :blue="selectionMode"
+        xs
+        :faded="!selectionMode"
+        :solid="selectionMode"
+        @click="emit('toggleSelectionMode')"
       />
       <SwitchLayout
         :is-on-expanded-layout="isOnExpandedLayout"

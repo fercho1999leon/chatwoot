@@ -227,7 +227,9 @@
         }
       },
       "BULK_HEADER": "Aplicar a {count} conversaciones seleccionadas",
-      "BULK_DELETE": "Eliminar {count} conversaciones"
+      "BULK_DELETE": "Eliminar {count} conversaciones",
+      "SELECT": "Seleccionar",
+      "SELECT_ALL": "Seleccionar todas las visibles"
     },
     "FOOTER": {
       "MESSAGE_SIGN_TOOLTIP": "Firma del mensaje",

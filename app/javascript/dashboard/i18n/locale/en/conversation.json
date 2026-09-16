@@ -265,7 +265,9 @@
           "SUCCESFUL": "Assigned team \"{team}\" to conversation id {conversationId}",
           "FAILED": "Couldn't assign team. Please try again."
         }
-      }
+      },
+      "SELECT": "Select",
+      "SELECT_ALL": "Select all visible"
     },
     "FOOTER": {
       "MESSAGE_SIGN_TOOLTIP": "Message signature",

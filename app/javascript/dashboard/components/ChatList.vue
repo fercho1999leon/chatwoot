@@ -114,6 +114,8 @@ const getConversationById = useMapGetter('getConversationById');
 const {
   selectedConversations,
   selectedInboxes,
+  selectionMode,
+  setSelectionMode,
   selectConversation,
   deSelectConversation,
   selectAllConversations,
@@ -865,6 +867,12 @@ const confirmBulkDelete = async () => {
 };
 provide('bulkContext', {
   selectedConversations,
+  selectionMode,
+  setSelectionMode,
+  selectAllVisible: () => {
+    setSelectionMode(true);
+    selectAllConversations(true, conversationList);
+  },
   onUpdateConversations,
   onAssignAgent,
   onAssignLabels,
@@ -924,6 +932,8 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
+      :selection-mode="selectionMode"
+      @toggle-selection-mode="setSelectionMode(!selectionMode)"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"

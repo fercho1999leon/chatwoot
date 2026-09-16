@@ -69,6 +69,7 @@ const {
   onUpdateConversations,
   onAssignPriority,
   onDeleteConversations,
+  setSelectionMode,
 } = useBulkActions();
 
 // Deleting is an administrator-only action (ConversationPolicy#destroy?), confirmed in a dialog.
@@ -136,6 +137,11 @@ const allSelected = computed({
   },
 });
 
+const clearSelection = () => {
+  allSelected.value = false;
+  setSelectionMode(false);
+};
+
 onMounted(() => {
   emitter.on(CMD_BULK_ACTION_SNOOZE_CONVERSATION, onCmdSnoozeConversation);
   emitter.on(CMD_BULK_ACTION_REOPEN_CONVERSATION, onCmdReopenConversation);
@@ -189,7 +195,7 @@ onUnmounted(() => {
             ghost
             class="!text-n-blue-11 !px-1 !h-6 flex-shrink-0"
             sm
-            @click="allSelected = false"
+            @click="clearSelection"
           />
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">

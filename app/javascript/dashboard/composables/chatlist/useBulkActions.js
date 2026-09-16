@@ -16,6 +16,11 @@ export function useBulkActions() {
     'bulkActions/getSelectedConversationIds'
   );
   const selectedInboxes = ref([]);
+  const selectionMode = useMapGetter('bulkActions/getSelectionMode');
+
+  function setSelectionMode(enabled) {
+    store.dispatch('bulkActions/setSelectionMode', enabled);
+  }
 
   function selectConversation(conversationId, inboxId) {
     store.dispatch('bulkActions/setSelectedConversationIds', conversationId);
@@ -35,6 +40,8 @@ export function useBulkActions() {
     }
   }
 
+  // Refetching the list (tab/filter change) drops the selected ids but keeps the selection mode on:
+  // the user leaves it with the header button or the bar's Clear.
   function resetBulkActions() {
     store.dispatch('bulkActions/clearSelectedConversationIds');
     selectedInboxes.value = [];
@@ -259,6 +266,8 @@ export function useBulkActions() {
   return {
     selectedConversations,
     selectedInboxes,
+    selectionMode,
+    setSelectionMode,
     selectConversation,
     deSelectConversation,
     selectAllConversations,
