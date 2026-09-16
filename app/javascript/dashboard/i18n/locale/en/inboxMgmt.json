@@ -856,6 +856,8 @@
         "META_CALLING": "Calling at Meta",
         "META_SIP": "SIP at Meta",
         "SYNCED_AT": "Last sync",
+        "PROVISIONING": "Applying the trunk on the PBX (FreePBX reload, 15-30 s)…",
+        "PROVISIONED_AT": "Trunk applied on the PBX",
         "PROVISION_ERROR": "PBX provisioning error"
       },
       "REQUIREMENTS": {
@@ -1261,7 +1263,8 @@
           "ACTIVE_CALLS": "Active calls: {count}",
           "PBX": "PBX",
           "NOT_CONFIGURED": "not configured",
-          "TEST_MODE": "Test mode (echo)"
+          "TEST_MODE": "Test mode (echo)",
+          "PROVISIONING": "Applying on the PBX…"
         },
         "TRUNK": {
           "TITLE": "SIP trunk",

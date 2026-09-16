@@ -52,14 +52,14 @@ class Whatsapp::SipCallingService
     channel.provider_config[CONFIG_KEY] || {}
   end
 
+  def phone_number_id
+    channel.provider_config['phone_number_id'].to_s
+  end
+
   private
 
   def pbx
     Telephony::Pbx.find_by(account_id: channel.account_id)
-  end
-
-  def phone_number_id
-    channel.provider_config['phone_number_id'].to_s
   end
 
   def business_number

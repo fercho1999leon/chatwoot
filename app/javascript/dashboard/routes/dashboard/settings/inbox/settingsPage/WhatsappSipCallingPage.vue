@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import InboxesAPI from 'dashboard/api/inboxes';
@@ -15,6 +15,8 @@ const { t } = useI18n();
 
 const config = ref({});
 const remote = ref({});
+const provision = ref({});
+let provisionTimer = null;
 const hostname = ref('');
 const loading = ref(true);
 const working = ref(false);
@@ -40,6 +42,10 @@ const load = async () => {
     ]);
     config.value = data.config || {};
     remote.value = data.remote || {};
+    provision.value = data.provision || {};
+    // The PBX reload runs in the background on the controller: poll until it settles.
+    clearTimeout(provisionTimer);
+    if (provision.value.provisioning) provisionTimer = setTimeout(load, 5000);
     // The SIP hostname is the PBX's public SIP/TLS name: the domain the agents' softphone uses.
     hostname.value = config.value.hostname || pbx.sip_domain || '';
   } catch (e) {
@@ -77,6 +83,7 @@ const onDisable = () =>
   run(() => InboxesAPI.disableWhatsappSipCalling(props.inbox.id));
 
 onMounted(load);
+onBeforeUnmount(() => clearTimeout(provisionTimer));
 </script>
 
 <template>
@@ -131,9 +138,22 @@ onMounted(load);
         <span v-if="remote.error" class="text-n-ruby-11 w-full">
           {{ remote.error }}
         </span>
-        <span v-if="config.provision_error" class="text-n-ruby-11 w-full">
+        <span v-if="provision.provisioning" class="text-n-amber-11 w-full">
+          {{ t('INBOX_MGMT.WHATSAPP_SIP_CALLING.STATUS.PROVISIONING') }}
+        </span>
+        <span
+          v-else-if="provision.provisioned_at && !provision.error"
+          class="text-n-slate-11 w-full"
+        >
+          {{ t('INBOX_MGMT.WHATSAPP_SIP_CALLING.STATUS.PROVISIONED_AT') }}:
+          {{ new Date(provision.provisioned_at).toLocaleString() }}
+        </span>
+        <span
+          v-if="provision.error || config.provision_error"
+          class="text-n-ruby-11 w-full"
+        >
           {{ t('INBOX_MGMT.WHATSAPP_SIP_CALLING.STATUS.PROVISION_ERROR') }}:
-          {{ config.provision_error }}
+          {{ provision.error || config.provision_error }}
         </span>
       </div>
 

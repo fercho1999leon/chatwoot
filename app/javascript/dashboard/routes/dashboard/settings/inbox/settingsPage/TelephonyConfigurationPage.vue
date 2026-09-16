@@ -1,7 +1,7 @@
 <script setup>
 // Pestaña "Telephony" del inbox de tipo Channel::Telephony: troncal, estado de la PBX,
 // agentes ↔ extensiones de FreePBX e inboxes desde los que se puede llamar.
-import { ref, computed, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -148,10 +148,15 @@ const loadTrunk = () => {
   };
 };
 
+let provisioningTimer = null;
 const loadStatus = async () => {
   statusLoading.value = true;
   try {
     status.value = await TelephonyAPI.status();
+    // The PBX reload runs in the background on the controller: poll until it settles.
+    clearTimeout(provisioningTimer);
+    if (status.value?.provisioning)
+      provisioningTimer = setTimeout(loadStatus, 5000);
   } catch (e) {
     status.value = { error: e?.response?.data?.code || 'unavailable' };
   } finally {
@@ -238,6 +243,7 @@ const onSavePbx = async () => {
   }
 };
 
+onBeforeUnmount(() => clearTimeout(provisioningTimer));
 onMounted(async () => {
   loadTrunk();
   await store.dispatch('agents/get');
@@ -275,6 +281,12 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
           class="px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11"
         >
           {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TEST_MODE') }}
+        </span>
+        <span
+          v-if="status?.provisioning"
+          class="px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11"
+        >
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.PROVISIONING') }}
         </span>
         <span
           v-if="status?.trunk"

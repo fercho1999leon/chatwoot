@@ -5,7 +5,7 @@ class Api::V1::Accounts::Inboxes::WhatsappSipCallingsController < Api::V1::Accou
   before_action :ensure_whatsapp_cloud
 
   def show
-    render json: { config: service.current_config, remote: safe_remote_status }
+    render json: { config: service.current_config, remote: safe_remote_status, provision: provision_status }
   end
 
   def create
@@ -45,5 +45,16 @@ class Api::V1::Accounts::Inboxes::WhatsappSipCallingsController < Api::V1::Accou
     service.remote_status
   rescue Whatsapp::SipCallingService::Error => e
     { error: e.message }
+  end
+
+  # La recarga de la PBX corre en segundo plano en el controlador: aquí se lee su resultado
+  # (provisioned_at / provision_error de la troncal wa-<phone_number_id>) y si sigue en curso.
+  def provision_status
+    data = Telephony::ControllerClient.new.whatsapp_trunks(account_id: Current.account.id)
+    trunk = Array(data['trunks']).find { |t| t['phone_number_id'].to_s == service.phone_number_id.to_s }
+    { provisioning: data['provisioning'] == true, provisioned_at: trunk&.dig('provisioned_at'),
+      error: trunk&.dig('provision_error'), trunk: trunk&.dig('name') }
+  rescue Telephony::ControllerClient::Error => e
+    { provisioning: false, error: e.message }
   end
 end

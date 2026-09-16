@@ -123,6 +123,10 @@ class Telephony::ControllerClient
   end
 
   # WhatsApp Business Calling por SIP: troncal wa-<phone_number_id> en la PBX.
+  def whatsapp_trunks(account_id:)
+    get('/internal/whatsapp_trunks', account_id: account_id)
+  end
+
   def upsert_whatsapp_trunk(payload)
     request(:put, '/internal/whatsapp_trunks', body: payload)
   end

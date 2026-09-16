@@ -213,19 +213,24 @@ const onDecline = () => {
   store.activeCall = null;
 };
 
-// Drop the SIP leg first (never leave audio behind), then tell the controller according to
-// the role; orphaned audio has no call to act on and just closes the card.
+// Tell the controller first (it hangs up every leg and ends the call), then drop the local
+// SIP leg no matter what: a BYE sent before the API call reaches Asterisk first and the
+// controller would log an `agent_dropped` (30 s grace + hold music) for a deliberate hangup.
+// Orphaned audio has no call to act on and just closes the card.
 const onHangup = async () => {
   isWorking.value = true;
   const orphan = store.hasOrphanAudio;
+  // Never leave the agent listening while a slow controller answers: local BYE after 1.5 s at most.
+  const localFallback = setTimeout(hangupLocal, 1500);
   try {
-    hangupLocal();
     if (orphan || !store.hasActiveCall) store.dropOrphanAudio();
     else if (store.isParticipant) await store.leaveCall();
     else await store.hangup();
   } catch (e) {
     // the controller will close it on StasisEnd anyway
   } finally {
+    clearTimeout(localFallback);
+    hangupLocal(); // idempotent: usually already terminated by the controller's hangup
     isWorking.value = false;
   }
 };
