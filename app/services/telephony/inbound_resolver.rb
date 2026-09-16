@@ -8,7 +8,6 @@ class Telephony::InboundResolver
     projection = create_projection(conversation)
     plan = Telephony::RoutingPlanner.new(account: account, conversation: conversation, contact: contact, did: did,
                                          caller_e164: caller_e164, telephony_inbox: telephony_inbox, hint: hint).plan
-    notify_bot(projection)
     {
       conversation_id: conversation.id, conversation_display_id: conversation.display_id, inbox_id: conversation.inbox_id,
       contact_id: contact&.id, contact_name: contact&.name.presence, plan: plan, projection_id: projection.id
@@ -50,12 +49,5 @@ class Telephony::InboundResolver
       state: 'requested', state_version: 0, destination_e164: caller_e164, direction: 'inbound', did: did,
       contact_name: contact&.name.presence, requested_at: Time.current, hint: hint.presence
     )
-  end
-
-  # Webhook opcional del bot de voz (n8n, etc.): arranca su flujo con el contexto de la entrante.
-  def notify_bot(projection)
-    return if account.telephony_pbx&.bot_webhook_url.blank?
-
-    Telephony::BotWebhookJob.perform_later(projection.id)
   end
 end

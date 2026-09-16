@@ -16,19 +16,41 @@ class Api::V1::Telephony::Bot::CallsController < ActionController::API
   end
 
   # POST bot/calls/:id/route { target: {type, team_id|user_ids|user_id|number|extension}, timeout?, note? }
+  #
+  # Idempotente (H13): la clave es `Idempotency-Key` (cabecera) o `request_id` (cuerpo); sin ninguna, el hash del
+  # propio comando. Repetir la misma clave (reintento de n8n, doble tool-call de la IA) devuelve la respuesta
+  # original sin volver a desmontar/timbrar ni duplicar la nota; el controlador la guarda también (`reroute_key`).
   def route
+    cached = Rails.cache.read(idempotency_cache_key)
+    return render json: cached if cached
+
     steps = planner.steps_for_target(target_params, timeout: params[:timeout].presence || DEFAULT_TIMEOUT)
     raise CustomExceptions::Telephony::Invalid, 'no_agents_online' if steps.empty?
 
     reroute!(steps)
     add_private_note(params[:note]) if params[:note].present?
-    render json: { ok: true, steps: steps }
+    body = { ok: true, steps: steps, request_id: idempotency_key }
+    Rails.cache.write(idempotency_cache_key, body, expires_in: IDEMPOTENCY_TTL)
+    render json: body
   end
 
   private
 
+  IDEMPOTENCY_TTL = 15.minutes
+
+  def idempotency_key
+    @idempotency_key ||= begin
+      given = request.headers['Idempotency-Key'].presence || params[:request_id].presence
+      given ? given.to_s.first(128) : Digest::SHA256.hexdigest([target_params.to_h.sort.to_h, params[:timeout], params[:note]].to_json)
+    end
+  end
+
+  def idempotency_cache_key
+    "telephony:bot_route:#{@account.id}:#{@projection.external_call_id}:#{idempotency_key}"
+  end
+
   def reroute!(steps)
-    remote = telephony_client.reroute(@projection.external_call_id, steps: steps, by: 'bot', note: params[:note].presence)
+    remote = telephony_client.reroute(@projection.external_call_id, steps: steps, by: 'bot', note: params[:note].presence, key: idempotency_key)
     Telephony::EventApplier.new(account: @account).apply_snapshot(remote)
   rescue Telephony::ControllerClient::Error => e
     raise_for(e)

@@ -35,6 +35,19 @@ RSpec.describe Telephony::RoutingPlanner do
                        ])
   end
 
+  it 'carries the bot decision limit (max_seconds) of an extension rule and rejects it elsewhere' do
+    create(:telephony_routing_rule, account: account, position: 1,
+                                    destination: { 'type' => 'extension', 'extension' => '2000', 'max_seconds' => '45' })
+
+    expect(plan.first).to eq(type: 'extension', extension: '2000', timeout: 20, max_seconds: 45)
+    expect(build(:telephony_routing_rule, account: account,
+                                          destination: { 'type' => 'extension', 'extension' => '2000', 'max_seconds' => '3' })).not_to be_valid
+    expect(build(:telephony_routing_rule, account: account,
+                                          destination: { 'type' => 'ringgroup', 'number' => '600', 'max_seconds' => '45' })).not_to be_valid
+    expect(build(:telephony_routing_rule, account: account,
+                                          destination: { 'type' => 'extension', 'extension' => '2000', 'max_seconds' => '' })).to be_valid
+  end
+
   it 'evaluates the rules by position, not by insertion order' do
     create(:telephony_routing_rule, account: account, position: 2, destination: { 'type' => 'extension', 'extension' => '2000' })
     create(:telephony_routing_rule, account: account, position: 1, destination: { 'type' => 'extension', 'extension' => '1000' })

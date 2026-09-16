@@ -16,6 +16,8 @@
       "INCOMING": "Incoming",
       "OUTGOING": "Outgoing",
       "IN_PROGRESS": "In progress",
+      "INTERNAL": "Internal",
+      "FAILED": "Failed",
       "ASSIGNEE": "Assignee",
       "ALL_ASSIGNEES": "All assignees",
       "MORE_FILTERS": "More filters",

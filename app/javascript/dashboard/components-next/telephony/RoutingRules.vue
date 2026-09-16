@@ -366,6 +366,23 @@ onMounted(async () => {
           />
         </label>
         <label
+          v-if="rule.destination.type === 'extension'"
+          v-tooltip.top="
+            t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.MAX_SECONDS_HELP')
+          "
+          class="!mb-0 flex items-center gap-1"
+        >
+          {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.MAX_SECONDS') }}
+          <input
+            v-model.number="rule.destination.max_seconds"
+            type="number"
+            min="5"
+            max="600"
+            placeholder="—"
+            class="!mb-0 w-20"
+          />
+        </label>
+        <label
           v-if="rule.destination.type === 'ringgroup'"
           class="!mb-0 col-span-full flex items-center gap-2"
         >

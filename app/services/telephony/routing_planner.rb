@@ -118,7 +118,10 @@ class Telephony::RoutingPlanner
 
   def pbx_step(destination, timeout)
     case destination['type']
-    when 'extension' then { type: 'extension', extension: destination['extension'].to_s, timeout: timeout }
+    when 'extension'
+      step = { type: 'extension', extension: destination['extension'].to_s, timeout: timeout }
+      step[:max_seconds] = destination['max_seconds'].to_i if destination['max_seconds'].present?
+      step
     when 'ringgroup' then { type: 'ringgroup', number: destination['number'].to_s, timeout: timeout, expand: expand?(destination['expand']) }
     when 'ivr' then { type: 'ivr', id: destination['ivr_id'].to_s }
     when 'voicemail' then { type: 'voicemail', extension: destination['extension'].to_s }

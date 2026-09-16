@@ -60,14 +60,10 @@ RSpec.describe Telephony::InboundResolver do
       expect(Telephony::CallProjection.find(resolve(hint: '', id: SecureRandom.uuid)[:projection_id]).hint).to be_nil
     end
 
-    it 'notifies the bot webhook only when the PBX has one configured' do
-      create(:telephony_pbx, account: account)
-      expect { resolve(id: SecureRandom.uuid) }.not_to have_enqueued_job(Telephony::BotWebhookJob)
+    it 'does not notify the bot webhook yet: that happens once the controller confirms the plan (EventApplier)' do
+      create(:telephony_pbx, account: account, bot_webhook_url: 'https://n8n.test/webhook/calls')
 
-      account.telephony_pbx.update!(bot_webhook_url: 'https://n8n.test/webhook/calls')
-      result = nil
-      expect { result = resolve }.to have_enqueued_job(Telephony::BotWebhookJob).on_queue('high')
-      expect(Telephony::BotWebhookJob).to have_been_enqueued.with(result[:projection_id])
+      expect { resolve }.not_to have_enqueued_job(Telephony::BotWebhookJob)
     end
   end
 

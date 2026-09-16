@@ -41,10 +41,18 @@ const ACTIVITY_ICONS = {
   incoming: 'i-lucide-phone-incoming',
   outgoing: 'i-lucide-phone-outgoing',
   in_progress: 'i-lucide-phone-call',
+  internal: 'i-lucide-users',
+  failed: 'i-lucide-phone-off',
 };
 
 const BASE_ACTIVITIES = ['missed', 'no_reply'];
-const OTHER_ACTIVITIES = ['incoming', 'outgoing', 'in_progress'];
+const OTHER_ACTIVITIES = [
+  'incoming',
+  'outgoing',
+  'in_progress',
+  'internal',
+  'failed',
+];
 
 // A single open-menu identifier keeps the three dropdowns mutually exclusive:
 // opening one closes the others without any cross-wiring.

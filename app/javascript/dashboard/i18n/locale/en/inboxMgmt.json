@@ -1337,6 +1337,8 @@
           "WHEN": "When",
           "THEN": "Then",
           "TIMEOUT": "Ring for (s)",
+          "MAX_SECONDS": "Bot decides within (s)",
+          "MAX_SECONDS_HELP": "For a voice bot on this extension: if it answers and does not route the call within this time, the call continues with the next rule. Empty = no limit.",
           "EMPTY": "No rules yet: incoming calls are hung up. Add at least one rule.",
           "SAVED": "Rule saved",
           "ERROR": "Could not save the rule",

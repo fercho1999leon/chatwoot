@@ -96,8 +96,10 @@ RSpec.describe 'Telephony Bot API', type: :request do
                                                                                  note: 'Cliente quiere un plan de fibra' }
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body).to eq('ok' => true, 'steps' => JSON.parse(steps.to_json))
-      expect(client).to have_received(:reroute).with(call.external_call_id, steps: steps, by: 'bot', note: 'Cliente quiere un plan de fibra')
+      expect(response.parsed_body).to include('ok' => true, 'steps' => JSON.parse(steps.to_json))
+      expect(client).to have_received(:reroute).with(call.external_call_id, steps: steps, by: 'bot', note: 'Cliente quiere un plan de fibra',
+                                                                            key: kind_of(String))
+      expect(response.parsed_body['request_id']).to be_present
       expect(call.reload).to have_attributes(state: 'agent_connecting', routed_by: 'bot', ringing_user_ids: [agent.id])
       note = conversation.messages.last
       expect(note).to have_attributes(private: true, content: 'Cliente quiere un plan de fibra', message_type: 'outgoing', sender: nil)
@@ -111,7 +113,36 @@ RSpec.describe 'Telephony Bot API', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(client).to have_received(:reroute)
-        .with(call.external_call_id, steps: [{ type: 'ringgroup', number: '600', timeout: 20, expand: true }], by: 'bot', note: nil)
+        .with(call.external_call_id, steps: [{ type: 'ringgroup', number: '600', timeout: 20,
+                                               expand: true }], by: 'bot', note: nil, key: kind_of(String))
+    end
+
+    it 'is idempotent: the same Idempotency-Key replays the first answer without rerouting or duplicating the note' do
+      allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new) # el entorno test usa null_store
+      key_headers = headers.merge('Idempotency-Key' => 'n8n-run-42')
+      body = { target: { type: 'team', team_id: team.id }, note: 'Cliente quiere ventas' }
+
+      post route_api_v1_telephony_bot_call_url(call.external_call_id), headers: key_headers, as: :json, params: body
+      first = response.parsed_body
+      post route_api_v1_telephony_bot_call_url(call.external_call_id), headers: key_headers, as: :json, params: body
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq(first)
+      expect(first['request_id']).to eq('n8n-run-42')
+      expect(client).to have_received(:reroute).once.with(call.external_call_id, steps: kind_of(Array), by: 'bot', note: 'Cliente quiere ventas',
+                                                                                 key: 'n8n-run-42')
+      expect(conversation.messages.where(private: true).count).to eq(1)
+    end
+
+    it 'derives the key from the command when none is given, so an identical double call is also idempotent' do
+      allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+      body = { target: { type: 'ringgroup', number: '600' } }
+      2.times { post route_api_v1_telephony_bot_call_url(call.external_call_id), headers: headers, as: :json, params: body }
+
+      expect(client).to have_received(:reroute).once
+      post route_api_v1_telephony_bot_call_url(call.external_call_id), headers: headers, as: :json,
+                                                                       params: { target: { type: 'team', team_id: team.id } }
+      expect(client).to have_received(:reroute).twice
     end
 
     it 'maps controller refusals to 409' do

@@ -153,8 +153,8 @@ class Telephony::ControllerClient
   end
 
   # Reenruta una entrante atendida por una pata sin usuario (IA/extensión): cliente a espera y nuevo plan.
-  def reroute(id, steps:, by:, note: nil)
-    post("/internal/calls/#{id}/reroute", { steps: steps, by: by, note: note }.compact)
+  def reroute(id, steps:, by:, note: nil, key: nil)
+    post("/internal/calls/#{id}/reroute", { steps: steps, by: by, note: note, key: key }.compact)
   end
 
   private

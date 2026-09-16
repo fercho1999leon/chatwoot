@@ -30,7 +30,9 @@ class Telephony::RoutingRule < ApplicationRecord
   DESTINATIONS = %w[assignee agent team extension ringgroup ivr voicemail hangup].freeze
   TERMINAL = %w[ivr voicemail hangup].freeze
   CONDITION_KEYS = %w[contact_known open_conversation assignee_online business_hours dids caller_prefix hint].freeze
-  DESTINATION_KEYS = %w[type user_id team_id extension number ivr_id timeout expand].freeze
+  DESTINATION_KEYS = %w[type user_id team_id extension number ivr_id timeout expand max_seconds].freeze
+  # max_seconds (solo extension): plazo de decisión de un bot de voz; si contesta y no deriva a tiempo se sigue con la cadena.
+  MAX_SECONDS_RANGE = (5..600)
   # Campo obligatorio de cada tipo de destino (también lo usa la API del bot).
   REQUIRED_FIELD = { 'agent' => 'user_id', 'team' => 'team_id', 'extension' => 'extension', 'ringgroup' => 'number',
                      'ivr' => 'ivr_id', 'voicemail' => 'extension' }.freeze
@@ -74,5 +76,14 @@ class Telephony::RoutingRule < ApplicationRecord
     required = REQUIRED_FIELD[d['type']]
     errors.add(:destination, "#{required} required") if required && d[required].blank?
     errors.add(:destination, 'expand') unless BOOLEANS.include?(d['expand'])
+    errors.add(:destination, 'max_seconds') unless valid_max_seconds?(d)
+  end
+
+  def valid_max_seconds?(destination)
+    value = destination['max_seconds']
+    return true if value.blank?
+    return false unless destination['type'] == 'extension'
+
+    value.to_s.match?(/\A\d+\z/) && MAX_SECONDS_RANGE.cover?(value.to_i)
   end
 end

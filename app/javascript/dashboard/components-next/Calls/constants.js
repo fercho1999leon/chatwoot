@@ -48,4 +48,7 @@ export const CALL_ACTIVITY_PARAMS = {
   incoming: { direction: VOICE_CALL_DIRECTION.INBOUND },
   outgoing: { direction: VOICE_CALL_DIRECTION.OUTBOUND },
   in_progress: { status: VOICE_CALL_STATUS.IN_PROGRESS },
+  // SIP telephony adds agent-to-agent calls and calls that ended by error (bridge_failure, PBX…).
+  internal: { direction: 'internal' },
+  failed: { status: VOICE_CALL_STATUS.FAILED },
 };

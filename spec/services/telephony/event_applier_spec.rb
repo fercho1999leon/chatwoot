@@ -77,6 +77,29 @@ RSpec.describe Telephony::EventApplier do
       expect(projection.reload).to have_attributes(recording_name: 'call-x', recording_state: 'stored')
     end
 
+    it 'notifies the bot webhook when an inbound call becomes routable (requested → agent_connecting), once' do
+      create(:telephony_pbx, account: account, bot_webhook_url: 'https://n8n.test/webhook/calls')
+      projection.update!(direction: 'inbound', user: nil)
+
+      expect { applier.apply_event(event(state: 'agent_connecting', user_id: nil, ringing_user_ids: [agent.id])) }
+        .to have_enqueued_job(Telephony::BotWebhookJob).with(projection.id).on_queue('high')
+      expect { applier.apply_event(event(state: 'agent_connecting', state_version: 3, user_id: nil)) }
+        .not_to have_enqueued_job(Telephony::BotWebhookJob)
+    end
+
+    it 'does not notify the bot webhook for outbound calls or when the PBX has none' do
+      create(:telephony_pbx, account: account)
+      projection.update!(direction: 'inbound', user: nil)
+      expect { applier.apply_event(event(state: 'agent_connecting', user_id: nil)) }.not_to have_enqueued_job(Telephony::BotWebhookJob)
+
+      account.telephony_pbx.update!(bot_webhook_url: 'https://n8n.test/webhook/calls')
+      outbound = create(:telephony_call_projection, account: account, user: agent, conversation: conversation, inbox: inbox, state: 'requested',
+                                                    state_version: 1)
+      expect do
+        applier.apply_event(event(call_id: outbound.external_call_id, state: 'agent_connecting'))
+      end.not_to have_enqueued_job(Telephony::BotWebhookJob)
+    end
+
     it 'copies the peer hold, routing origin and dialplan hint' do
       applier.apply_event(event(peer_on_hold: true, routed_by: 'bot', hint: 'ventas'))
 

@@ -86,10 +86,26 @@ class Telephony::EventApplier
     attrs[:user_id] = data['user_id'].to_i if owner_changed
     # Los agentes que sonaban y no contestaron deben cerrar su widget: se les avisa una última vez.
     @previously_ringing = projection.ringing_user_ids + projection.participants
+    became_routable = routable_now?(projection, attrs)
     projection.update!(attrs)
     hand_over_conversation(projection) if owner_changed && projection.conversation
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.conversation
     fetch_recording(projection, data)
+    notify_bot(projection) if became_routable
+  end
+
+  # Entrante que pasa de `requested` a sonar: desde aquí POST bot/calls/:id/route ya puede aplicarse.
+  def routable_now?(projection, attrs)
+    projection.inbound? && projection.state == 'requested' && attrs[:state] == 'agent_connecting'
+  end
+
+  # Webhook opcional del bot de voz (n8n, etc.): se avisa cuando el controlador ya confirmó el plan y la llamada
+  # suena (`agent_connecting`), es decir, cuando POST bot/calls/:id/route ya puede aplicarse (H13). Avisar antes,
+  # al resolver la entrante, dejaba a un bot rápido con `not_reroutable`.
+  def notify_bot(projection)
+    return if account.telephony_pbx&.bot_webhook_url.blank?
+
+    Telephony::BotWebhookJob.perform_later(projection.id)
   end
 
   # La grabación queda en la PBX al colgar: recogerla en segundo plano.
