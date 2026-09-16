@@ -163,6 +163,9 @@ jobs:
 
   build:
     needs: [lint-backend, lint-frontend, frontend-tests, backend-tests, security-scan]
+    # Tests on every branch push; the image only from the release branch and tags
+    # (codex/telephony-backend and codex/isp-image usually point at the same commit).
+    if: github.ref_type == 'tag' || github.ref_name == 'codex/isp-image' || startsWith(github.ref_name, 'isp/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
