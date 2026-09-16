@@ -31,6 +31,7 @@
       "REJECTED": "Rejected by destination",
       "INVALID_NUMBER": "Invalid number",
       "TRUNK_FAILURE": "Trunk failure",
+      "BRIDGE_FAILURE": "Audio could not be connected on the PBX",
       "CANCELED": "Canceled",
       "CONTROLLER_RESTART": "Phone system restarted",
       "PBX_UNREACHABLE": "Phone system unreachable",
