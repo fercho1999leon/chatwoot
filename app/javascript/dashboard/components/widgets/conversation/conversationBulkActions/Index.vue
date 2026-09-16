@@ -62,6 +62,7 @@ const { t } = useI18n();
 
 const {
   selectedConversations,
+  selectionMode,
   onAssignAgent,
   onAssignLabels,
   onRemoveLabels,
@@ -92,10 +93,14 @@ const appliedLabelsForSelection = computed(() => {
   return Array.from(applied);
 });
 
+// In selection mode with nothing selected yet the bar still shows, offering "Select all".
+const hasSelection = computed(() => props.conversations.length > 0);
 const selectedLabel = computed(() =>
-  t('BULK_ACTION.CONVERSATIONS_SELECTED', {
-    conversationCount: props.conversations.length,
-  })
+  hasSelection.value
+    ? t('BULK_ACTION.CONVERSATIONS_SELECTED', {
+        conversationCount: props.conversations.length,
+      })
+    : t('BULK_ACTION.SELECT_ALL')
 );
 
 const showCustomTimeSnoozeModal = ref(false);
@@ -165,7 +170,7 @@ onUnmounted(() => {
     leave-to-class="opacity-0 scale-95 translate-y-2"
   >
     <div
-      v-if="conversations.length > 0"
+      v-if="hasSelection || selectionMode"
       v-bind="attrs"
       class="px-2 absolute bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 w-full origin-bottom"
     >
@@ -182,7 +187,7 @@ onUnmounted(() => {
           <label class="cursor-pointer flex items-center gap-1.5 min-w-0">
             <Checkbox
               v-model="allSelected"
-              :indeterminate="!allConversationsSelected"
+              :indeterminate="hasSelection && !allConversationsSelected"
               class="flex-shrink-0"
             />
             <span :title="selectedLabel" class="cursor-pointer truncate">
@@ -198,7 +203,7 @@ onUnmounted(() => {
             @click="clearSelection"
           />
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
+        <div v-if="hasSelection" class="flex items-center gap-2 flex-shrink-0">
           <BulkLabelActions @assign="onAssignLabels" />
           <BulkLabelActions
             action="remove"

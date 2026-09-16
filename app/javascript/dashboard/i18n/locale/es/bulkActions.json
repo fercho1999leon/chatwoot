@@ -58,6 +58,7 @@
     "SELECTION_MODE": {
       "ENTER": "Seleccionar conversaciones",
       "EXIT": "Salir de la selección"
-    }
+    },
+    "SELECT_ALL": "Seleccionar todas"
   }
 }
