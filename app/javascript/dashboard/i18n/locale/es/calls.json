@@ -20,7 +20,9 @@
       "ALL_ASSIGNEES": "Todos los responsables",
       "MORE_FILTERS": "Más filtros",
       "INBOX": "Bandeja de entrada",
-      "ALL_INBOXES": "Todas las bandejas"
+      "ALL_INBOXES": "Todas las bandejas",
+      "INTERNAL": "Internas",
+      "FAILED": "Fallidas"
     },
     "STATUS": {
       "ONGOING": "En Curso",
@@ -39,7 +41,18 @@
       "NO_AGENT": "Ningún agente respondió esta llamada",
       "NO_CONTACT_ANSWER": "El contacto no respondió",
       "FAILED": "La llamada no se ha podido conectar",
-      "YESTERDAY": "Ayer"
+      "YESTERDAY": "Ayer",
+      "RECORDING_PROCESSING": "Grabación…",
+      "INTERNAL_CALL": "Llamada interna · {name}",
+      "JOIN": "Unirse",
+      "INTERNAL": "Interna",
+      "ROUTED_BY_BOT": "bot",
+      "ROUTED_BY_BOT_TOOLTIP": "Derivada por el bot de voz",
+      "HINT_TOOLTIP": "Pista del dialplan: {hint}"
+    },
+    "CALL_AGENT": {
+      "PLACEHOLDER": "Llamar a un agente…",
+      "BUTTON": "Llamar"
     }
   }
 }

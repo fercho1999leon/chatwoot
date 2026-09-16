@@ -641,3 +641,35 @@ es:
       no_subscriptions_to_test: 'Seleccione al menos una suscripción para probar.'
       no_subscriptions_to_delete: 'Seleccione al menos una suscripción a eliminar.'
       subscriptions_deleted: "Suscripción(es) %{count} eliminada(s). El dispositivo(s) del usuario volverá a registrarse en el próximo lanzamiento de la aplicación."
+
+  telephony:
+    note: "Llamada %{id} — agente %{agent} → %{destination}: %{result} (duración %{duration})"
+    inbound_note: "Llamada entrante %{id} de %{caller} → %{agent}: %{result} (duración %{duration})"
+    nobody: nadie
+    end_reason:
+      requested: iniciando
+      agent_connecting: timbrando
+      dialing: marcando
+      ringing: timbrando
+      answered: en curso
+      completed: completada
+      agent_hangup: finalizada por el agente antes de contestar
+      agent_no_answer: el agente no conectó el audio
+      agent_unregistered: softphone del agente no registrado
+      busy: ocupado
+      no_answer: sin respuesta
+      rejected: rechazada por el destino
+      invalid_number: número no válido
+      trunk_failure: fallo de la troncal
+      bridge_failure: no se pudo conectar el audio en la PBX
+      canceled: cancelada
+      controller_restart: controlador reiniciado
+      pbx_unreachable: PBX inaccesible
+      policy_denied: denegada por política
+      max_duration: duración máxima alcanzada
+      no_agents: no hay agentes disponibles
+      missed: perdida (quien llamaba colgó)
+      to_ivr: enviada al IVR de la PBX
+      to_voicemail: enviada al buzón de voz
+      unrouted: no se pudo enrutar
+      unknown: desconocido

@@ -692,6 +692,7 @@ en:
       rejected: rejected by destination
       invalid_number: invalid number
       trunk_failure: trunk failure
+      bridge_failure: audio could not be connected on the PBX
       canceled: canceled
       controller_restart: controller restarted
       pbx_unreachable: PBX unreachable

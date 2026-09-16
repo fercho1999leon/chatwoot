@@ -94,26 +94,29 @@
       "LABELS_COUNT": "{count} etiquetas"
     },
     "VOICE_CALL": {
-      "INCOMING_CALL": "Incoming call",
-      "OUTGOING_CALL": "Outgoing call",
-      "CALL_IN_PROGRESS": "Call in progress",
-      "NO_ANSWER": "No answer",
-      "NO_ANSWER_OUTBOUND_LABEL": "No answer",
+      "INCOMING_CALL": "Llamada entrante",
+      "OUTGOING_CALL": "Llamada saliente",
+      "CALL_IN_PROGRESS": "Llamada en curso",
+      "NO_ANSWER": "Sin respuesta",
+      "NO_ANSWER_OUTBOUND_LABEL": "Sin respuesta",
       "NO_ANSWER_OUTBOUND_SUBTEXT": "El contacto no ha atendido",
-      "MISSED_CALL": "Missed call",
+      "MISSED_CALL": "Llamada perdida",
       "MISSED_CALL_INBOUND_SUBTEXT": "Ningún agente escogido",
       "MISSED_CALL_DECLINED_BY": "Denegado por {agentName}",
-      "CALL_ENDED": "Call ended",
+      "CALL_ENDED": "Llamada finalizada",
       "HANDLED_BY": "Manejado por {agentName}",
-      "NOT_ANSWERED_YET": "Not answered yet",
+      "NOT_ANSWERED_YET": "Aún sin contestar",
       "CALLING": "Llamando…",
-      "THEY_ANSWERED": "They answered",
-      "YOU_ANSWERED": "You answered",
+      "THEY_ANSWERED": "Contestaron",
+      "YOU_ANSWERED": "Contestaste",
       "AGENT_ANSWERED": "{agentName} respondió",
       "JOIN_CALL": "Unirse a la llamada",
       "CALL_BACK": "Llamar de vuelta",
       "TRANSCRIPT_SHOW_MORE": "Mostrar más",
-      "TRANSCRIPT_SHOW_LESS": "Mostrar menos"
+      "TRANSCRIPT_SHOW_LESS": "Mostrar menos",
+      "RECORDING_PROCESSING": "La grabación se está procesando…",
+      "RECORDING_FAILED": "No se pudo recuperar la grabación de la PBX",
+      "ROUTED_BY_BOT": "Derivada por el bot"
     },
     "HEADER": {
       "RESOLVE_ACTION": "Resolver",
@@ -222,7 +225,9 @@
           "SUCCESFUL": "Equipo asignado \"{team}\" al ID de conversación {conversationId}",
           "FAILED": "No se pudo asignar el equipo. Por favor, inténtelo de nuevo."
         }
-      }
+      },
+      "BULK_HEADER": "Aplicar a {count} conversaciones seleccionadas",
+      "BULK_DELETE": "Eliminar {count} conversaciones"
     },
     "FOOTER": {
       "MESSAGE_SIGN_TOOLTIP": "Firma del mensaje",

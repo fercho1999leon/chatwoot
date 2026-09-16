@@ -39,6 +39,7 @@ import settings from './settings.json';
 import signup from './signup.json';
 import sla from './sla.json';
 import teamsSettings from './teamsSettings.json';
+import telephony from './telephony.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 
@@ -51,6 +52,7 @@ export default {
   ...automation,
   ...bulkActions,
   ...calls,
+  ...telephony,
   ...campaign,
   ...cannedMgmt,
   ...chatlist,

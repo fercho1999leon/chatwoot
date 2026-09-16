@@ -520,6 +520,10 @@
           "VOICE": {
             "TITLE": "Voice",
             "DESCRIPTION": "Integrate with Twilio Voice"
+          },
+          "TELEPHONY": {
+            "TITLE": "Telefonía (SIP)",
+            "DESCRIPTION": "Llama a tus contactos desde cualquier conversación a través de tu propia troncal SIP (Asterisk/FreePBX)."
           }
         }
       },
@@ -554,6 +558,169 @@
         "SIGN_IN": "Iniciar sesión con Google",
         "EMAIL_PLACEHOLDER": "Introduzca la dirección de correo",
         "ERROR_MESSAGE": "Se ha producido un error al conectar a Google, por favor inténtelo nuevamente"
+      },
+      "TELEPHONY": {
+        "TITLE": "Telefonía (troncal SIP)",
+        "DESC": "Conecta tu PBX (Asterisk/FreePBX) una sola vez y luego configura la troncal SIP de tu operador. Los agentes llaman desde el navegador; la PBX cursa la llamada por la troncal.",
+        "CHANNEL_NAME": {
+          "LABEL": "Nombre del inbox",
+          "PLACEHOLDER": "Telefonía"
+        },
+        "TRUNK_MODE": {
+          "LABEL": "Troncal",
+          "CUSTOM": "Configurar aquí (Chatwoot la provisiona en la PBX)",
+          "GUI": "Ya existe en FreePBX (usar su nombre)",
+          "ROUTES": "Rutas salientes de FreePBX (uno o varios operadores)",
+          "ROUTES_HELP": "Las llamadas salen por las Outbound Routes de FreePBX (Connectivity → Outbound Routes): los patrones de marcado, el failover y los distintos operadores se gestionan allí. Chatwoot solo necesita el identificador de llamada y tus DID.",
+          "HELP": "Elige \"Configurar aquí\" salvo que tus troncales vivan en el administrador de FreePBX. Con varios operadores usa \"Rutas salientes de FreePBX\"."
+        },
+        "TRUNK_NAME": {
+          "LABEL": "Nombre de la troncal en FreePBX",
+          "HELP": "Exactamente como aparece en FreePBX → Connectivity → Trunks.",
+          "PLACEHOLDER": "Operador"
+        },
+        "HOST": {
+          "LABEL": "Servidor SIP (host o IP)",
+          "PLACEHOLDER": "sip.proveedor.com"
+        },
+        "PORT": {
+          "LABEL": "Puerto"
+        },
+        "TRANSPORT": {
+          "LABEL": "Transporte"
+        },
+        "AUTH_MODE": {
+          "LABEL": "Autenticación",
+          "REGISTER": "Usuario y contraseña (registro)",
+          "IP": "Por IP (sin credenciales)"
+        },
+        "USERNAME": {
+          "LABEL": "Usuario"
+        },
+        "PASSWORD": {
+          "LABEL": "Contraseña",
+          "HELP": "Deja el valor enmascarado para conservar la contraseña actual."
+        },
+        "REGISTER": {
+          "LABEL": "Registrarse en el operador (desmarca si el operador no exige registro)"
+        },
+        "CARRIER_IPS": {
+          "LABEL": "Direcciones IP del operador",
+          "HELP": "Separadas por comas. Se usan para identificar el tráfico SIP entrante del operador y para abrir el cortafuegos.",
+          "PLACEHOLDER": "203.0.113.10, 203.0.113.11"
+        },
+        "CALLER_ID": {
+          "LABEL": "Identificador de llamada (número aprobado por el operador)",
+          "PLACEHOLDER": "593999999999"
+        },
+        "DTMF": {
+          "LABEL": "Modo DTMF"
+        },
+        "CODECS": {
+          "LABEL": "Códecs"
+        },
+        "DEFAULT_COUNTRY": {
+          "LABEL": "País por defecto (ISO)",
+          "HELP": "Se usa para normalizar números locales (p. ej. EC → 09… pasa a +5939…). Vacío = solo E.164.",
+          "PLACEHOLDER": "EC"
+        },
+        "MAX_CALL_SECONDS": {
+          "LABEL": "Duración máxima de la llamada (segundos)"
+        },
+        "ALLOWED_INBOXES": {
+          "LABEL": "Permitir llamar desde estos inboxes",
+          "HELP": "Ninguno seleccionado = todos los inboxes de la cuenta."
+        },
+        "SUBMIT_BUTTON": "Crear inbox de telefonía",
+        "ERROR_MESSAGE": "No se pudo crear el inbox de telefonía",
+        "PBX": {
+          "STEP_TITLE": "Paso 1 · Conecta tu PBX",
+          "STEP_HELP": "Chatwoot habla con tu Asterisk/FreePBX por ARI y el softphone del navegador se registra por WebSocket. Todo lo de abajo sale de tu PBX; nada está fijo en el código.",
+          "CONFIGURED": "PBX conectada: {url}",
+          "EDIT": "Editar",
+          "SAVE": "Guardar conexión con la PBX",
+          "SAVED": "Conexión con la PBX guardada",
+          "ARI_TITLE": "ARI (Asterisk REST Interface)",
+          "ARI_URL": {
+            "LABEL": "URL base de ARI",
+            "HELP": "http(s)://host[:8088]. En FreePBX activa ARI en Settings → Asterisk REST Interface Users; el nombre de la app de abajo debe tener un usuario Stasis con lectura/escritura."
+          },
+          "ARI_USER": "Usuario ARI",
+          "ARI_PASSWORD": "Contraseña ARI",
+          "ARI_APP": {
+            "LABEL": "Nombre de la app Stasis",
+            "HELP": "Nombre de la aplicación ARI (por defecto \"chatwoot\")."
+          },
+          "SIP_TITLE": "Softphone del navegador (SIP sobre WebSocket)",
+          "SIP_WS_URL": {
+            "LABEL": "URL del WebSocket SIP",
+            "HELP": "Endpoint wss://… de Asterisk (http.conf / proxy inverso). Debe ser accesible desde los navegadores de los agentes."
+          },
+          "SIP_DOMAIN": {
+            "LABEL": "Dominio SIP",
+            "HELP": "Dominio que se usa en la URI SIP de los agentes (sip:1001{'@'}dominio)."
+          },
+          "STUN_URL": "Servidor STUN (opcional)",
+          "TURN_URLS": {
+            "LABEL": "Servidores TURN (opcional)",
+            "HELP": "URLs turn:/turns: separadas por comas (coturn). Necesarios cuando los agentes están detrás de NAT/cortafuegos."
+          },
+          "TURN_SECRET": {
+            "LABEL": "Secreto compartido de TURN",
+            "HELP": "static-auth-secret de coturn (use-auth-secret). Las credenciales se generan por sesión."
+          },
+          "TURN_TTL": "TTL de las credenciales TURN (s)",
+          "PROVISION_TITLE": "Provisioner de la PBX (opcional)",
+          "PROVISION_HELP": "Pequeño servicio en la PBX que permite a Chatwoot escribir la troncal y activar WebRTC en las extensiones de FreePBX. Sin él, crea la troncal en FreePBX y elige \"Ya existe en FreePBX\".",
+          "PROVISION_URL": "URL del provisioner (base de la PBX; Chatwoot llama a /provision/… en ella)",
+          "PROVISION_TOKEN": "Token del provisioner",
+          "CALLS_TITLE": "Llamadas",
+          "TEST_MODE": {
+            "LABEL": "Modo de prueba: marcar la prueba de eco de la PBX en vez del operador",
+            "DIAL": "Cadena de marcado de prueba",
+            "HELP": "Local/*43{'@'}from-internal es la prueba de eco de FreePBX (contesta al instante). Local/s{'@'}chatwoot-test timbra 6 segundos primero, como una llamada real (necesita el overlay de dialplan de Chatwoot en la PBX). Desactívalo cuando la troncal esté registrada."
+          },
+          "AGENT_TIMEOUT": "Timbre al agente (s)",
+          "PSTN_TIMEOUT": "Timbre al operador (s)",
+          "TRANSFER_TIMEOUT": "Timbre de transferencia (s)",
+          "MAX_CALL_SECONDS": "Llamada máxima (s)",
+          "TEST": {
+            "BUTTON": "Probar conexión",
+            "OK": "OK",
+            "NOT_CONFIGURED": "sin configurar"
+          },
+          "ERROR": {
+            "UNKNOWN": "No se pudo guardar la conexión con la PBX",
+            "PBX_UNREACHABLE": "El servicio de telefonía no está accesible",
+            "NOT_CONFIGURED": "La telefonía no está habilitada en esta instalación (TELEPHONY_CONTROLLER_URL)",
+            "INVALID": "Algunos valores no son válidos"
+          },
+          "RECORDING_TITLE": "Grabación de llamadas",
+          "RECORDING_HELP": "La PBX graba el audio mezclado; Chatwoot lo guarda junto a la llamada (tarjeta de la conversación y página Llamadas) y lo borra de la PBX. Revisa la legislación local sobre informar a quien llama.",
+          "RECORD_CALLS": {
+            "LABEL": "Grabar llamadas",
+            "NEVER": "Nunca",
+            "INBOUND": "Solo entrantes",
+            "OUTBOUND": "Solo salientes",
+            "ALL": "Todas las llamadas"
+          },
+          "RETENTION": {
+            "LABEL": "Conservar grabaciones durante (días)",
+            "HELP": "0 = conservar para siempre. Las grabaciones más antiguas se eliminan automáticamente cada día."
+          },
+          "PURGE": {
+            "LABEL": "Eliminar grabaciones anteriores a",
+            "DAYS": "días",
+            "BUTTON": "Purgar ahora",
+            "CONFIRM": "¿Eliminar todas las grabaciones anteriores a {days} días? No se puede deshacer.",
+            "STARTED": "Purga iniciada en segundo plano"
+          }
+        },
+        "DIDS": {
+          "LABEL": "Tus números (DID) para llamadas entrantes",
+          "PLACEHOLDER": "593000000000, 593000000001",
+          "HELP": "Números que el operador entrega a esta PBX para esta cuenta. En FreePBX, apunta la Inbound Route de cada DID al Custom Destination \"Chatwoot\"; Chatwoot decide entonces a quién timbrar con las reglas de enrutamiento de abajo."
+        }
       }
     },
     "DETAILS": {
@@ -662,7 +829,9 @@
       "ACCOUNT_HEALTH": "Account Health",
       "CSAT": "Encuestas de Satisfacción",
       "VOICE": "Voz",
-      "CALLS": "Llamadas"
+      "CALLS": "Llamadas",
+      "TELEPHONY": "Telefonía",
+      "WHATSAPP_SIP_CALLING": "Llamadas SIP"
     },
     "VOICE_CONFIGURATION": {
       "ENABLE_VOICE": {
@@ -1008,7 +1177,159 @@
         "LABEL": "Habilitar llamadas de voz",
         "DESCRIPTION": "Permitir a los agentes iniciar y recibir llamadas de voz de WhatsApp en esta bandeja de entrada. Disponible solo para canales de WhatsApp Cloud configurados mediante WhatsApp Embedded Signup y con permiso de llamada concedido por Meta."
       },
-      "UPDATE_PRE_CHAT_FORM_SETTINGS": "Actualizar configuración de Formulario de Chat"
+      "UPDATE_PRE_CHAT_FORM_SETTINGS": "Actualizar configuración de Formulario de Chat",
+      "TELEPHONY": {
+        "SAVED": "Troncal guardada y enviada a la PBX",
+        "SAVE_ERROR": "No se pudo guardar la troncal",
+        "TAKEN": "ocupada",
+        "EXTENSION_LINKED": "Extensión {extension} vinculada",
+        "EXTENSION_ERROR": {
+          "EXTENSION_TAKEN": "Esa extensión ya está vinculada a otro agente",
+          "EXTENSION_UNAVAILABLE": "La extensión no existe en FreePBX o no es PJSIP",
+          "PROVISIONER_NOT_CONFIGURED": "El provisioner de la PBX no está configurado",
+          "PBX_UNREACHABLE": "PBX inaccesible",
+          "UNKNOWN": "No se pudo actualizar la extensión"
+        },
+        "STATUS": {
+          "TITLE": "Estado",
+          "CONNECTED": "conectada",
+          "DISCONNECTED": "desconectada",
+          "TRUNK": "Troncal",
+          "TRUNK_ROUTES": "Rutas salientes de FreePBX",
+          "ACTIVE_CALLS": "Llamadas activas: {count}",
+          "PBX": "PBX",
+          "NOT_CONFIGURED": "sin configurar",
+          "TEST_MODE": "Modo de prueba (eco)",
+          "PROVISIONING": "Aplicando en la PBX…"
+        },
+        "HEALTH": {
+          "TITLE": "Salud",
+          "HELP": "Señales en vivo del controlador de telefonía (desde su último arranque). Sin SSH: si algo se ve raro aquí, consulta el runbook.",
+          "CONTROLLER": "Controlador",
+          "UPTIME": "en pie",
+          "PROVISION_ERRORS": "Errores de provisión: {count}",
+          "ARI": "Sesión con la PBX (ARI)",
+          "ARI_CONNECTED_FOR": "Conectada desde hace {for}",
+          "ARI_DISCONNECTED": "Desconectada",
+          "RECONNECTS": "Reconexiones: {count}",
+          "LAST_DISCONNECT": "última caída:",
+          "OUTBOX": "Eventos hacia Chatwoot",
+          "OUTBOX_PENDING": "Pendientes: {count}",
+          "OUTBOX_FAILING": "{count} con intentos fallidos (¿Chatwoot rechaza la firma?)",
+          "OLDEST": "más antiguo",
+          "LIVE_CALLS": "Llamadas vivas",
+          "NO_LIVE_CALLS": "Ninguna",
+          "LEGS_LIVE": "Patas SIP levantadas: {count}",
+          "BUSY": "en curso: {count}",
+          "RECORDINGS": "Grabaciones",
+          "RECORDINGS_PENDING": "por recoger: {count}",
+          "RECORDINGS_FAILED": "fallidas: {count}",
+          "RECORDINGS_MISSING": "perdidas: {count}",
+          "RETRY_RECORDINGS": "Reintentar la recogida ahora",
+          "RETRY_QUEUED": "Recogida encolada; corre en segundo plano.",
+          "SWEEP": "Autocorrección",
+          "SWEEP_PSTN_GONE": "cliente desaparecido",
+          "SWEEP_ORPHAN_CLEANUP": "huérfanos limpiados",
+          "SWEEP_BRIDGE_FAILURES": "fallos de bridge",
+          "SWEEP_RECORDINGS_MISSING": "grabaciones perdidas",
+          "SWEEP_HELP": "Lo que el barrido periódico tuvo que corregir",
+          "SWEEP_CLEAN": "nada por ahora",
+          "SWEEP_ATTENTION": "conviene mirarlo si sigue creciendo"
+        },
+        "TRUNK": {
+          "TITLE": "Troncal SIP",
+          "SAVE": "Guardar y provisionar"
+        },
+        "AGENTS": {
+          "TITLE": "Agentes y extensiones",
+          "HELP": "Vincula una extensión de FreePBX a cada agente. Chatwoot activa WebRTC en la extensión para que el navegador pueda registrarse; un teléfono de escritorio puede seguir registrado también.",
+          "AGENT": "Agente",
+          "EXTENSION": "Extensión",
+          "REGISTERED": "Registrado",
+          "YES": "sí",
+          "NO": "no",
+          "LINK": "Vincular",
+          "ROTATE": "Regenerar secreto SIP",
+          "NO_EXTENSIONS": "No hay extensiones PJSIP en FreePBX (créalas en FreePBX → Applications → Extensions)."
+        },
+        "GROUPS": {
+          "TITLE": "Ring groups (FreePBX)",
+          "HELP": "Se gestionan en FreePBX. Se usan como destinos de enrutamiento y transferencia."
+        },
+        "PBX": {
+          "TITLE": "Conexión con la PBX",
+          "HELP": "Tu Asterisk/FreePBX: ARI, WebSocket SIP del navegador, TURN, provisioner y tiempos de llamada."
+        },
+        "ROUTING": {
+          "TITLE": "Enrutamiento de llamadas entrantes",
+          "HELP": "Las reglas se evalúan de arriba abajo en cada llamada entrante. Cada regla que coincide añade un paso (quién timbra y cuánto tiempo); una regla de IVR, buzón de voz o colgar termina la lista. Si ningún agente contesta, sigue el siguiente paso.",
+          "ADD": "Añadir regla",
+          "NAME": "Nombre",
+          "SAVE": "Guardar",
+          "DELETE": "Eliminar",
+          "ENABLED": "Activa",
+          "MOVE_UP": "Subir",
+          "MOVE_DOWN": "Bajar",
+          "WHEN": "Cuando",
+          "THEN": "Entonces",
+          "TIMEOUT": "Timbrar durante (s)",
+          "MAX_SECONDS": "El bot decide en (s)",
+          "MAX_SECONDS_HELP": "Para un bot de voz en esta extensión: si contesta y no deriva la llamada en este tiempo, la llamada sigue con la siguiente regla. Vacío = sin límite.",
+          "EMPTY": "Aún no hay reglas: las llamadas entrantes se cuelgan. Añade al menos una regla.",
+          "SAVED": "Regla guardada",
+          "ERROR": "No se pudo guardar la regla",
+          "COND": {
+            "CONTACT_KNOWN": "Contacto",
+            "OPEN_CONVERSATION": "Conversación abierta",
+            "ASSIGNEE_ONLINE": "Agente asignado en línea",
+            "BUSINESS_HOURS": "Horario de atención",
+            "DIDS": "Solo estos DID",
+            "CALLER_PREFIX": "El número empieza por",
+            "ANY": "cualquiera",
+            "YES": "sí",
+            "NO": "no",
+            "IN": "dentro",
+            "OUT": "fuera",
+            "HINT": "Pista",
+            "HINT_HELP": "Valor de CHATWOOT_HINT que fija el dialplan de la PBX / el Custom Destination del IVR, p. ej. ventas o rg-600"
+          },
+          "DEST": {
+            "ASSIGNEE": "Timbrar al agente asignado de la conversación",
+            "AGENT": "Timbrar a un agente",
+            "TEAM": "Timbrar a un equipo (todos los miembros en línea)",
+            "EXTENSION": "Timbrar a una extensión de FreePBX",
+            "RINGGROUP": "Timbrar a un ring group de FreePBX",
+            "IVR": "Enviar a un IVR de FreePBX (bot/menú)",
+            "VOICEMAIL": "Enviar a un buzón de voz",
+            "HANGUP": "Colgar"
+          },
+          "FREEPBX_HINT": "Las extensiones, ring groups e IVR se gestionan en FreePBX; las listas de abajo se leen en vivo de la PBX.",
+          "EXPAND_RINGGROUP": "Timbrar a sus miembros en Chatwoot (los agentes con extensión vinculada timbran en el navegador)"
+        },
+        "BOT": {
+          "TITLE": "Bot de voz",
+          "HELP": "Un agente de voz externo (IA) registrado como extensión de FreePBX contesta primero y devuelve la llamada a Chatwoot con un destino. Regla 1: timbrar a la extensión del agente de voz (p. ej. 2000); el bot lee el contexto de la llamada y llama al endpoint de derivación con un equipo, agentes, ring group, extensión o buzón. Chatwoot cuelga al bot, pone al cliente en espera y timbra a los agentes elegidos en el navegador.",
+          "API_TITLE": "Endpoints de la API",
+          "CALLS_URL": "Contexto de la llamada (GET)",
+          "ROUTE_URL": "Derivar la llamada (POST)",
+          "AUTH_HELP": "Autentica con la cabecera Authorization: Bearer <token>. :id es el id de la llamada enviado en la cabecera SIP X-Chatwoot-Call-Id y en el webhook.",
+          "TOKEN_TITLE": "Token del bot",
+          "TOKEN_ACTIVE": "Hay un token configurado. Rotarlo lo sustituye: actualiza el bot antes de rotar.",
+          "TOKEN_NONE": "Aún no hay token: la API del bot está desactivada hasta que generes uno.",
+          "GENERATE": "Generar token",
+          "ROTATE": "Rotar token",
+          "REVOKE": "Revocar",
+          "ROTATE_CONFIRM": "¿Rotar el token del bot? El token actual deja de funcionar de inmediato.",
+          "REVOKE_CONFIRM": "¿Revocar el token del bot? La API del bot deja de funcionar hasta que se genere uno nuevo.",
+          "TOKEN_ONCE": "Copia el token ahora: se muestra una sola vez y no se puede recuperar.",
+          "COPY": "Copiar",
+          "COPIED": "Copiado al portapapeles",
+          "REVOKED": "Token del bot revocado",
+          "ERROR": "No se pudo actualizar el token del bot",
+          "WEBHOOK_LABEL": "URL del webhook (opcional)",
+          "WEBHOOK_HELP": "Cada llamada entrante hace un POST call.inbound (quien llama, DID, pista, contacto, conversación, URLs de la API) a esta URL, firmado con X-Chatwoot-Telephony-Signature (HMAC-SHA256 con el token del bot). Se guarda con la conexión con la PBX."
+        }
+      }
     },
     "HELP_CENTER": {
       "LABEL": "Centro de ayuda",
@@ -1373,7 +1694,41 @@
       "API": "Canal API",
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
-      "VOICE": "Voice"
+      "VOICE": "Voice",
+      "TELEPHONY": "Telefonía (SIP)"
+    },
+    "WHATSAPP_SIP_CALLING": {
+      "TITLE": "Llamadas de WhatsApp a través de tu PBX",
+      "HELP": "Meta envía las llamadas de WhatsApp a tu Asterisk/FreePBX por SIP (TLS) en vez de la API del navegador. Las entrantes siguen las reglas de enrutamiento de telefonía y caen en la conversación de WhatsApp del contacto; los agentes llaman a usuarios de WhatsApp desde el mismo botón de llamada.",
+      "LOADING": "Leyendo la configuración de llamadas de Meta…",
+      "SAVED": "Llamadas SIP de WhatsApp actualizadas",
+      "ERROR": "No se pudieron actualizar las llamadas SIP de WhatsApp",
+      "ENABLE": "Activar llamadas SIP",
+      "RESYNC": "Resincronizar contraseña",
+      "DISABLE": "Desactivar",
+      "HOSTNAME": {
+        "LABEL": "Nombre del servidor SIP (tu PBX)",
+        "PLACEHOLDER": "pbx.ejemplo.com",
+        "HELP": "Nombre público de la PBX con SIP sobre TLS en el puerto 5061; su certificado debe cubrir este nombre. Se rellena con el dominio SIP de la conexión con la PBX."
+      },
+      "STATUS": {
+        "NUMBER": "Número",
+        "PBX": "Troncal en la PBX",
+        "ENABLED": "provisionada",
+        "DISABLED": "sin provisionar",
+        "META_CALLING": "Llamadas en Meta",
+        "META_SIP": "SIP en Meta",
+        "SYNCED_AT": "Última sincronización",
+        "PROVISIONING": "Aplicando la troncal en la PBX (recarga de FreePBX, 15-30 s)…",
+        "PROVISIONED_AT": "Troncal aplicada en la PBX",
+        "PROVISION_ERROR": "Error de provisión en la PBX"
+      },
+      "REQUIREMENTS": {
+        "TOKEN": "El token de acceso de este inbox necesita whatsapp_business_management (acceso avanzado) para leer la contraseña SIP que genera Meta.",
+        "TLS": "La PBX debe exponer SIP sobre TLS en el 5061 con un certificado válido, además de ICE, DTLS-SRTP y el códec Opus (el overlay de Chatwoot para FreePBX lo hace).",
+        "ROUTING": "Al activarlo se crea una troncal wa-<id del número> y una Inbound Route del número apuntando a Chatwoot; las llamadas entrantes de WhatsApp usan entonces las reglas de enrutamiento del inbox de Telefonía.",
+        "PERMISSION": "Meta solo conecta llamadas iniciadas por la empresa a usuarios que dieron permiso de llamada (o que te llamaron hace poco)."
+      }
     }
   }
 }

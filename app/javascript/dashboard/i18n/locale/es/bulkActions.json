@@ -41,6 +41,19 @@
       "UNASSIGN_TEAM_CONFIRMATION_LABEL": "¿Estás seguro de que quieres desasignar {n} conversación? | ¿Estás seguro de que quieres desasignar las {n} conversaciones?",
       "ASSIGN_SUCCESFUL": "Equipos asignados correctamente.",
       "ASSIGN_FAILED": "Error al asignar equipo, inténtelo de nuevo."
+    },
+    "PRIORITY": {
+      "CHANGE_PRIORITY": "Cambiar prioridad",
+      "ASSIGN_SUCCESFUL": "Prioridad actualizada correctamente.",
+      "ASSIGN_FAILED": "No se pudo actualizar la prioridad. Inténtalo de nuevo."
+    },
+    "DELETE": {
+      "BUTTON": "Eliminar",
+      "TITLE": "Eliminar {count} conversación | Eliminar {count} conversaciones",
+      "DESCRIPTION": "Esto elimina de forma permanente las conversaciones seleccionadas con sus mensajes y adjuntos. No se puede deshacer.",
+      "CONFIRM": "Eliminar",
+      "SUCCESFUL": "{count} conversación eliminada. | {count} conversaciones eliminadas.",
+      "FAILED": "No se pudieron eliminar las conversaciones. Inténtalo de nuevo."
     }
   }
 }
