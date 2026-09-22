@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { relativeDayTimestamp } from 'shared/helpers/timeHelper';
+import { useExactTimestamp } from 'shared/composables/useExactTimestamp';
 import { getInboxVoiceIcon } from 'dashboard/helper/inbox';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -22,6 +23,8 @@ const props = defineProps({
   canJoin: { type: Boolean, default: false },
 });
 const emit = defineEmits(['join']);
+
+const exactTimestamp = useExactTimestamp();
 
 const { t } = useI18n();
 const route = useRoute();
@@ -96,6 +99,8 @@ const routeBadge = computed(() => {
 const createdAtLabel = computed(() =>
   relativeDayTimestamp(props.call.createdAt, t('CALLS_PAGE.ROW.YESTERDAY'))
 );
+
+const createdAtTooltip = computed(() => exactTimestamp(props.call.createdAt));
 
 const conversationRoute = computed(() => ({
   name: 'inbox_conversation',
@@ -178,6 +183,10 @@ const conversationRoute = computed(() => ({
       </span>
       <span
         v-if="!call.recordingUrl"
+        v-tooltip.top="{
+          content: createdAtTooltip,
+          delay: { show: 500, hide: 0 },
+        }"
         class="ms-auto shrink-0 text-label-small text-n-slate-11 tabular-nums"
       >
         {{ createdAtLabel }}
@@ -192,7 +201,13 @@ const conversationRoute = computed(() => ({
         :fallback-duration="call.durationSeconds || 0"
         class="flex-1 sm:flex-[0.7] min-w-0"
       />
-      <span class="shrink-0 text-label-small text-n-slate-11 tabular-nums">
+      <span
+        v-tooltip.top="{
+          content: createdAtTooltip,
+          delay: { show: 500, hide: 0 },
+        }"
+        class="shrink-0 text-label-small text-n-slate-11 tabular-nums"
+      >
         {{ createdAtLabel }}
       </span>
     </div>
@@ -301,7 +316,7 @@ const conversationRoute = computed(() => ({
     </RouterLink>
     <span
       v-tooltip.top="{
-        content: createdAtLabel,
+        content: createdAtTooltip,
         delay: { show: 500, hide: 0 },
       }"
       class="text-label-small text-end text-n-slate-11 truncate py-3.5 tabular-nums justify-self-end min-w-16 max-w-20 shrink-0"

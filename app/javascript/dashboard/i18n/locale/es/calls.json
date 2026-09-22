@@ -16,7 +16,7 @@
       "INCOMING": "Entrantes",
       "OUTGOING": "Salientes",
       "IN_PROGRESS": "En curso",
-      "ASSIGNEE": "Responsable",
+      "ASSIGNEE": "Asignado a",
       "ALL_ASSIGNEES": "Todos los responsables",
       "MORE_FILTERS": "Más filtros",
       "INBOX": "Bandeja de entrada",
@@ -48,7 +48,8 @@
       "INTERNAL": "Interna",
       "ROUTED_BY_BOT": "bot",
       "ROUTED_BY_BOT_TOOLTIP": "Derivada por el bot de voz",
-      "HINT_TOOLTIP": "Pista del dialplan: {hint}"
+      "HINT_TOOLTIP": "Pista del dialplan: {hint}",
+      "DELETED_CONTACT": "Contacto eliminado"
     },
     "CALL_AGENT": {
       "PLACEHOLDER": "Llamar a un agente…",

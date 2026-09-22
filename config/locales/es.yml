@@ -95,9 +95,14 @@ es:
     saml:
       feature_not_enabled: SAML feature not enabled for this account
       sso_not_enabled: SAML SSO is not enabled for this installation
+      multi_account_invitation_not_allowed: Los usuarios asociados con otra cuenta no pueden ser añadidos mientras SAML está habilitado
     conversations:
+      resolved: La conversación está resuelta y no acepta nuevos mensajes
       unread_counts:
         feature_not_enabled: Función de contadores no leídos de conversación no habilitada para esta cuenta
+      export_dataset:
+        success: Te avisaremos cuando el archivo del dataset de conversaciones esté listo para descargar.
+        invalid_params: Parámetros de exportación del dataset no válidos
     data_import:
       data_type:
         invalid: Tipo de datos no válido
@@ -148,6 +153,7 @@ es:
         already_ended: 'Esta llamada ya ha finalizado'
         already_accepted: 'Otro agente ya aceptó la llamada'
         no_recording: 'Ningún archivo de grabación proporcionado'
+        recording_disabled: 'La grabación de llamadas está desactivada para esta bandeja de entrada'
         no_message: 'La llamada no tiene ningún mensaje asociado'
         sdp_offer_required: 'sdp_offer es requerido'
         contact_phone_required: 'Se requiere un número de teléfono de contacto'
@@ -276,6 +282,16 @@ es:
     attachment: 'Adjunto'
     no_content: 'Sin contenido'
   conversations:
+    dataset_export:
+      default_system_prompt: >-
+        Eres el asistente de atención al cliente de un proveedor de internet. Respondes en español, de forma breve y
+        cordial, pides los datos necesarios para identificar el servicio, informas con precisión y escalas a un técnico
+        cuando el problema no se resuelve por chat. Nunca inventes datos del cliente ni de la factura.
+      mail:
+        subject: Tu exportación del dataset de conversaciones está lista para descargar.
+        greeting: Hola
+        body: El archivo con el dataset de conversaciones ya está listo para descargar.
+        link_label: Descargar el archivo exportado
     captain:
       handoff: 'Transferring to another agent for further assistance.'
     messages:
@@ -428,6 +444,8 @@ es:
       completed_tool_call: 'Se completó la llamada a la herramienta %{function_name}'
       invalid_tool_call: 'Llamada de herramienta no válida'
       tool_not_available: 'Herramienta no disponible'
+      reply_suggestion_discarded: 'La conversación cambió mientras Copilot estaba redactando el borrador, así que la sugerencia fue descartada.'
+      reply_suggestion_failed: "Copilot no pudo generar una respuesta. Por favor, inténtelo de nuevo."
     documents:
       limit_exceeded: 'Document limit exceeded'
       pdf_format_error: 'must be a PDF file'
@@ -614,16 +632,21 @@ es:
         empty: 'No hay historial de suspensiones registrado.'
     captain_model_overrides:
       form:
-        helper_text: 'Deje un modelo en blanco para usar el valor por defecto de YAML para esa función de IA.'
+        helper_text: 'Deja un modelo en blanco para usar la ruta predeterminada para esa función de IA.'
+        customer_features: 'Características del cliente'
+        internal_features: 'Características internas'
         use_default: 'Usar por defecto: %{model} (%{model_id})'
+        use_installation_model: 'Usar modelo de instalación: %{model} (%{model_id})'
       show:
         summary: 'Ver ruta del modelo'
         provider: 'Proveedor'
         model: 'Modelo'
       sources:
         account_override: 'Anulación de cuenta'
+        installation_override: 'Configuración de instalación'
         default: 'Predeterminado'
       features:
+        conversation_completion: 'Evaluador de finalización de conversaciones inactivas'
         editor: 'Editor'
         assistant: 'Asistente'
         copilot: 'Copilot'
@@ -640,8 +663,14 @@ es:
       user_not_found: 'Usuario no encontrado.'
       no_subscriptions_to_test: 'Seleccione al menos una suscripción para probar.'
       no_subscriptions_to_delete: 'Seleccione al menos una suscripción a eliminar.'
-      subscriptions_deleted: "Suscripción(es) %{count} eliminada(s). El dispositivo(s) del usuario volverá a registrarse en el próximo lanzamiento de la aplicación."
-
+      subscriptions_deleted:
+        one: "Suscripción %{count} eliminada. El dispositivo del usuario volverá a registrarse en el próximo lanzamiento de la aplicación."
+        other: "Suscripciones %{count} eliminadas. Los dispositivos de los usuarios se registrarán en el próximo lanzamiento de la aplicación."
+    users:
+      resend_confirmation:
+        button: 'Reenviar email de confirmación'
+        sent: 'Correo de confirmación enviado.'
+        already_confirmed: 'El usuario ya está confirmado.'
   telephony:
     note: "Llamada %{id} — agente %{agent} → %{destination}: %{result} (duración %{duration})"
     inbound_note: "Llamada entrante %{id} de %{caller} → %{agent}: %{result} (duración %{duration})"
