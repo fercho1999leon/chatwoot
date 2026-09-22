@@ -54,7 +54,13 @@ class Conversations::FilterService < FilterService
   end
 
   def conversations
-    @conversations.sort_on_last_activity_at.page(current_page)
+    Conversations::SortService.apply(@conversations, @params[:sort_by]).page(current_page)
+  end
+
+  # Unpaginated relation for bulk consumers such as dataset exports.
+  def filtered_conversations
+    validate_query_operator
+    query_builder(@filters['conversations'])
   end
 
   private

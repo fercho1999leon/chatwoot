@@ -41,8 +41,13 @@ class ConversationApi extends ApiClient {
       signal: options.signal,
       params: {
         page: payload.page,
+        sort_by: payload.sortBy,
       },
     });
+  }
+
+  exportDataset(params) {
+    return axios.post(`${this.url}/export_dataset`, params);
   }
 
   search({ q }) {

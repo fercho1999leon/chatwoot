@@ -7,6 +7,10 @@ class ConversationPolicy < ApplicationPolicy
     administrator?
   end
 
+  def export_dataset?
+    administrator?
+  end
+
   def show?
     administrator? || agent_bot? || agent_can_view_conversation?
   end

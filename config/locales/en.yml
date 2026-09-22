@@ -116,6 +116,9 @@ en:
       resolved: Conversation is resolved and does not accept new messages
       unread_counts:
         feature_not_enabled: Conversation unread counts feature not enabled for this account
+      export_dataset:
+        success: We will notify you once the conversations dataset export file is ready to download.
+        invalid_params: Invalid dataset export parameters
     data_import:
       data_type:
         invalid: Invalid data type
@@ -213,6 +216,14 @@ en:
       invalid_token: Invalid or expired MFA token
       invalid_credentials: Invalid credentials or verification code
       feature_unavailable: MFA feature is not available. Please configure encryption keys.
+    device_verification:
+      invalid_token: Invalid or expired verification token, sign in again to get a new code
+      invalid_code: Incorrect code. Enter the 6-digit code we sent to your email.
+      expired: Verification code expired, sign in again to get a new one
+      locked: Too many incorrect codes, sign in again to get a new one
+      stale: Your account changed since this code was issued, sign in again
+      rate_limited: Too many verification attempts, try again later or reset your password
+      code_field_required: Enter the 6-digit code from your email in the verification code field, not the backup code field
     billing:
       invalid_currency: Invalid billing currency
       currency_locked: Billing currency cannot be changed after billing has been set up
@@ -307,6 +318,16 @@ en:
     attachment: 'Attachment'
     no_content: 'No content'
   conversations:
+    dataset_export:
+      default_system_prompt: >-
+        You are the customer support assistant of an internet service provider. Reply briefly and politely, ask for the
+        details needed to identify the service, give accurate information and escalate to a technician when the issue
+        cannot be solved over chat. Never make up customer or invoice data.
+      mail:
+        subject: Your conversations dataset export is available to download.
+        greeting: Hi
+        body: Your conversations dataset export file is ready to download.
+        link_label: Download the export file
     captain:
       handoff: 'Transferring to another agent for further assistance.'
     messages:
@@ -491,7 +512,7 @@ en:
       page_processing_error: 'Error processing pages %{start}-%{end}: %{error}'
     custom_tool:
       slug_generation_failed: 'Unable to generate unique slug after 5 attempts'
-      limit_exceeded: 'You can create a maximum of %{limit} custom tools per account'
+      limit_exceeded: 'You can create a maximum of %{limit} custom tools per assistant'
   public_portal:
     search:
       search_placeholder: Search for article by title or body...
@@ -649,6 +670,8 @@ en:
         suspended_at: 'Suspended at'
         category: 'Category'
         reason: 'Reason'
+        suspended_by: 'Suspended by'
+        unknown_user: 'Unknown user'
         empty: 'No suspension history recorded.'
     captain_model_overrides:
       form:
