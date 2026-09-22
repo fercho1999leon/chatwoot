@@ -11,6 +11,14 @@ vi.mock('dashboard/composables/useUISettings', async () => {
   };
 });
 
+const { adminState } = vi.hoisted(() => ({ adminState: { isAdmin: true } }));
+vi.mock('dashboard/composables/useAdmin', async () => {
+  const { computed } = await import('vue');
+  return {
+    useAdmin: () => ({ isAdmin: computed(() => adminState.isAdmin) }),
+  };
+});
+
 const mountHeader = props =>
   shallowMount(ChatListHeader, {
     props: {
@@ -31,6 +39,10 @@ const mountHeader = props =>
 const contactFilter = { id: 7, name: 'Jane Doe' };
 
 describe('ChatListHeader', () => {
+  beforeEach(() => {
+    adminState.isAdmin = true;
+  });
+
   it('renders the page title and the filter button without filters', () => {
     const wrapper = mountHeader();
 
@@ -65,6 +77,18 @@ describe('ChatListHeader', () => {
 
     expect(wrapper.find('h1').text()).toBe('Conversations');
     expect(wrapper.find('#toggleConversationFilterButton').exists()).toBe(
+      false
+    );
+  });
+
+  it('shows the dataset export button only for administrators', () => {
+    expect(mountHeader().find('[icon="i-lucide-download"]').exists()).toBe(
+      true
+    );
+
+    adminState.isAdmin = false;
+
+    expect(mountHeader().find('[icon="i-lucide-download"]').exists()).toBe(
       false
     );
   });

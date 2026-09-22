@@ -16,7 +16,8 @@ class Api::V1::Accounts::Conversations::DatasetExportsController < Api::V1::Acco
 
   def export_params
     permitted = params.permit(
-      :export_format, :status, :since, :until, :limit, inbox_ids: [],
+      :export_format, :status, :since, :until, :limit,
+      inbox_ids: [],
       options: [:anonymize, :include_private_notes, :include_bot_messages, :min_agent_messages,
                 :min_user_messages, :min_csat, :system_prompt, :eval_ratio]
     )
