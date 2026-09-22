@@ -116,6 +116,9 @@ en:
       resolved: Conversation is resolved and does not accept new messages
       unread_counts:
         feature_not_enabled: Conversation unread counts feature not enabled for this account
+      export_dataset:
+        success: We will notify you once the conversations dataset export file is ready to download.
+        invalid_params: Invalid dataset export parameters
     data_import:
       data_type:
         invalid: Invalid data type
@@ -315,6 +318,16 @@ en:
     attachment: 'Attachment'
     no_content: 'No content'
   conversations:
+    dataset_export:
+      default_system_prompt: >-
+        You are the customer support assistant of an internet service provider. Reply briefly and politely, ask for the
+        details needed to identify the service, give accurate information and escalate to a technician when the issue
+        cannot be solved over chat. Never make up customer or invoice data.
+      mail:
+        subject: Your conversations dataset export is available to download.
+        greeting: Hi
+        body: Your conversations dataset export file is ready to download.
+        link_label: Download the export file
     captain:
       handoff: 'Transferring to another agent for further assistance.'
     messages:

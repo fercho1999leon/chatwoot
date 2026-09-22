@@ -1214,6 +1214,54 @@ RSpec.describe 'Conversations API', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/{account.id}/conversations/export_dataset' do
+    let(:params) { { export_format: 'chat_jsonl', limit: 10, options: { anonymize: true } } }
+
+    context 'when it is an unauthenticated user' do
+      it 'returns unauthorized' do
+        post "/api/v1/accounts/#{account.id}/conversations/export_dataset", params: params, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when it is an agent' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      it 'returns unauthorized' do
+        post "/api/v1/accounts/#{account.id}/conversations/export_dataset",
+             headers: agent.create_new_auth_token, params: params, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when it is an administrator' do
+      let(:admin) { create(:user, account: account, role: :administrator) }
+
+      it 'enqueues the dataset export job with the permitted params' do
+        expect(Account::ConversationsDatasetExportJob).to receive(:perform_later).with(
+          account.id, admin.id,
+          { 'export_format' => 'chat_jsonl', 'limit' => 10, 'options' => { 'anonymize' => true }, :payload => nil }
+        ).once
+
+        post "/api/v1/accounts/#{account.id}/conversations/export_dataset",
+             headers: admin.create_new_auth_token, params: params, as: :json
+
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'returns unprocessable entity for an unknown format' do
+        expect(Account::ConversationsDatasetExportJob).not_to receive(:perform_later)
+
+        post "/api/v1/accounts/#{account.id}/conversations/export_dataset",
+             headers: admin.create_new_auth_token, params: { export_format: 'csv' }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+  end
+
   describe 'POST /api/v1/accounts/{account.id}/conversations/:id/transcript' do
     let(:conversation) { create(:conversation, account: account) }
 

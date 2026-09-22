@@ -100,6 +100,9 @@ es:
       resolved: La conversación está resuelta y no acepta nuevos mensajes
       unread_counts:
         feature_not_enabled: Función de contadores no leídos de conversación no habilitada para esta cuenta
+      export_dataset:
+        success: Te avisaremos cuando el archivo del dataset de conversaciones esté listo para descargar.
+        invalid_params: Parámetros de exportación del dataset no válidos
     data_import:
       data_type:
         invalid: Tipo de datos no válido
@@ -279,6 +282,16 @@ es:
     attachment: 'Adjunto'
     no_content: 'Sin contenido'
   conversations:
+    dataset_export:
+      default_system_prompt: >-
+        Eres el asistente de atención al cliente de un proveedor de internet. Respondes en español, de forma breve y
+        cordial, pides los datos necesarios para identificar el servicio, informas con precisión y escalas a un técnico
+        cuando el problema no se resuelve por chat. Nunca inventes datos del cliente ni de la factura.
+      mail:
+        subject: Tu exportación del dataset de conversaciones está lista para descargar.
+        greeting: Hola
+        body: El archivo con el dataset de conversaciones ya está listo para descargar.
+        link_label: Descargar el archivo exportado
     captain:
       handoff: 'Transferring to another agent for further assistance.'
     messages:

@@ -401,6 +401,39 @@
       "UNMUTE": "Reactivar micrófono",
       "VIEW_CHAT_HISTORY": "Ver historial de chat",
       "GO_TO_CONVERSATION": "Ir al hilo de conversación"
+    },
+    "EXPORT_DATASET": {
+      "BUTTON": "Exportar dataset",
+      "TITLE": "Exportar dataset de conversaciones",
+      "DESCRIPTION": "Exporta conversaciones como dataset de fine-tuning o JSON completo. El archivo se genera en segundo plano y se envía a tu correo.",
+      "CONFIRM": "Exportar",
+      "OPTIONS_TITLE": "Opciones",
+      "FORMATS": {
+        "CHAT_JSONL": "Dataset de chat (zip con train/eval JSONL)",
+        "RAW_JSON": "Conversaciones completas (JSON)"
+      },
+      "FIELDS": {
+        "FORMAT": "Formato",
+        "LIMIT": "Máximo de conversaciones (las más recientes)",
+        "USE_CURRENT_FILTER": "Usar el filtro aplicado actualmente en la lista",
+        "STATUS": "Estado",
+        "INBOXES": "Bandejas",
+        "INBOXES_PLACEHOLDER": "Todas las bandejas",
+        "SINCE": "Creadas desde",
+        "UNTIL": "Creadas hasta",
+        "ANONYMIZE": "Anonimizar datos personales (nombres, cédula/RUC, teléfonos, correos, tarjetas, URLs)",
+        "INCLUDE_PRIVATE_NOTES": "Incluir notas privadas",
+        "INCLUDE_BOT_MESSAGES": "Incluir mensajes del bot",
+        "MIN_AGENT_MESSAGES": "Mín. turnos del agente",
+        "MIN_USER_MESSAGES": "Mín. turnos del cliente",
+        "MIN_CSAT": "CSAT mínimo",
+        "MIN_CSAT_ANY": "Cualquiera",
+        "EVAL_RATIO": "Proporción reservada para eval.jsonl (0-0.5)",
+        "SYSTEM_PROMPT": "Prompt de sistema",
+        "SYSTEM_PROMPT_PLACEHOLDER": "Déjalo vacío para usar el prompt por defecto"
+      },
+      "SUCCESS_MESSAGE": "La exportación está en curso. Recibirás un correo con el enlace cuando el archivo esté listo.",
+      "ERROR_MESSAGE": "Ocurrió un error, inténtalo de nuevo"
     }
   },
   "EMAIL_TRANSCRIPT": {

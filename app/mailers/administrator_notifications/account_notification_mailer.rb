@@ -50,6 +50,11 @@ class AdministratorNotifications::AccountNotificationMailer < AdministratorNotif
     send_notification(subject, to: email_to, action_url: file_url)
   end
 
+  def conversations_dataset_export_complete(file_url, email_to)
+    meta = %w[greeting body link_label].index_with { |key| I18n.t("conversations.dataset_export.mail.#{key}") }
+    send_notification(I18n.t('conversations.dataset_export.mail.subject'), to: email_to, action_url: file_url, meta: meta)
+  end
+
   def automation_rule_disabled(rule)
     subject = 'Automation rule disabled due to validation errors.'
     action_url = settings_url('automation/list')

@@ -118,6 +118,14 @@ const actions = {
     });
   },
 
+  exportDataset: async (_, params) => {
+    try {
+      await ConversationApi.exportDataset(params);
+    } catch (error) {
+      throw new Error(error.response?.data?.error || error.message);
+    }
+  },
+
   fetchFilteredConversations: async ({ commit, dispatch, state }, params) => {
     return conversationListRequest.run(async signal => {
       const {

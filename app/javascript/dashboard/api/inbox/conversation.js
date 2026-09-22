@@ -46,6 +46,10 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  exportDataset(params) {
+    return axios.post(`${this.url}/export_dataset`, params);
+  }
+
   search({ q }) {
     return axios.get(`${this.url}/search`, {
       params: {

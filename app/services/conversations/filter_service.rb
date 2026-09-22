@@ -57,6 +57,12 @@ class Conversations::FilterService < FilterService
     Conversations::SortService.apply(@conversations, @params[:sort_by]).page(current_page)
   end
 
+  # Unpaginated relation for bulk consumers such as dataset exports.
+  def filtered_conversations
+    validate_query_operator
+    query_builder(@filters['conversations'])
+  end
+
   private
 
   # The planner hint only pays off when the label condition positively narrows the

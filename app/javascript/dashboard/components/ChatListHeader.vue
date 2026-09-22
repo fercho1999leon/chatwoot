@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { formatNumber } from '@chatwoot/utils';
 import wootConstants from 'dashboard/constants/globals';
 
@@ -25,9 +26,11 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'exportDataset',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
+const { isAdmin } = useAdmin();
 
 const onBasicFilterChange = (value, type) => {
   emit('basicFilterChange', value, type);
@@ -169,6 +172,16 @@ const toggleConversationLayout = () => {
           :class="{ 'ltr:right-0 rtl:left-0': isOnExpandedLayout }"
         />
       </div>
+      <NextButton
+        v-if="isAdmin"
+        v-tooltip.top-end="$t('CONVERSATION.EXPORT_DATASET.BUTTON')"
+        :aria-label="$t('CONVERSATION.EXPORT_DATASET.BUTTON')"
+        icon="i-lucide-download"
+        slate
+        xs
+        faded
+        @click="emit('exportDataset')"
+      />
       <ConversationBasicFilter
         v-if="!isContactScoped"
         :is-on-expanded-layout="isOnExpandedLayout"

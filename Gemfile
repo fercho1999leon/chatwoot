@@ -51,6 +51,8 @@ gem 'gmail_xoauth'
 gem 'net-smtp',  '~> 0.3.4'
 # Prevent CSV injection
 gem 'csv-safe'
+# Bundle dataset export files into a zip archive
+gem 'rubyzip'
 
 ##-- for active storage --##
 gem 'aws-sdk-s3', require: false

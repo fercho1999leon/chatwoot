@@ -10,6 +10,7 @@ import {
 import ChatListHeader from './ChatListHeader.vue';
 import ConversationList from './ConversationList.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import ConversationDatasetExportDialog from 'dashboard/components-next/Conversation/ConversationDatasetExportDialog.vue';
 import ConversationFilter from 'next/filter/ConversationFilter.vue';
 import SaveCustomView from 'next/filter/SaveCustomView.vue';
 import ChatTypeTabs from './widgets/ChatTypeTabs.vue';
@@ -563,6 +564,34 @@ function initalizeAppliedFiltersToModal() {
   appliedFilter.value = [...appliedFilters.value];
 }
 
+const datasetExportDialogRef = ref(null);
+const isExportingDataset = ref(false);
+
+// Advanced filter query the export dialog can reuse ({ payload: [...] })
+const datasetExportFilterQuery = computed(() => {
+  if (hasActiveFolders.value) return activeFolder.value.query;
+  if (hasAppliedFilters.value) {
+    return filterQueryGenerator(useSnakeCase(appliedFilters.value));
+  }
+  return null;
+});
+
+function openDatasetExportDialog() {
+  datasetExportDialogRef.value?.dialogRef.open();
+}
+
+async function onExportDataset(params) {
+  isExportingDataset.value = true;
+  try {
+    await store.dispatch('exportDataset', params);
+    useAlert(t('CONVERSATION.EXPORT_DATASET.SUCCESS_MESSAGE'));
+  } catch (error) {
+    useAlert(error.message || t('CONVERSATION.EXPORT_DATASET.ERROR_MESSAGE'));
+  } finally {
+    isExportingDataset.value = false;
+  }
+}
+
 function onToggleAdvanceFiltersModal() {
   if (showAdvancedFilters.value === true) {
     closeAdvanceFiltersModal();
@@ -912,6 +941,13 @@ watch(appliedFilters, () => resetBulkActions());
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
+      @export-dataset="openDatasetExportDialog"
+    />
+    <ConversationDatasetExportDialog
+      ref="datasetExportDialogRef"
+      :current-filter-query="datasetExportFilterQuery"
+      :is-exporting="isExportingDataset"
+      @export="onExportDataset"
     />
 
     <TeleportWithDirection
