@@ -1,0 +1,31 @@
+{
+  "DATASET_EXPORTS": {
+    "HEADER": "Dataset exports",
+    "DESCRIPTION": "Download the conversation datasets exported from the conversations list.",
+    "LOADING": "Loading dataset exports...",
+    "REFRESH": "Refresh",
+    "DOWNLOAD": "Download",
+    "FORMATS": {
+      "CHAT_JSONL": "Chat dataset (zip)",
+      "RAW_JSON": "Raw conversations (JSON)"
+    },
+    "STATUS": {
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed"
+    },
+    "LIST": {
+      "404": "There are no dataset exports yet. Use the export button in the conversations list to create one.",
+      "TABLE_HEADER": {
+        "FORMAT": "Format",
+        "CONVERSATIONS": "Conversations",
+        "STATUS": "Status",
+        "CREATED_BY": "Created by",
+        "TIME": "Date"
+      }
+    },
+    "API": {
+      "ERROR_MESSAGE": "Could not load the dataset exports"
+    }
+  }
+}

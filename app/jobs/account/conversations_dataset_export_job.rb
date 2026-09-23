@@ -13,11 +13,16 @@ class Account::ConversationsDatasetExportJob < ApplicationJob
     @params = params.with_indifferent_access
     @options = @params[:options].to_h
     @stats = Hash.new(0)
+    @dataset_export = @account.dataset_exports.create!(user: @account_user, export_format: @params[:export_format], params: @params)
 
     with_user_locale do
       @params[:export_format] == 'raw_json' ? export_raw_json : export_chat_jsonl
     end
+    @dataset_export.update!(status: :completed, conversations_count: @stats[:conversations_read])
     send_mail
+  rescue StandardError => e
+    @dataset_export&.update(status: :failed, error_message: e.message)
+    raise
   end
 
   private
@@ -101,7 +106,7 @@ class Account::ConversationsDatasetExportJob < ApplicationJob
   end
 
   def attach_export_file(data, filename, content_type)
-    @account.conversations_dataset_export.attach(
+    @dataset_export.file.attach(
       io: StringIO.new(data),
       filename: "#{@account.name}_#{@account.id}_#{filename}",
       content_type: content_type
@@ -109,8 +114,7 @@ class Account::ConversationsDatasetExportJob < ApplicationJob
   end
 
   def send_mail
-    file_url = Rails.application.routes.url_helpers.rails_blob_url(@account.conversations_dataset_export)
     mailer = AdministratorNotifications::AccountNotificationMailer.with(account: @account)
-    mailer.conversations_dataset_export_complete(file_url, @account_user.email)&.deliver_later
+    mailer.conversations_dataset_export_complete(@dataset_export.file_url, @account_user.email)&.deliver_later
   end
 end

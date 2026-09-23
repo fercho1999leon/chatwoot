@@ -344,6 +344,7 @@
     "AGENTS": "Agents",
     "AGENT_BOTS": "Bots",
     "AUDIT_LOGS": "Audit Logs",
+    "DATASET_EXPORTS": "Dataset exports",
     "INBOXES": "Inboxes",
     "WHATSAPP_TEMPLATES": "Templates",
     "NOTIFICATIONS": "Notifications",

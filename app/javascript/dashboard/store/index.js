@@ -8,6 +8,7 @@ import assignmentPolicies from './modules/assignmentPolicies';
 import articles from './modules/helpCenterArticles';
 import attributes from './modules/attributes';
 import auditlogs from './modules/auditlogs';
+import datasetExports from './modules/datasetExports';
 import auth from './modules/auth';
 import automations from './modules/automations';
 import bulkActions from './modules/bulkActions';
@@ -75,6 +76,7 @@ export default createStore({
     articles,
     attributes,
     auditlogs,
+    datasetExports,
     auth,
     automations,
     bulkActions,

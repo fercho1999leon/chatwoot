@@ -31,7 +31,7 @@ RSpec.describe Account::ConversationsDatasetExportJob do
   it 'exports a chat_jsonl zip of resolved conversations and sends the mail' do
     described_class.perform_now(account.id, user.id, { export_format: 'chat_jsonl', options: { min_agent_messages: 1 } })
 
-    export = account.conversations_dataset_export
+    export = account.dataset_exports.last.file
     expect(export.filename.to_s).to end_with('_dataset.zip')
     entries = Zip::File.open_buffer(export.download).each_with_object({}) { |entry, memo| memo[entry.name] = entry.get_input_stream.read }
     expect(entries.keys).to contain_exactly('train.jsonl', 'eval.jsonl', 'stats.json')
@@ -53,15 +53,23 @@ RSpec.describe Account::ConversationsDatasetExportJob do
 
     described_class.perform_now(account.id, user.id, { export_format: 'chat_jsonl', options: { min_agent_messages: 1 } })
 
-    entries = Zip::File.open_buffer(account.conversations_dataset_export.download).to_a.index_by(&:name)
+    entries = Zip::File.open_buffer(account.dataset_exports.last.file.download).to_a.index_by(&:name)
     sample = JSON.parse(entries['train.jsonl'].get_input_stream.read.lines.first)
     expect(sample['messages'].first['content']).to eq(I18n.t('conversations.dataset_export.default_system_prompt', locale: :es))
+  end
+
+  it 'records the export with its status and conversation count' do
+    described_class.perform_now(account.id, user.id, { export_format: 'chat_jsonl', options: { min_agent_messages: 1 } })
+
+    record = account.dataset_exports.last
+    expect(record).to have_attributes(export_format: 'chat_jsonl', status: 'completed', conversations_count: 3, user: user)
+    expect(record.file).to be_attached
   end
 
   it 'counts dropped conversations in stats' do
     described_class.perform_now(account.id, user.id, { export_format: 'chat_jsonl', options: { min_agent_messages: 5 } })
 
-    entries = Zip::File.open_buffer(account.conversations_dataset_export.download).to_a.index_by(&:name)
+    entries = Zip::File.open_buffer(account.dataset_exports.last.file.download).to_a.index_by(&:name)
     stats = JSON.parse(entries['stats.json'].get_input_stream.read)
 
     expect(stats).to include('conversations_read' => 3, 'conversations_kept' => 0, 'dropped_too_short' => 3)
@@ -74,7 +82,7 @@ RSpec.describe Account::ConversationsDatasetExportJob do
 
     described_class.perform_now(account.id, user.id, { export_format: 'raw_json', status: 'open', inbox_ids: [inbox.id], limit: 5, options: {} })
 
-    export = account.conversations_dataset_export
+    export = account.dataset_exports.last.file
     expect(export.filename.to_s).to end_with('_conversations.json')
     records = JSON.parse(export.download)
     expect(records.size).to eq(1)
@@ -87,7 +95,7 @@ RSpec.describe Account::ConversationsDatasetExportJob do
 
     described_class.perform_now(account.id, user.id, { export_format: 'raw_json', payload: payload, limit: 1 })
 
-    records = JSON.parse(account.conversations_dataset_export.download)
+    records = JSON.parse(account.dataset_exports.last.file.download)
     expect(records.map { |record| record['status'] }).to eq(['open'])
   end
 end

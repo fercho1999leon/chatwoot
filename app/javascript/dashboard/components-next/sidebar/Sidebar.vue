@@ -923,6 +923,12 @@ const menuItems = computed(() => {
           to: accountScopedRoute('auditlogs_list'),
         },
         {
+          name: 'Settings Dataset Exports',
+          label: t('SIDEBAR.DATASET_EXPORTS'),
+          icon: 'i-lucide-download',
+          to: accountScopedRoute('dataset_exports_list'),
+        },
+        {
           name: 'Settings Custom Roles',
           label: t('SIDEBAR.CUSTOM_ROLES'),
           icon: 'i-lucide-shield-plus',
