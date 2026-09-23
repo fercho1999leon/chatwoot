@@ -251,7 +251,7 @@ Rails.application.routes.draw do
             end
           end
 
-          resources :dataset_exports, only: [:index]
+          resources :dataset_exports, only: [:index, :destroy]
           resources :search, only: [:index] do
             collection do
               get :conversations

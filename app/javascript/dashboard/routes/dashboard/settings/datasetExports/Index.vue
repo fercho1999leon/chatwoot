@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStoreGetters, useStore } from 'dashboard/composables/store';
@@ -10,6 +10,7 @@ import {
   BaseTableCell,
 } from 'dashboard/components-next/table';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 
@@ -32,6 +33,7 @@ const tableHeaders = computed(() => [
   t('DATASET_EXPORTS.LIST.TABLE_HEADER.CREATED_BY'),
   t('DATASET_EXPORTS.LIST.TABLE_HEADER.TIME'),
   '',
+  '',
 ]);
 
 const formatLabel = exportRecord =>
@@ -47,6 +49,26 @@ const fileSize = exportRecord => {
     return `${Math.max(1, Math.round(bytes / BYTES_IN_A_KILOBYTE))} KB`;
   }
   return `${(bytes / BYTES_IN_A_MEGABYTE).toFixed(1)} MB`;
+};
+
+const deleteDialogRef = ref(null);
+const exportToDelete = ref(null);
+
+const openDeleteDialog = exportRecord => {
+  exportToDelete.value = exportRecord;
+  deleteDialogRef.value?.open();
+};
+
+const deleteExport = async () => {
+  try {
+    await store.dispatch('datasetExports/delete', exportToDelete.value.id);
+    useAlert(t('DATASET_EXPORTS.DELETE.SUCCESS_MESSAGE'));
+  } catch (error) {
+    useAlert(error?.message || t('DATASET_EXPORTS.DELETE.ERROR_MESSAGE'));
+  } finally {
+    deleteDialogRef.value?.close();
+    exportToDelete.value = null;
+  }
 };
 
 const fetchDatasetExports = async () => {
@@ -134,10 +156,30 @@ onMounted(fetchDatasetExports);
                   </span>
                 </a>
               </BaseTableCell>
+              <BaseTableCell>
+                <Button
+                  v-tooltip.top="$t('DATASET_EXPORTS.DELETE.BUTTON')"
+                  :aria-label="$t('DATASET_EXPORTS.DELETE.BUTTON')"
+                  icon="i-lucide-trash-2"
+                  ruby
+                  xs
+                  faded
+                  @click="openDeleteDialog(exportRecord)"
+                />
+              </BaseTableCell>
             </template>
           </BaseTableRow>
         </template>
       </BaseTable>
     </template>
   </SettingsLayout>
+  <Dialog
+    ref="deleteDialogRef"
+    type="alert"
+    :title="$t('DATASET_EXPORTS.DELETE.TITLE')"
+    :description="$t('DATASET_EXPORTS.DELETE.DESCRIPTION')"
+    :confirm-button-label="$t('DATASET_EXPORTS.DELETE.CONFIRM')"
+    @confirm="deleteExport"
+    @close="exportToDelete = null"
+  />
 </template>

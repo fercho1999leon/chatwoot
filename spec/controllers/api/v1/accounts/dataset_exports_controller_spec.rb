@@ -41,4 +41,41 @@ RSpec.describe 'Dataset Exports API', type: :request do
       end
     end
   end
+
+  describe 'DELETE /api/v1/accounts/{account.id}/dataset_exports/{id}' do
+    let(:admin) { create(:user, account: account, role: :administrator) }
+    let(:dataset_export) { create(:dataset_export, account: account, user: admin) }
+
+    context 'when it is an agent' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      it 'returns unauthorized and keeps the export' do
+        delete "/api/v1/accounts/#{account.id}/dataset_exports/#{dataset_export.id}",
+               headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(dataset_export.reload).to be_present
+      end
+    end
+
+    context 'when it is an administrator' do
+      it 'deletes the export' do
+        delete "/api/v1/accounts/#{account.id}/dataset_exports/#{dataset_export.id}",
+               headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(DatasetExport.find_by(id: dataset_export.id)).to be_nil
+      end
+
+      it 'does not delete exports of another account' do
+        other_export = create(:dataset_export, account: create(:account), user: create(:user))
+
+        delete "/api/v1/accounts/#{account.id}/dataset_exports/#{other_export.id}",
+               headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(other_export.reload).to be_present
+      end
+    end
+  end
 end

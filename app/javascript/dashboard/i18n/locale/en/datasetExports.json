@@ -26,6 +26,14 @@
     },
     "API": {
       "ERROR_MESSAGE": "Could not load the dataset exports"
+    },
+    "DELETE": {
+      "BUTTON": "Delete export",
+      "TITLE": "Delete dataset export",
+      "DESCRIPTION": "The exported file will be deleted permanently and its download link will stop working. This cannot be undone.",
+      "CONFIRM": "Delete",
+      "SUCCESS_MESSAGE": "Dataset export deleted",
+      "ERROR_MESSAGE": "Could not delete the dataset export"
     }
   }
 }

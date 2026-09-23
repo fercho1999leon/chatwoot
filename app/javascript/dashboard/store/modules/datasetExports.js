@@ -32,9 +32,21 @@ export const actions = {
       });
     }
   },
+
+  async delete({ commit }, id) {
+    try {
+      await DatasetExportsAPI.delete(id);
+      commit(types.default.DELETE_DATASET_EXPORT, id);
+    } catch (error) {
+      throwErrorMessage(error);
+    }
+  },
 };
 
 export const mutations = {
+  [types.default.DELETE_DATASET_EXPORT](_state, id) {
+    _state.records = _state.records.filter(record => record.id !== id);
+  },
   [types.default.SET_DATASET_EXPORTS](_state, records) {
     _state.records = records;
   },

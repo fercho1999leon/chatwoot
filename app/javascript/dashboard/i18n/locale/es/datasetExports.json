@@ -26,6 +26,14 @@
     },
     "API": {
       "ERROR_MESSAGE": "No se pudieron cargar las exportaciones"
+    },
+    "DELETE": {
+      "BUTTON": "Eliminar exportación",
+      "TITLE": "Eliminar exportación de dataset",
+      "DESCRIPTION": "El archivo exportado se eliminará de forma permanente y su enlace de descarga dejará de funcionar. Esta acción no se puede deshacer.",
+      "CONFIRM": "Eliminar",
+      "SUCCESS_MESSAGE": "Exportación eliminada",
+      "ERROR_MESSAGE": "No se pudo eliminar la exportación"
     }
   }
 }
