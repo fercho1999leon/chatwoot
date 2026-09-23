@@ -440,7 +440,19 @@
         "SYSTEM_PROMPT_PLACEHOLDER": "Déjalo vacío para usar el prompt por defecto"
       },
       "SUCCESS_MESSAGE": "La exportación está en curso. Recibirás un correo con el enlace cuando el archivo esté listo.",
-      "ERROR_MESSAGE": "Ocurrió un error, inténtalo de nuevo"
+      "ERROR_MESSAGE": "Ocurrió un error, inténtalo de nuevo",
+      "PREVIEW": {
+        "TITLE": "Previsualización",
+        "RUN": "Previsualizar",
+        "HINT": "Comprueba cuántas conversaciones exportarían estos ajustes antes de lanzarlo.",
+        "SUMMARY": "{matching} conversaciones coinciden. De las {analyzed} más recientes analizadas, se exportarían {kept}.",
+        "EMPTY": "Con estos ajustes la exportación saldría vacía. Baja el mínimo de turnos o cambia el estado.",
+        "ERROR": "No se pudo generar la previsualización",
+        "DROPPED": {
+          "TOO_SHORT": "{count} descartadas por tener menos turnos que el mínimo.",
+          "CSAT": "{count} descartadas por estar por debajo del CSAT mínimo."
+        }
+      }
     }
   },
   "EMAIL_TRANSCRIPT": {

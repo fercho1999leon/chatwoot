@@ -177,6 +177,7 @@ Rails.application.routes.draw do
               get :unread_counts, to: 'conversations/unread_counts#index'
               post :filter
               post :export_dataset, to: 'conversations/dataset_exports#create'
+              post :export_dataset_preview, to: 'conversations/dataset_exports#preview'
             end
             scope module: :conversations do
               resources :messages, only: [:index, :create, :destroy, :update] do

@@ -451,7 +451,19 @@
         "SYSTEM_PROMPT_PLACEHOLDER": "Leave empty to use the default prompt"
       },
       "SUCCESS_MESSAGE": "Export is in progress. You will be notified by email when the file is ready to download.",
-      "ERROR_MESSAGE": "There was an error, please try again"
+      "ERROR_MESSAGE": "There was an error, please try again",
+      "PREVIEW": {
+        "TITLE": "Preview",
+        "RUN": "Preview",
+        "HINT": "Check how many conversations these settings would export before running it.",
+        "SUMMARY": "{matching} conversations match. Of the {analyzed} most recent analysed, {kept} would be exported.",
+        "EMPTY": "With these settings the export would be empty. Lower the minimum turns or change the status.",
+        "ERROR": "Could not build the preview",
+        "DROPPED": {
+          "TOO_SHORT": "{count} discarded for having fewer turns than the minimum.",
+          "CSAT": "{count} discarded for being below the minimum CSAT rating."
+        }
+      }
     }
   },
   "EMAIL_TRANSCRIPT": {

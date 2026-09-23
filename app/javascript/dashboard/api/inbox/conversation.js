@@ -50,6 +50,10 @@ class ConversationApi extends ApiClient {
     return axios.post(`${this.url}/export_dataset`, params);
   }
 
+  previewDataset(params) {
+    return axios.post(`${this.url}/export_dataset_preview`, params);
+  }
+
   search({ q }) {
     return axios.get(`${this.url}/search`, {
       params: {

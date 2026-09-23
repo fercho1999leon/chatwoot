@@ -1251,6 +1251,16 @@ RSpec.describe 'Conversations API', type: :request do
         expect(response).to have_http_status(:success)
       end
 
+      it 'returns the preview counts without enqueuing an export' do
+        expect(Account::ConversationsDatasetExportJob).not_to receive(:perform_later)
+
+        post "/api/v1/accounts/#{account.id}/conversations/export_dataset_preview",
+             headers: admin.create_new_auth_token, params: params, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body.keys).to include('matching_count', 'analyzed_count', 'kept_count', 'dropped')
+      end
+
       it 'returns unprocessable entity for an unknown format' do
         expect(Account::ConversationsDatasetExportJob).not_to receive(:perform_later)
 

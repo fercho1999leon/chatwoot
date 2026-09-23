@@ -126,6 +126,15 @@ const actions = {
     }
   },
 
+  previewDataset: async (_, params) => {
+    try {
+      const { data } = await ConversationApi.previewDataset(params);
+      return data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || error.message);
+    }
+  },
+
   fetchFilteredConversations: async ({ commit, dispatch, state }, params) => {
     return conversationListRequest.run(async signal => {
       const {

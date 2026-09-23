@@ -1,13 +1,14 @@
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 
 const props = defineProps({
@@ -27,7 +28,13 @@ const CSAT_RATINGS = [1, 2, 3, 4, 5];
 const SYSTEM_PROMPT_MAX_LENGTH = 2000;
 
 const dialogRef = ref(null);
+const store = useStore();
 const inboxes = useMapGetter('inboxes/getInboxes');
+
+const preview = ref(null);
+const previewError = ref('');
+const isPreviewing = ref(false);
+const PREVIEW_TURNS_SHOWN = 4;
 
 const form = reactive({
   exportFormat: FORMATS[0],
@@ -93,6 +100,39 @@ const exportParams = () => ({
     eval_ratio: isChatFormat.value ? Number(form.evalRatio) : null,
   },
 });
+
+const runPreview = async () => {
+  isPreviewing.value = true;
+  previewError.value = '';
+  try {
+    preview.value = await store.dispatch('previewDataset', exportParams());
+  } catch (error) {
+    preview.value = null;
+    previewError.value =
+      error.message || t('CONVERSATION.EXPORT_DATASET.PREVIEW.ERROR');
+  } finally {
+    isPreviewing.value = false;
+  }
+};
+
+// A preview describes one set of settings; changing them makes it stale.
+watch(
+  () => JSON.stringify(exportParams()),
+  () => {
+    preview.value = null;
+    previewError.value = '';
+  }
+);
+
+const previewTurns = computed(() =>
+  (preview.value?.sample?.messages ?? [])
+    .filter(message => message.role !== 'system')
+    .slice(0, PREVIEW_TURNS_SHOWN)
+);
+
+const droppedEntries = computed(() =>
+  Object.entries(preview.value?.dropped ?? {}).filter(([, count]) => count > 0)
+);
 
 const handleDialogConfirm = () => {
   emit('export', exportParams());
@@ -220,6 +260,72 @@ defineExpose({ dialogRef });
           />
         </div>
       </div>
+      <div class="flex flex-col gap-2 pt-2 border-t border-n-weak">
+        <div class="flex items-center justify-between gap-2">
+          <h4 class="text-sm font-medium text-n-slate-12">
+            {{ t('CONVERSATION.EXPORT_DATASET.PREVIEW.TITLE') }}
+          </h4>
+          <Button
+            :label="t('CONVERSATION.EXPORT_DATASET.PREVIEW.RUN')"
+            :is-loading="isPreviewing"
+            :disabled="isPreviewing"
+            icon="i-lucide-eye"
+            type="button"
+            slate
+            faded
+            sm
+            @click="runPreview"
+          />
+        </div>
+        <p v-if="previewError" class="text-sm text-n-ruby-11">
+          {{ previewError }}
+        </p>
+        <p v-else-if="!preview" class="text-sm text-n-slate-11">
+          {{ t('CONVERSATION.EXPORT_DATASET.PREVIEW.HINT') }}
+        </p>
+        <template v-else>
+          <p class="text-sm text-n-slate-12">
+            {{
+              t('CONVERSATION.EXPORT_DATASET.PREVIEW.SUMMARY', {
+                matching: preview.matching_count,
+                analyzed: preview.analyzed_count,
+                kept: preview.kept_count,
+              })
+            }}
+          </p>
+          <p
+            v-for="[reason, count] in droppedEntries"
+            :key="reason"
+            class="text-sm text-n-slate-11"
+          >
+            {{
+              t(
+                `CONVERSATION.EXPORT_DATASET.PREVIEW.DROPPED.${reason.toUpperCase()}`,
+                { count }
+              )
+            }}
+          </p>
+          <p v-if="!preview.kept_count" class="text-sm text-n-ruby-11">
+            {{ t('CONVERSATION.EXPORT_DATASET.PREVIEW.EMPTY') }}
+          </p>
+          <div
+            v-if="previewTurns.length"
+            class="flex flex-col gap-1 p-3 rounded-lg bg-n-alpha-black2 max-h-48 overflow-y-auto"
+          >
+            <p
+              v-for="(turn, index) in previewTurns"
+              :key="index"
+              class="text-sm text-n-slate-12"
+            >
+              <span class="font-medium text-n-slate-11">
+                {{ `${turn.role}:` }}
+              </span>
+              {{ turn.content }}
+            </p>
+          </div>
+        </template>
+      </div>
+
       <template v-if="isChatFormat">
         <Input
           v-model="form.evalRatio"

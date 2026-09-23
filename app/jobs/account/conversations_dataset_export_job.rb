@@ -2,8 +2,6 @@ class Account::ConversationsDatasetExportJob < ApplicationJob
   queue_as :low
 
   FORMATS = %w[chat_jsonl raw_json].freeze
-  MAX_CONVERSATIONS = 50_000
-  BATCH_SIZE = 200
   DEFAULT_EVAL_RATIO = 0.1
   SPLIT_SEED = 42
 
@@ -72,31 +70,12 @@ class Account::ConversationsDatasetExportJob < ApplicationJob
     (@options[:eval_ratio].presence || DEFAULT_EVAL_RATIO).to_f
   end
 
-  # Loads the selected conversations newest first, in batches, with everything the builder needs.
-  def each_conversation
-    ids = conversations.reorder(created_at: :desc).limit(limit).pluck(:id)
-    @stats[:conversations_read] = ids.size
-
-    ids.each_slice(BATCH_SIZE) do |batch_ids|
-      batch = Conversation.where(id: batch_ids)
-                          .preload(:inbox, :contact, :csat_survey_response, messages: [:sender, :attachments])
-                          .index_by(&:id)
-      batch_ids.each { |id| yield batch[id] }
-    end
+  def each_conversation(&)
+    @stats[:conversations_read] = selection.each_conversation(&)
   end
 
-  def conversations
-    return ::Conversations::FilterService.new(@params, @account_user, @account).filtered_conversations if @params[:payload].present?
-
-    scope = @account.conversations.where(status: @params[:status].presence || :resolved)
-    scope = scope.where(inbox_id: @params[:inbox_ids]) if @params[:inbox_ids].present?
-    scope = scope.where(created_at: @params[:since]..) if @params[:since].present?
-    scope = scope.where(created_at: ..@params[:until]) if @params[:until].present?
-    scope
-  end
-
-  def limit
-    [@params[:limit].presence&.to_i || MAX_CONVERSATIONS, MAX_CONVERSATIONS].min
+  def selection
+    @selection ||= Conversations::DatasetSelection.new(@account, @account_user, @params)
   end
 
   # Translated content (default system prompt) follows the dashboard language of the requesting user.

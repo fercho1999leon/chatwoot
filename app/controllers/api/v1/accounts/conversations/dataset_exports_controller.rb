@@ -8,6 +8,12 @@ class Api::V1::Accounts::Conversations::DatasetExportsController < Api::V1::Acco
     head :ok, message: I18n.t('errors.conversations.export_dataset.success')
   end
 
+  def preview
+    return render_could_not_create_error(I18n.t('errors.conversations.export_dataset.invalid_params')) unless valid_params?
+
+    render json: Conversations::DatasetPreview.new(Current.account, Current.user, export_params.with_indifferent_access).perform
+  end
+
   private
 
   def check_authorization
