@@ -11,8 +11,7 @@
       "NO_PHONE": "The contact has no valid phone number",
       "NO_TRUNK": "No SIP trunk configured (Settings → Inboxes → Telephony)",
       "AGENT_BUSY": "You already have a call in progress",
-      "PBX_DRAINING": "The phone system is under maintenance",
-      "DESTINATION_NOT_ALLOWED": "This destination is not allowed on the trunk (Settings → Inboxes → Telephony → Allowed destinations)"
+      "PBX_DRAINING": "The phone system is under maintenance"
     },
     "STATE": {
       "REQUESTED": "Starting call…",
@@ -109,8 +108,7 @@
       "ALREADY_IN_CALL": "That agent is already on this call",
       "SAME_USER": "You cannot call yourself",
       "TARGET_NO_ENDPOINT": "That agent has no SIP extension",
-      "REGISTRATION": "Softphone registration was lost",
-      "DESTINATION_NOT_ALLOWED": "This destination is not allowed on the trunk (Settings → Inboxes → Telephony → Allowed destinations)"
+      "REGISTRATION": "Softphone registration was lost"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "No Chatwoot open: softphone not connected"

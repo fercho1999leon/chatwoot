@@ -129,7 +129,7 @@ const registeredByExt = computed(() => {
 const loadTrunk = () => {
   const tconf = props.inbox.telephony || {};
   trunk.value = {
-    trunk_mode: tconf.trunk_mode || 'custom',
+    trunk_mode: tconf.trunk_mode || 'native',
     trunk_name: tconf.trunk_name || '',
     host: tconf.host || '',
     port: tconf.port || 5060,
@@ -144,9 +144,6 @@ const loadTrunk = () => {
     codecs: tconf.codecs || ['ulaw', 'alaw'],
     dtmf: tconf.dtmf || 'rfc4733',
     default_country: tconf.default_country || '',
-    dial_format: tconf.dial_format || 'e164',
-    dial_prefix: tconf.dial_prefix || '',
-    allowed_prefixes: tconf.allowed_prefixes || '',
     allowed_inbox_ids: tconf.allowed_inbox_ids || [],
   };
 };
@@ -314,8 +311,8 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
           "
         >
           {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TRUNK') }}:
-          <template v-if="status.trunk.mode === 'routes'">
-            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TRUNK_ROUTES') }}
+          <template v-if="!status.trunk.name">
+            {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.TRUNK_EXISTING') }}
           </template>
           <template v-else>
             {{ status.trunk.name }} · {{ status.trunk.endpoint_state || '—' }}

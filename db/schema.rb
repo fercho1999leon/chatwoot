@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_25_130000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_26_100000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -673,7 +673,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_25_130000) do
 
   create_table "channel_telephony", force: :cascade do |t|
     t.integer "account_id", null: false
-    t.string "trunk_mode", default: "custom", null: false
+    t.string "trunk_mode", default: "native", null: false
     t.string "trunk_name", default: "", null: false
     t.string "host", default: "", null: false
     t.integer "port", default: 5060, null: false
@@ -694,9 +694,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_25_130000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "dids", default: "", null: false
-    t.string "dial_format", default: "e164", null: false
-    t.string "dial_prefix", default: "", null: false
-    t.string "allowed_prefixes", default: "", null: false
     t.index ["account_id"], name: "index_channel_telephony_on_account_id", unique: true
   end
 

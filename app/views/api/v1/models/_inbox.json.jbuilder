@@ -156,12 +156,9 @@ if resource.telephony? && Current.account_user&.administrator?
     json.dtmf ch.dtmf
     json.register ch.register
     json.default_country ch.default_country
-    json.dial_format ch.dial_format
-    json.dial_prefix ch.dial_prefix
-    json.allowed_prefixes ch.allowed_prefixes
     json.sync_error ch.provision_error
     json.allowed_inbox_ids ch.allowed_inbox_ids
-    json.dial_trunk_name ch.dial_trunk_name
+    json.pbx_trunk_name ch.pbx_trunk_name
     json.configured ch.configured?
   end
 end

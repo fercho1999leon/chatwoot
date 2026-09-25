@@ -41,27 +41,28 @@ RSpec.describe Channel::Telephony do
     end
   end
 
-  describe 'dial policy' do
-    it 'validates the dial format, prefix, allowed destinations and caller ID' do
-      expect(build(:channel_telephony, account: account, dial_format: 'weird')).not_to be_valid
-      expect(build(:channel_telephony, account: account, dial_prefix: '9x')).not_to be_valid
-      expect(build(:channel_telephony, account: account, allowed_prefixes: '593; drop')).not_to be_valid
+  describe 'trunk modes' do
+    it 'accepts only native and existing, and validates the caller ID' do
+      expect(build(:channel_telephony, account: account, trunk_mode: 'custom')).not_to be_valid
       expect(build(:channel_telephony, account: account, caller_id: '+59398765432100000000000')).not_to be_valid
-      expect(build(:channel_telephony, account: account, dial_format: 'national', dial_prefix: '*77', allowed_prefixes: '593, 1')).to be_valid
+      expect(build(:channel_telephony, account: account, trunk_mode: 'existing', host: '')).to be_valid
     end
 
-    it 'derives the allowed destinations from the default country and sends them to the controller' do
-      channel = build(:channel_telephony, account: account, default_country: 'EC', dial_format: 'national', dial_prefix: '9')
-      expect(channel.destination_prefixes).to eq(['593'])
-      expect(channel.destination_allowed?('+593987654321')).to be(true)
-      expect(channel.destination_allowed?('+15551714097')).to be(false)
-      expect(channel.controller_payload).to include(dial_format: 'national', dial_prefix: '9', allowed_prefixes: ['593'])
-      expect(channel.controller_payload).not_to have_key(:max_call_seconds)
+    it 'names the native FreePBX trunk and sends the carrier data to the controller' do
+      native = build(:channel_telephony, account: account)
+      expect(native).to be_configured
+      expect(native.pbx_trunk_name).to eq("chatwoot-#{account.id}")
+      expect(native.controller_payload).to include(mode: 'native', host: 'sip.carrier.test')
+      expect(native.controller_payload.keys).not_to include(:max_call_seconds, :dial_format)
+    end
 
-      channel.allowed_prefixes = '*'
-      expect(channel.destination_allowed?('+15551714097')).to be(true)
-      channel.assign_attributes(allowed_prefixes: '', default_country: '')
-      expect(channel.destination_allowed?('+15551714097')).to be(true) # sin país: como antes, cualquiera
+    it 'references an existing FreePBX trunk by its optional name' do
+      existing = build(:channel_telephony, account: account, trunk_mode: 'existing', host: '', trunk_name: '')
+      expect(existing).to be_configured
+      expect(existing.pbx_trunk_name).to be_nil
+      existing.trunk_name = 'Claro'
+      expect(existing.pbx_trunk_name).to eq('Claro')
+      expect(build(:channel_telephony, account: account, host: '')).not_to be_configured
     end
   end
 

@@ -7,7 +7,7 @@ RSpec.describe 'Telephony inbox JSON visibility', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
   let!(:channel) do
     allow(Telephony::TrunkSyncJob).to receive(:perform_later)
-    create(:channel_telephony, account: account, dids: '59322000000', carrier_ips: ['203.0.113.10'], dial_format: 'national')
+    create(:channel_telephony, account: account, dids: '59322000000', carrier_ips: ['203.0.113.10'])
   end
 
   before { create(:inbox_member, inbox: channel.inbox, user: agent) }
@@ -19,7 +19,8 @@ RSpec.describe 'Telephony inbox JSON visibility', type: :request do
 
   it 'shows the trunk to administrators without the password' do
     telephony = inbox_json(admin)['telephony']
-    expect(telephony).to include('host' => 'sip.carrier.test', 'dids' => '59322000000', 'dial_format' => 'national', 'password' => '********')
+    expect(telephony).to include('host' => 'sip.carrier.test', 'dids' => '59322000000', 'trunk_mode' => 'native',
+                                 'pbx_trunk_name' => "chatwoot-#{account.id}", 'password' => '********')
     expect(telephony).not_to have_key('max_call_seconds')
   end
 

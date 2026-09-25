@@ -29,7 +29,7 @@ const {
 const editingPbx = ref(false);
 const channelName = ref('Telephony');
 const trunk = ref({
-  trunk_mode: 'custom',
+  trunk_mode: 'native',
   trunk_name: '',
   host: '',
   port: 5060,
@@ -44,19 +44,13 @@ const trunk = ref({
   codecs: ['ulaw', 'alaw'],
   dtmf: 'rfc4733',
   default_country: '',
-  dial_format: 'e164',
-  dial_prefix: '',
-  allowed_prefixes: '',
   allowed_inbox_ids: [],
 });
 const uiFlags = computed(() => store.getters['inboxes/getUIFlags']);
 const isValid = computed(
   () =>
     channelName.value.trim() &&
-    (trunk.value.trunk_mode === 'routes' ||
-      (trunk.value.trunk_mode === 'gui'
-        ? trunk.value.trunk_name
-        : trunk.value.host))
+    (trunk.value.trunk_mode === 'existing' || trunk.value.host)
 );
 
 const onSavePbx = async () => {

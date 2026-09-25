@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :channel_telephony, class: 'Channel::Telephony' do
     account
-    trunk_mode { 'custom' }
+    trunk_mode { 'native' }
     host { 'sip.carrier.test' }
     username { 'user' }
     password { 'secret' }

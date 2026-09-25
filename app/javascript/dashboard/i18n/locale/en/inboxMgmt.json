@@ -669,15 +669,14 @@
         },
         "TRUNK_MODE": {
           "LABEL": "Trunk",
-          "CUSTOM": "Configure here (Chatwoot provisions it in the PBX)",
-          "GUI": "Already exists in FreePBX (use its name)",
-          "ROUTES": "FreePBX outbound routes (one or more carriers)",
-          "ROUTES_HELP": "Calls leave through FreePBX's Outbound Routes (Connectivity → Outbound Routes): dial patterns, failover and several carriers are managed there. Chatwoot only needs the caller ID and your DIDs.",
-          "HELP": "Choose \"Configure here\" unless your trunks live in the FreePBX admin. With several carriers use \"FreePBX outbound routes\"."
+          "NATIVE": "Chatwoot creates it in FreePBX",
+          "EXISTING": "Already exists in FreePBX",
+          "HELP": "\"Chatwoot creates it in FreePBX\" adds a native FreePBX trunk (chatwoot-<account>) that you then see in Connectivity → Trunks and use in your Outbound Routes. Choose \"Already exists in FreePBX\" if the carrier trunks are managed in the FreePBX admin.",
+          "OUTBOUND_HELP": "Calls from Chatwoot leave through FreePBX's Outbound Routes (Connectivity → Outbound Routes) with the caller ID of the agent's extension: dial patterns, allowed destinations, number format and failover are configured there."
         },
         "TRUNK_NAME": {
           "LABEL": "FreePBX trunk name",
-          "HELP": "Exactly as shown in FreePBX → Connectivity → Trunks.",
+          "HELP": "Optional. Exactly as shown in FreePBX → Connectivity → Trunks, to show its registration status here.",
           "PLACEHOLDER": "Carrier"
         },
         "HOST": {
@@ -712,7 +711,8 @@
         },
         "CALLER_ID": {
           "LABEL": "Caller ID (number approved by the carrier)",
-          "PLACEHOLDER": "593999999999"
+          "PLACEHOLDER": "593999999999",
+          "HELP": "Outbound caller ID of the FreePBX trunk. FreePBX can override it per extension or route."
         },
         "DTMF": {
           "LABEL": "DTMF mode"
@@ -817,23 +817,7 @@
         "DIDS": {
           "LABEL": "Your numbers (DIDs) for incoming calls",
           "PLACEHOLDER": "593000000000, 593000000001",
-          "HELP": "Numbers the carrier delivers to this PBX, written the way the carrier sends them (+ and spaces are removed). Chatwoot creates the FreePBX Inbound Route of each one towards \"Chatwoot\" and removes it when you delete the number here. A number can only belong to one account."
-        },
-        "ALLOWED_PREFIXES": {
-          "LABEL": "Allowed destinations",
-          "PLACEHOLDER": "593",
-          "HELP": "Country or number prefixes agents can call through this trunk, comma-separated (e.g. 593, 1). Empty = only the default country; * = any destination. WhatsApp calls are not affected."
-        },
-        "DIAL_FORMAT": {
-          "LABEL": "Number format sent to the carrier",
-          "HELP": "How the destination is dialed on the trunk (and matched by FreePBX outbound routes).",
-          "E164": "International without + (593987654321)",
-          "E164_PLUS": "International with + (+593987654321)",
-          "NATIONAL": "National (0987654321)"
-        },
-        "DIAL_PREFIX": {
-          "LABEL": "Dial prefix",
-          "HELP": "Digits added in front of every number (technical prefix some carriers require). Leave empty if not needed."
+          "HELP": "Numbers the carrier delivers to this PBX, written the way the carrier sends them (+ and spaces are removed). They decide which account and inbox a call belongs to; where each one rings (IVR, queue, ring group, or the \"Chatwoot\" destination) is chosen in the FreePBX Inbound Route. A number can only belong to one account."
         }
       }
     },
@@ -1501,7 +1485,7 @@
           "CONNECTED": "connected",
           "DISCONNECTED": "disconnected",
           "TRUNK": "Trunk",
-          "TRUNK_ROUTES": "FreePBX outbound routes",
+          "TRUNK_EXISTING": "existing FreePBX trunk",
           "ACTIVE_CALLS": "Active calls: {count}",
           "PBX": "PBX",
           "NOT_CONFIGURED": "not configured",

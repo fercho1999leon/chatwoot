@@ -666,15 +666,14 @@
         },
         "TRUNK_MODE": {
           "LABEL": "Troncal",
-          "CUSTOM": "Configurar aquí (Chatwoot la provisiona en la PBX)",
-          "GUI": "Ya existe en FreePBX (usar su nombre)",
-          "ROUTES": "Rutas salientes de FreePBX (uno o varios operadores)",
-          "ROUTES_HELP": "Las llamadas salen por las Outbound Routes de FreePBX (Connectivity → Outbound Routes): los patrones de marcado, el failover y los distintos operadores se gestionan allí. Chatwoot solo necesita el identificador de llamada y tus DID.",
-          "HELP": "Elige \"Configurar aquí\" salvo que tus troncales vivan en el administrador de FreePBX. Con varios operadores usa \"Rutas salientes de FreePBX\"."
+          "NATIVE": "Chatwoot la crea en FreePBX",
+          "EXISTING": "Ya existe en FreePBX",
+          "HELP": "«Chatwoot la crea en FreePBX» añade una troncal nativa de FreePBX (chatwoot-<cuenta>) que luego ves en Connectivity → Trunks y usas en tus Outbound Routes. Elige «Ya existe en FreePBX» si las troncales del operador se administran en FreePBX.",
+          "OUTBOUND_HELP": "Las llamadas desde Chatwoot salen por las Outbound Routes de FreePBX (Connectivity → Outbound Routes) con el identificador de la extensión del agente: los patrones de marcado, los destinos permitidos, el formato del número y el failover se configuran allí."
         },
         "TRUNK_NAME": {
           "LABEL": "Nombre de la troncal en FreePBX",
-          "HELP": "Exactamente como aparece en FreePBX → Connectivity → Trunks.",
+          "HELP": "Opcional. Exactamente como aparece en FreePBX → Connectivity → Trunks, para mostrar aquí su estado de registro.",
           "PLACEHOLDER": "Operador"
         },
         "HOST": {
@@ -709,7 +708,8 @@
         },
         "CALLER_ID": {
           "LABEL": "Identificador de llamada (número aprobado por el operador)",
-          "PLACEHOLDER": "593999999999"
+          "PLACEHOLDER": "593999999999",
+          "HELP": "Caller ID de salida de la troncal en FreePBX. FreePBX puede sustituirlo por extensión o por ruta."
         },
         "DTMF": {
           "LABEL": "Modo DTMF"
@@ -814,23 +814,7 @@
         "DIDS": {
           "LABEL": "Tus números (DID) para llamadas entrantes",
           "PLACEHOLDER": "593000000000, 593000000001",
-          "HELP": "Números que el operador entrega a esta PBX, escritos como los envía el operador (se quitan el + y los espacios). Chatwoot crea la Inbound Route de FreePBX de cada uno hacia «Chatwoot» y la borra cuando quitas el número de aquí. Un número solo puede pertenecer a una cuenta."
-        },
-        "ALLOWED_PREFIXES": {
-          "LABEL": "Destinos permitidos",
-          "PLACEHOLDER": "593",
-          "HELP": "Prefijos de país o de número a los que los agentes pueden llamar por esta troncal, separados por comas (p. ej. 593, 1). Vacío = solo el país por defecto; * = cualquier destino. No afecta a las llamadas de WhatsApp."
-        },
-        "DIAL_FORMAT": {
-          "LABEL": "Formato del número hacia el operador",
-          "HELP": "Cómo se marca el destino en la troncal (y cómo lo ven las Outbound Routes de FreePBX).",
-          "E164": "Internacional sin + (593987654321)",
-          "E164_PLUS": "Internacional con + (+593987654321)",
-          "NATIONAL": "Nacional (0987654321)"
-        },
-        "DIAL_PREFIX": {
-          "LABEL": "Prefijo de marcado",
-          "HELP": "Dígitos que se anteponen a cada número (prefijo técnico que exigen algunos operadores). Déjalo vacío si no hace falta."
+          "HELP": "Números que el operador entrega a esta PBX, escritos como los envía el operador (se quitan el + y los espacios). Deciden a qué cuenta e inbox pertenece la llamada; dónde suena cada uno (IVR, cola, ring group o el destino «Chatwoot») se elige en la Inbound Route de FreePBX. Un número solo puede pertenecer a una cuenta."
         }
       }
     },
@@ -1345,7 +1329,7 @@
           "CONNECTED": "conectada",
           "DISCONNECTED": "desconectada",
           "TRUNK": "Troncal",
-          "TRUNK_ROUTES": "Rutas salientes de FreePBX",
+          "TRUNK_EXISTING": "troncal existente de FreePBX",
           "ACTIVE_CALLS": "Llamadas activas: {count}",
           "PBX": "PBX",
           "NOT_CONFIGURED": "sin configurar",

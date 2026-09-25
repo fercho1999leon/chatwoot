@@ -7,10 +7,7 @@
 #  auth_mode         :string           default("register"), not null
 #  carrier_ips       :jsonb            not null
 #  codecs            :jsonb            not null
-#  allowed_prefixes  :string           default(""), not null
 #  default_country   :string           default(""), not null
-#  dial_format       :string           default("e164"), not null
-#  dial_prefix       :string           default(""), not null
 #  dids              :string           default(""), not null
 #  dtmf              :string           default("rfc4733"), not null
 #  host              :string           default(""), not null
@@ -21,7 +18,7 @@
 #  provisioned_at    :datetime
 #  register          :boolean          default(TRUE), not null
 #  transport         :string           default("udp"), not null
-#  trunk_mode        :string           default("custom"), not null
+#  trunk_mode        :string           default("native"), not null
 #  trunk_name        :string           default(""), not null
 #  username          :string           default(""), not null
 #  created_at        :datetime         not null
@@ -36,31 +33,31 @@
 
 # Canal "Telephony (SIP)": la troncal de la cuenta, editable desde Settings → Inboxes.
 # Los colaboradores del inbox son los agentes con extensión (Telephony::Endpoint).
+# Modelo «Asterisk enruta, Chatwoot atiende»: FreePBX decide a quién suena cada llamada; esta troncal se crea como
+# troncal nativa de FreePBX (native) o referencia una que ya existe allí (existing). La saliente va siempre por las
+# Outbound Routes de FreePBX (sus patrones deciden formato y destinos permitidos). Los DIDs deciden el inbox.
 class Channel::Telephony < ApplicationRecord
   include Channelable
 
   self.table_name = 'channel_telephony'
   EDITABLE_ATTRS = [:trunk_mode, :trunk_name, :host, :port, :transport, :auth_mode, :username, :password, :caller_id, :dtmf, :register,
-                    :default_country, :dids, :dial_format, :dial_prefix, :allowed_prefixes,
+                    :default_country, :dids,
                     { carrier_ips: [], codecs: [], allowed_inbox_ids: [] }].freeze
   # max_call_seconds: el límite que se cumple es el de la conexión PBX (Telephony::Pbx).
   # provisioned_at: el estado de provisión lo da el controlador (GET telephony/status).
   self.ignored_columns += %w[max_call_seconds provisioned_at]
 
-  # custom: Chatwoot escribe la troncal; gui: troncal fija de FreePBX; routes: Outbound Routes de FreePBX (varios carriers)
-  TRUNK_MODES = %w[custom gui routes].freeze
+  # native: Chatwoot la crea en FreePBX (chatwoot-<account_id>); existing: ya existe en FreePBX (trunk_name opcional, para su estado)
+  TRUNK_MODES = %w[native existing].freeze
   TRANSPORTS = %w[udp tcp tls].freeze
   AUTH_MODES = %w[register ip].freeze
   CODECS = %w[ulaw alaw g722 opus g729 gsm].freeze
   DTMF_MODES = %w[rfc4733 inband info auto].freeze
   MASKED_PASSWORD = '********'.freeze
-  # Cómo se entrega el número al carrier: 593987654321 · +593987654321 · 0987654321 (nacional con default_country).
-  DIAL_FORMATS = %w[e164 e164_plus national].freeze
-  ANY_DESTINATION = '*'.freeze
 
   encrypts :password if Chatwoot.encryption_configured?
 
-  # Una troncal por cuenta: el controlador guarda una sola (trunk-<account_id>). Varios carriers → modo routes.
+  # Una troncal por cuenta: el controlador guarda una sola (chatwoot-<account_id>). Varios carriers → modo existing.
   validates :account_id, uniqueness: true
   validates :trunk_mode, inclusion: { in: TRUNK_MODES }
   # Usuario y contraseña terminan en pjsip.conf: un salto de línea permitiría inyectar secciones.
@@ -70,9 +67,6 @@ class Channel::Telephony < ApplicationRecord
   validates :auth_mode, inclusion: { in: AUTH_MODES }
   validates :dtmf, inclusion: { in: DTMF_MODES }
   validates :port, numericality: { only_integer: true, greater_than: 0, less_than: 65_536 }
-  validates :dial_format, inclusion: { in: DIAL_FORMATS }
-  validates :dial_prefix, format: { with: /\A[0-9*#]{0,8}\z/ }
-  validates :allowed_prefixes, format: { with: /\A(\*|[\d,\s]*)\z/ }
   validates :caller_id, format: { with: /\A\+?\d{0,20}\z/ }
   validates :host, format: { with: /\A[A-Za-z0-9.-]*\z/ }
   validates :dids, format: { with: /\A[\d+,\s]*\z/ }
@@ -89,39 +83,17 @@ class Channel::Telephony < ApplicationRecord
   end
 
   def configured?
-    case trunk_mode
-    when 'gui' then trunk_name.present?
-    when 'routes' then true
-    else host.present?
-    end
+    trunk_mode == 'existing' || host.present?
   end
 
-  # Nombre PJSIP con el que marca el controlador.
-  def dial_trunk_name
-    case trunk_mode
-    when 'gui' then trunk_name
-    when 'routes' then 'from-internal'
-    else "trunk-#{account_id}"
-    end
+  # Nombre de la troncal en FreePBX (para su estado); nil = existente sin nombre indicado.
+  def pbx_trunk_name
+    trunk_mode == 'native' ? "chatwoot-#{account_id}" : trunk_name.presence
   end
 
   # DIDs como los entrega el operador: solo dígitos, sin duplicados ("+593 22 000 000" → "59322000000").
   def did_list
     dids.to_s.split(',').map { |did| did.gsub(/\D/, '') }.compact_blank.uniq
-  end
-
-  # Prefijos E.164 a los que se puede llamar por esta troncal. Vacío = el país de default_country
-  # (sin país: cualquiera, como antes); '*' = cualquiera.
-  def destination_prefixes
-    return [] if allowed_prefixes.strip == ANY_DESTINATION
-
-    list = allowed_prefixes.split(',').map { |p| p.gsub(/\D/, '') }.compact_blank.uniq
-    list.presence || [Telephony::Did::COUNTRY_CODES[default_country.to_s.upcase]].compact
-  end
-
-  def destination_allowed?(e164)
-    prefixes = destination_prefixes
-    prefixes.empty? || prefixes.any? { |prefix| e164.to_s.delete('+').start_with?(prefix) }
   end
 
   # Un inbox puede llamar si la lista está vacía (todos) o lo incluye.
@@ -133,8 +105,7 @@ class Channel::Telephony < ApplicationRecord
     {
       account_id: account_id, mode: trunk_mode, trunk_name: trunk_name, host: host, port: port, transport: transport,
       auth: auth_mode, username: username, password: password, carrier_ips: carrier_ips, caller_id: caller_id,
-      codecs: codecs, dtmf: dtmf, register: register, default_country: default_country, dids: dids,
-      dial_format: dial_format, dial_prefix: dial_prefix, allowed_prefixes: destination_prefixes
+      codecs: codecs, dtmf: dtmf, register: register, default_country: default_country, dids: dids
     }
   end
 
@@ -143,7 +114,6 @@ class Channel::Telephony < ApplicationRecord
   def normalize
     normalize_lists
     self.dids = did_list.join(', ')
-    self.allowed_prefixes = allowed_prefixes.to_s.strip
     self.caller_id = caller_id.to_s.gsub(/[^0-9+]/, '')
     # La UI manda '********' para conservar la contraseña guardada.
     self.password = password_was.to_s if password == MASKED_PASSWORD

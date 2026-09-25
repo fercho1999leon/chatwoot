@@ -15,7 +15,6 @@ const TRANSPORTS = ['udp', 'tcp', 'tls'];
 const AUTH_MODES = ['register', 'ip'];
 const CODECS = ['ulaw', 'alaw', 'g722', 'opus', 'g729', 'gsm'];
 const DTMF = ['rfc4733', 'inband', 'info', 'auto'];
-const DIAL_FORMATS = ['e164', 'e164_plus', 'national'];
 
 const form = computed({
   get: () => props.modelValue,
@@ -41,9 +40,9 @@ const carrierIpsText = computed({
         .filter(Boolean)
     ),
 });
-const isGui = computed(() => form.value.trunk_mode === 'gui');
-const isRoutes = computed(() => form.value.trunk_mode === 'routes');
-const isCustom = computed(() => !isGui.value && !isRoutes.value);
+// native: Chatwoot crea la troncal en FreePBX; existing: ya existe allí (FreePBX la usa en sus Outbound Routes).
+const isExisting = computed(() => form.value.trunk_mode === 'existing');
+const isNative = computed(() => !isExisting.value);
 </script>
 
 <template>
@@ -54,14 +53,11 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
         :value="form.trunk_mode"
         @change="set('trunk_mode', $event.target.value)"
       >
-        <option value="custom">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.CUSTOM') }}
+        <option value="native">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.NATIVE') }}
         </option>
-        <option value="gui">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.GUI') }}
-        </option>
-        <option value="routes">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.ROUTES') }}
+        <option value="existing">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.EXISTING') }}
         </option>
       </select>
       <p class="help-text">
@@ -69,7 +65,7 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
       </p>
     </label>
 
-    <label v-if="isGui">
+    <label v-if="isExisting">
       {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_NAME.LABEL') }}
       <input
         :value="form.trunk_name"
@@ -82,11 +78,11 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
       </p>
     </label>
 
-    <p v-if="isRoutes" class="help-text">
-      {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.ROUTES_HELP') }}
+    <p class="help-text">
+      {{ t('INBOX_MGMT.ADD.TELEPHONY.TRUNK_MODE.OUTBOUND_HELP') }}
     </p>
 
-    <template v-if="isCustom">
+    <template v-if="isNative">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label class="md:col-span-2">
           {{ t('INBOX_MGMT.ADD.TELEPHONY.HOST.LABEL') }}
@@ -173,6 +169,18 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
             <option v-for="d in DTMF" :key="d" :value="d">{{ d }}</option>
           </select>
         </label>
+        <label>
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.LABEL') }}
+          <input
+            :value="form.caller_id"
+            type="text"
+            :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.PLACEHOLDER')"
+            @input="set('caller_id', $event.target.value)"
+          />
+          <p class="help-text">
+            {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.HELP') }}
+          </p>
+        </label>
       </div>
       <div>
         <span class="text-sm font-medium">{{
@@ -195,7 +203,7 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
       </div>
     </template>
 
-    <!-- Común a todos los modos: IPs del carrier (firewall de la PBX), entrantes (DIDs) y Caller ID saliente -->
+    <!-- Común a los dos modos: IPs del carrier (firewall de la PBX) y DIDs (a qué inbox va cada entrante) -->
     <label>
       {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.LABEL') }}
       <input
@@ -221,18 +229,6 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
         </p>
       </label>
       <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.LABEL') }}
-        <input
-          :value="form.caller_id"
-          type="text"
-          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CALLER_ID.PLACEHOLDER')"
-          @input="set('caller_id', $event.target.value)"
-        />
-      </label>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <label>
         {{ t('INBOX_MGMT.ADD.TELEPHONY.DEFAULT_COUNTRY.LABEL') }}
         <input
           :value="form.default_country"
@@ -245,52 +241,6 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
         />
         <p class="help-text">
           {{ t('INBOX_MGMT.ADD.TELEPHONY.DEFAULT_COUNTRY.HELP') }}
-        </p>
-      </label>
-      <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.LABEL') }}
-        <input
-          :value="form.allowed_prefixes"
-          type="text"
-          :placeholder="
-            t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.PLACEHOLDER')
-          "
-          @input="set('allowed_prefixes', $event.target.value)"
-        />
-        <p class="help-text">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.HELP') }}
-        </p>
-      </label>
-    </div>
-
-    <!-- Cómo se entrega el número al carrier (o a las Outbound Routes de FreePBX) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.LABEL') }}
-        <select
-          :value="form.dial_format || 'e164'"
-          @change="set('dial_format', $event.target.value)"
-        >
-          <option v-for="f in DIAL_FORMATS" :key="f" :value="f">
-            {{ t(`INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.${f.toUpperCase()}`) }}
-          </option>
-        </select>
-        <p class="help-text">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.HELP') }}
-        </p>
-      </label>
-      <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_PREFIX.LABEL') }}
-        <input
-          :value="form.dial_prefix"
-          type="text"
-          maxlength="8"
-          @input="
-            set('dial_prefix', $event.target.value.replace(/[^0-9*#]/g, ''))
-          "
-        />
-        <p class="help-text">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_PREFIX.HELP') }}
         </p>
       </label>
     </div>

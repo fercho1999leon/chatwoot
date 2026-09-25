@@ -16,7 +16,7 @@ RSpec.describe Telephony::TrunkSyncJob do
 
     described_class.perform_now(channel.id)
 
-    expect(client).to have_received(:upsert_trunk).with(hash_including(account_id: account.id, dial_format: 'e164'))
+    expect(client).to have_received(:upsert_trunk).with(hash_including(account_id: account.id, mode: 'native'))
     expect(channel.reload.provision_error).to be_nil
   end
 

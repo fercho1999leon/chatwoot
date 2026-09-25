@@ -70,9 +70,7 @@ class Telephony::CapabilityResolver
       'no_trunk' => whatsapp_sip? || telephony_channel&.configured?,
       'inbox_not_enabled' => inbox_enabled?,
       'no_endpoint' => endpoint.present?,
-      'no_phone' => destination.present?,
-      # Por la troncal del carrier solo se marcan los prefijos permitidos; WhatsApp no pasa por el carrier.
-      'destination_not_allowed' => whatsapp_sip? || telephony_channel&.destination_allowed?(destination) || false
+      'no_phone' => destination.present?
     }
   end
 
