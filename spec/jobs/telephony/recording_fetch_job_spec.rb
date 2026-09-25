@@ -25,6 +25,19 @@ RSpec.describe Telephony::RecordingFetchJob do
     expect(client).to have_received(:delete_recording).with(projection.external_call_id)
   end
 
+  it 'keeps the format of a FreePBX recording (mp3) in the attachment name' do
+    allow(client).to receive(:download_recording) do |_id, to:|
+      File.binwrite(to, 'ID3')
+      'audio/mpeg'
+    end
+    allow(client).to receive(:delete_recording)
+
+    described_class.perform_now(projection.id)
+
+    expect(projection.reload.recording.filename.to_s).to end_with('.mp3')
+    expect(projection.recording.content_type).to eq('audio/mpeg')
+  end
+
   it 'marks missing (terminal) when the controller answers 404 instead of retrying' do
     allow(client).to receive(:download_recording).and_raise(Telephony::ControllerClient::Error.new(404, 'no_recording'))
 

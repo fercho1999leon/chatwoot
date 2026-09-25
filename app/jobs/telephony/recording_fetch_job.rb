@@ -42,11 +42,14 @@ class Telephony::RecordingFetchJob < ApplicationJob
     projection.update!(recording_state: 'fetched') unless projection.recording_state == 'fetched'
   end
 
+  # Las grabaciones de FreePBX (llamadas que enruta él) pueden venir en mp3 u ogg según su ajuste de formato.
+  EXTENSIONS = { 'audio/mpeg' => '.mp3', 'audio/ogg' => '.ogg' }.freeze
+
   def attach!(projection)
-    Tempfile.create(['telephony-recording', '.wav']) do |tmp|
-      content_type = Telephony::ControllerClient.new.download_recording(projection.external_call_id, to: tmp.path)
-      projection.recording.attach(io: File.open(tmp.path), filename: "call-#{projection.external_call_id[0, 8]}.wav",
-                                  content_type: content_type.presence || 'audio/wav')
+    Tempfile.create(['telephony-recording', '.audio']) do |tmp|
+      content_type = Telephony::ControllerClient.new.download_recording(projection.external_call_id, to: tmp.path).presence || 'audio/wav'
+      filename = "call-#{projection.external_call_id[0, 8]}#{EXTENSIONS.fetch(content_type, '.wav')}"
+      projection.recording.attach(io: File.open(tmp.path), filename: filename, content_type: content_type)
     end
     # Rebroadcast the card so the player appears without a refetch.
     projection.message&.touch # rubocop:disable Rails/SkipsModelValidations
