@@ -41,6 +41,30 @@ RSpec.describe Channel::Telephony do
     end
   end
 
+  describe 'dial policy' do
+    it 'validates the dial format, prefix, allowed destinations and caller ID' do
+      expect(build(:channel_telephony, account: account, dial_format: 'weird')).not_to be_valid
+      expect(build(:channel_telephony, account: account, dial_prefix: '9x')).not_to be_valid
+      expect(build(:channel_telephony, account: account, allowed_prefixes: '593; drop')).not_to be_valid
+      expect(build(:channel_telephony, account: account, caller_id: '+59398765432100000000000')).not_to be_valid
+      expect(build(:channel_telephony, account: account, dial_format: 'national', dial_prefix: '*77', allowed_prefixes: '593, 1')).to be_valid
+    end
+
+    it 'derives the allowed destinations from the default country and sends them to the controller' do
+      channel = build(:channel_telephony, account: account, default_country: 'EC', dial_format: 'national', dial_prefix: '9')
+      expect(channel.destination_prefixes).to eq(['593'])
+      expect(channel.destination_allowed?('+593987654321')).to be(true)
+      expect(channel.destination_allowed?('+15551714097')).to be(false)
+      expect(channel.controller_payload).to include(dial_format: 'national', dial_prefix: '9', allowed_prefixes: ['593'])
+      expect(channel.controller_payload).not_to have_key(:max_call_seconds)
+
+      channel.allowed_prefixes = '*'
+      expect(channel.destination_allowed?('+15551714097')).to be(true)
+      channel.assign_attributes(allowed_prefixes: '', default_country: '')
+      expect(channel.destination_allowed?('+15551714097')).to be(true) # sin país: como antes, cualquiera
+    end
+  end
+
   describe 'removal' do
     it 'asks the controller to retire the trunk when the channel is destroyed' do
       channel = create(:channel_telephony, account: account)

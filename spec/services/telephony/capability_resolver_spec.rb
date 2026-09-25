@@ -51,6 +51,25 @@ RSpec.describe Telephony::CapabilityResolver do
       expect(resolver.resolve).to include(enabled: false, reason: 'inbox_not_enabled')
     end
 
+    it 'blocks carrier destinations outside the allowed prefixes (default: the trunk country)' do
+      account.telephony_channels.first.update!(default_country: 'EC', allowed_prefixes: '')
+      expect(resolve[:reason]).to be_nil
+
+      contact.update!(phone_number: '+15551714097')
+      expect(resolve).to include(can_call: false, reason: 'destination_not_allowed')
+
+      account.telephony_channels.first.update!(allowed_prefixes: '593, 1')
+      expect(resolve[:reason]).to be_nil
+      account.telephony_channels.first.update!(allowed_prefixes: '*')
+      contact.update!(phone_number: '+447911123456')
+      expect(resolve[:reason]).to be_nil
+    end
+
+    it 'reports the max call duration enforced by the PBX connection' do
+      account.telephony_pbx.update!(max_call_seconds: 1800)
+      expect(resolve[:max_call_seconds]).to eq(1800)
+    end
+
     it 'blocks contacts without a phone number' do
       contact.update!(phone_number: nil)
 

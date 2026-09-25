@@ -11,7 +11,8 @@
       "NO_PHONE": "El contacto no tiene un número de teléfono válido",
       "NO_TRUNK": "No hay troncal SIP configurada (Ajustes → Inboxes → Telefonía)",
       "AGENT_BUSY": "Ya tienes una llamada en curso",
-      "PBX_DRAINING": "El sistema telefónico está en mantenimiento"
+      "PBX_DRAINING": "El sistema telefónico está en mantenimiento",
+      "DESTINATION_NOT_ALLOWED": "Este destino no está permitido en la troncal (Ajustes → Inboxes → Telefonía → Destinos permitidos)"
     },
     "STATE": {
       "REQUESTED": "Iniciando llamada…",
@@ -108,7 +109,8 @@
       "ALREADY_IN_CALL": "Ese agente ya está en esta llamada",
       "SAME_USER": "No puedes llamarte a ti mismo",
       "TARGET_NO_ENDPOINT": "Ese agente no tiene extensión SIP",
-      "REGISTRATION": "Se perdió el registro del softphone"
+      "REGISTRATION": "Se perdió el registro del softphone",
+      "DESTINATION_NOT_ALLOWED": "Este destino no está permitido en la troncal (Ajustes → Inboxes → Telefonía → Destinos permitidos)"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "Sin Chatwoot abierto: softphone no conectado"

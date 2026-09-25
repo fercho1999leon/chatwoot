@@ -15,6 +15,7 @@ const TRANSPORTS = ['udp', 'tcp', 'tls'];
 const AUTH_MODES = ['register', 'ip'];
 const CODECS = ['ulaw', 'alaw', 'g722', 'opus', 'g729', 'gsm'];
 const DTMF = ['rfc4733', 'inband', 'info', 'auto'];
+const DIAL_FORMATS = ['e164', 'e164_plus', 'national'];
 
 const form = computed({
   get: () => props.modelValue,
@@ -247,14 +248,50 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
         </p>
       </label>
       <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.MAX_CALL_SECONDS.LABEL') }}
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.LABEL') }}
         <input
-          :value="form.max_call_seconds"
-          type="number"
-          min="60"
-          max="14400"
-          @input="set('max_call_seconds', Number($event.target.value))"
+          :value="form.allowed_prefixes"
+          type="text"
+          :placeholder="
+            t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.PLACEHOLDER')
+          "
+          @input="set('allowed_prefixes', $event.target.value)"
         />
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.ALLOWED_PREFIXES.HELP') }}
+        </p>
+      </label>
+    </div>
+
+    <!-- Cómo se entrega el número al carrier (o a las Outbound Routes de FreePBX) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.LABEL') }}
+        <select
+          :value="form.dial_format || 'e164'"
+          @change="set('dial_format', $event.target.value)"
+        >
+          <option v-for="f in DIAL_FORMATS" :key="f" :value="f">
+            {{ t(`INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.${f.toUpperCase()}`) }}
+          </option>
+        </select>
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_FORMAT.HELP') }}
+        </p>
+      </label>
+      <label>
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_PREFIX.LABEL') }}
+        <input
+          :value="form.dial_prefix"
+          type="text"
+          maxlength="8"
+          @input="
+            set('dial_prefix', $event.target.value.replace(/[^0-9*#]/g, ''))
+          "
+        />
+        <p class="help-text">
+          {{ t('INBOX_MGMT.ADD.TELEPHONY.DIAL_PREFIX.HELP') }}
+        </p>
       </label>
     </div>
 

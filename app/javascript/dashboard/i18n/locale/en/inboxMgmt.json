@@ -725,9 +725,6 @@
           "HELP": "Used to normalize local numbers (e.g. EC → 09… becomes +5939…). Empty = only E.164.",
           "PLACEHOLDER": "EC"
         },
-        "MAX_CALL_SECONDS": {
-          "LABEL": "Maximum call duration (seconds)"
-        },
         "ALLOWED_INBOXES": {
           "LABEL": "Allow calling from these inboxes",
           "HELP": "None selected = all inboxes of the account."
@@ -821,6 +818,22 @@
           "LABEL": "Your numbers (DIDs) for incoming calls",
           "PLACEHOLDER": "593000000000, 593000000001",
           "HELP": "Numbers the carrier delivers to this PBX, written the way the carrier sends them (+ and spaces are removed). Chatwoot creates the FreePBX Inbound Route of each one towards \"Chatwoot\" and removes it when you delete the number here. A number can only belong to one account."
+        },
+        "ALLOWED_PREFIXES": {
+          "LABEL": "Allowed destinations",
+          "PLACEHOLDER": "593",
+          "HELP": "Country or number prefixes agents can call through this trunk, comma-separated (e.g. 593, 1). Empty = only the default country; * = any destination. WhatsApp calls are not affected."
+        },
+        "DIAL_FORMAT": {
+          "LABEL": "Number format sent to the carrier",
+          "HELP": "How the destination is dialed on the trunk (and matched by FreePBX outbound routes).",
+          "E164": "International without + (593987654321)",
+          "E164_PLUS": "International with + (+593987654321)",
+          "NATIONAL": "National (0987654321)"
+        },
+        "DIAL_PREFIX": {
+          "LABEL": "Dial prefix",
+          "HELP": "Digits added in front of every number (technical prefix some carriers require). Leave empty if not needed."
         }
       }
     },
@@ -1494,7 +1507,8 @@
           "NOT_CONFIGURED": "not configured",
           "TEST_MODE": "Test mode (echo)",
           "PROVISIONING": "Applying on the PBX…",
-          "REGISTRATIONS": "FreePBX trunks"
+          "REGISTRATIONS": "FreePBX trunks",
+          "SYNC_ERROR": "The telephony service rejected the trunk: {error}"
         },
         "HEALTH": {
           "TITLE": "Health",

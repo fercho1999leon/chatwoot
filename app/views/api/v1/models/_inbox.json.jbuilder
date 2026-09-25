@@ -137,8 +137,8 @@ end
 
 json.provider resource.channel.try(:provider)
 
-## Telephony (SIP) Channel Attributes
-if resource.telephony?
+## Telephony (SIP) Channel Attributes — carrier data only for administrators (the call button uses capabilities)
+if resource.telephony? && Current.account_user&.administrator?
   json.telephony do
     ch = resource.channel
     json.trunk_mode ch.trunk_mode
@@ -156,12 +156,13 @@ if resource.telephony?
     json.dtmf ch.dtmf
     json.register ch.register
     json.default_country ch.default_country
-    json.max_call_seconds ch.max_call_seconds
+    json.dial_format ch.dial_format
+    json.dial_prefix ch.dial_prefix
+    json.allowed_prefixes ch.allowed_prefixes
+    json.sync_error ch.provision_error
     json.allowed_inbox_ids ch.allowed_inbox_ids
     json.dial_trunk_name ch.dial_trunk_name
     json.configured ch.configured?
-    json.provisioned_at ch.provisioned_at
-    json.provision_error ch.provision_error
   end
 end
 

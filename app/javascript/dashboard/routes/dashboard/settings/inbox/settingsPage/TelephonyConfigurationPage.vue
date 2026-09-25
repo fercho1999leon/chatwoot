@@ -144,7 +144,9 @@ const loadTrunk = () => {
     codecs: tconf.codecs || ['ulaw', 'alaw'],
     dtmf: tconf.dtmf || 'rfc4733',
     default_country: tconf.default_country || '',
-    max_call_seconds: tconf.max_call_seconds || 3600,
+    dial_format: tconf.dial_format || 'e164',
+    dial_prefix: tconf.dial_prefix || '',
+    allowed_prefixes: tconf.allowed_prefixes || '',
     allowed_inbox_ids: tconf.allowed_inbox_ids || [],
   };
 };
@@ -338,6 +340,13 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
         <span v-if="status?.trunk?.provision_error" class="text-n-ruby-11">{{
           status.trunk.provision_error
         }}</span>
+        <span v-if="inbox.telephony?.sync_error" class="text-n-ruby-11">
+          {{
+            t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.SYNC_ERROR', {
+              error: inbox.telephony.sync_error,
+            })
+          }}
+        </span>
         <span v-if="status?.active_calls != null" class="text-n-slate-11">{{
           t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.ACTIVE_CALLS', {
             count: status.active_calls,

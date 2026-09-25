@@ -44,7 +44,9 @@ const trunk = ref({
   codecs: ['ulaw', 'alaw'],
   dtmf: 'rfc4733',
   default_country: '',
-  max_call_seconds: 3600,
+  dial_format: 'e164',
+  dial_prefix: '',
+  allowed_prefixes: '',
   allowed_inbox_ids: [],
 });
 const uiFlags = computed(() => store.getters['inboxes/getUIFlags']);
