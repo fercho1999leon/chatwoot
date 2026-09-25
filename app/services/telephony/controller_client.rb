@@ -81,6 +81,11 @@ class Telephony::ControllerClient
     get('/internal/ivrs', account_id: account_id)
   end
 
+  # Extensiones, colas y ring groups de FreePBX: destinos de una transferencia por REFER desde el softphone.
+  def transfer_targets(account_id:)
+    get('/internal/transfer_targets', account_id: account_id)
+  end
+
   # Descarga (streaming a un archivo temporal) la grabación almacenada en la PBX.
   def download_recording(id, to:)
     raise Error.new(503, 'not_configured') unless self.class.configured?

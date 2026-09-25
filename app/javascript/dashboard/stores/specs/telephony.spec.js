@@ -320,4 +320,50 @@ describe('telephony store', () => {
       expect(store.audioConnected).toBe(true);
     });
   });
+
+  describe('calls routed by FreePBX', () => {
+    const observed = (overrides = {}) =>
+      joinedCall({
+        source: 'pbx',
+        user_id: ME,
+        participants: [],
+        ...overrides,
+      });
+
+    it('never asks to reconnect audio for them (FreePBX decides who rings)', () => {
+      store.audioConnected = false;
+      store.activeCall = observed();
+      expect(store.needsReinvite).toBe(false);
+
+      store.activeCall = observed({ source: 'controller' });
+      expect(store.needsReinvite).toBe(true);
+    });
+
+    it('treats a FreePBX leg as incoming before the controller announces the call', () => {
+      store.activeCall = null;
+      store.audioConnected = false;
+      store.hasInvitation = true;
+      store.setPbxSession({ remote_number: '0987654321', answered: false });
+
+      expect(store.isIncoming).toBe(true);
+      expect(store.isPbxCall).toBe(true);
+      expect(store.showWidget).toBe(true);
+
+      store.setPbxSession({ answered: true, on_hold: true });
+      store.hasInvitation = false;
+      store.audioConnected = true;
+      expect(store.isIncoming).toBe(false);
+      expect(store.isOnHold).toBe(true);
+      expect(store.pbxSession.remote_number).toBe('0987654321');
+    });
+
+    it('keeps SIP controls for a FreePBX leg instead of calling it orphaned audio', () => {
+      store.activeCall = null;
+      store.setPbxSession({ answered: true });
+
+      expect(store.hasOrphanAudio).toBe(false);
+      store.setPbxSession(null);
+      expect(store.hasOrphanAudio).toBe(true);
+    });
+  });
 });

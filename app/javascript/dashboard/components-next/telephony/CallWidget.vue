@@ -14,6 +14,7 @@ import { useSipSession } from 'dashboard/composables/useSipSession';
 import { useRingtone } from 'dashboard/composables/useRingtone';
 import { useCallNotification } from 'dashboard/composables/useCallNotification';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
 import TelephonyAPI from 'dashboard/api/telephony';
 
 const { t } = useI18n();
@@ -21,7 +22,15 @@ const router = useRouter();
 const vuexStore = useStore();
 const store = useTelephonyStore();
 const { accountId } = useAccount();
-const { acceptInvitation, setMuted, hangupLocal, connect } = useSipSession();
+const {
+  acceptInvitation,
+  setMuted,
+  hangupLocal,
+  connect,
+  setHold,
+  sendDtmf,
+  transfer: referTo,
+} = useSipSession();
 const ringtone = useRingtone();
 const callNotification = useCallNotification();
 
@@ -36,6 +45,14 @@ const transferLoading = ref(false);
 const addingMember = ref(null);
 const isWorking = ref(false);
 const seconds = ref(0);
+// Transfer of a FreePBX-routed call (REFER): extensions, queues and ring groups of the PBX, or any number.
+const pbxTargets = ref({ extensions: [], queues: [], ringgroups: [] });
+const pbxTransferNumber = ref('');
+const pbxTargetGroups = computed(() => [
+  { key: 'queues', label: t('TELEPHONY.WIDGET.PBX_QUEUES') },
+  { key: 'ringgroups', label: t('TELEPHONY.WIDGET.PBX_RING_GROUPS') },
+  { key: 'extensions', label: t('TELEPHONY.WIDGET.PBX_EXTENSIONS') },
+]);
 let timer = null;
 
 const call = computed(() => store.activeCall || store.lastEndedCall);
@@ -43,8 +60,17 @@ const state = computed(() => call.value?.state);
 // Another tab of this agent holds the softphone: audio buttons here would ring that tab.
 const isStandby = computed(() => store.sipStatus === SIP_STATUS.STANDBY);
 // Mute/keypad/hold/transfer only make sense with audio up; while reconnecting the row shows Reconnect.
+// A FreePBX-routed leg in this tab: its controls are SIP (hold, REFER, DTMF), not the controller API.
+const isPbx = computed(() => store.isPbxCall);
 const hasAudioControls = computed(
-  () => store.isAnswered && store.audioConnected && !isStandby.value
+  () =>
+    (store.isAnswered || isPbx.value) &&
+    store.audioConnected &&
+    !isStandby.value
+);
+// Keypad, hold and transfer: the owner of a controller call, or whoever holds a FreePBX leg.
+const canControl = computed(
+  () => hasAudioControls.value && (store.isOwner || isPbx.value)
 );
 // A SIP leg is up or ringing in this tab: Hang up must always be reachable.
 const sessionLive = computed(() => store.audioConnected || store.hasInvitation);
@@ -83,11 +109,24 @@ const title = computed(() => {
   if (store.sipStatus === SIP_STATUS.CONNECTING)
     return t('TELEPHONY.WIDGET.SIP_CONNECTING');
   if (store.hasInvitation) return t('TELEPHONY.WIDGET.INVITATION');
+  if (!state.value && isPbx.value)
+    return store.isOnHold
+      ? t('TELEPHONY.WIDGET.ON_HOLD')
+      : t('TELEPHONY.STATE.ANSWERED');
   if (!state.value) return '';
   return t(`TELEPHONY.STATE.${state.value.toUpperCase()}`);
 });
 
+const pbxCaller = computed(() =>
+  [store.pbxSession?.remote_name, store.pbxSession?.remote_number]
+    .filter(Boolean)
+    .filter((v, i, all) => all.indexOf(v) === i)
+    .join(' · ')
+);
+
 const subtitle = computed(() => {
+  // FreePBX rang us before (or without) the controller announcing the call: show who is calling.
+  if (!call.value && isPbx.value) return pbxCaller.value;
   if (store.isMissedInbound) {
     return [call.value?.contact_name, call.value?.destination_masked]
       .filter(Boolean)
@@ -218,6 +257,11 @@ const onDecline = () => {
 // controller would log an `agent_dropped` (30 s grace + hold music) for a deliberate hangup.
 // Orphaned audio has no call to act on and just closes the card.
 const onHangup = async () => {
+  // FreePBX-routed leg: a local BYE is the hang up; the controller sees the leg go down.
+  if (isPbx.value) {
+    hangupLocal();
+    return;
+  }
   isWorking.value = true;
   const orphan = store.hasOrphanAudio;
   // Never leave the agent listening while a slow controller answers: local BYE after 1.5 s at most.
@@ -240,7 +284,8 @@ const onToggleMute = () => setMuted(!store.isMuted);
 const onToggleHold = async () => {
   isWorking.value = true;
   try {
-    await store.toggleHold();
+    if (isPbx.value) await setHold(!store.isOnHold);
+    else await store.toggleHold();
   } catch (e) {
     // 409 si no está contestada
   } finally {
@@ -254,6 +299,16 @@ const openTransfer = async (mode = 'transfer') => {
   showTransfer.value = reopen;
   if (!showTransfer.value) return;
   transferLoading.value = true;
+  if (isPbx.value) {
+    try {
+      pbxTargets.value = await TelephonyAPI.transferTargets();
+    } catch (e) {
+      pbxTargets.value = { extensions: [], queues: [], ringgroups: [] };
+    } finally {
+      transferLoading.value = false;
+    }
+    return;
+  }
   try {
     const data = await TelephonyAPI.agents(call.value?.conversation_display_id);
     transferAgents.value = data.agents;
@@ -328,6 +383,21 @@ const onTransfer = async userId => {
   }
 };
 
+// Blind transfer of a FreePBX-routed call: FreePBX takes it to the target and hangs up our leg.
+const onPbxTransfer = async number => {
+  if (!number) return;
+  isWorking.value = true;
+  try {
+    await referTo(number);
+    showTransfer.value = false;
+    pbxTransferNumber.value = '';
+  } catch (error) {
+    useAlert(t('TELEPHONY.ERROR.TRANSFER_FAILED'));
+  } finally {
+    isWorking.value = false;
+  }
+};
+
 const onPick = userId =>
   pickerMode.value === 'add' ? onAddAgent(userId) : onTransfer(userId);
 
@@ -342,7 +412,8 @@ const onCancelTransfer = async () => {
 
 const onDtmf = async digit => {
   try {
-    await store.sendDtmf(digit);
+    if (isPbx.value) sendDtmf(digit);
+    else await store.sendDtmf(digit);
   } catch (e) {
     // 409 when not answered: keypad is only shown in answered state
   }
@@ -431,7 +502,61 @@ onBeforeUnmount(stopTimer);
       </span>
     </div>
 
-    <div v-if="showTransfer && store.isAnswered" class="flex flex-col gap-1">
+    <div
+      v-if="showTransfer && isPbx && hasAudioControls"
+      class="flex flex-col gap-1 max-h-64 overflow-y-auto"
+    >
+      <p class="text-xs text-n-slate-11">
+        {{ t('TELEPHONY.WIDGET.TRANSFER_TO') }}
+      </p>
+      <form
+        class="flex items-center gap-1"
+        @submit.prevent="onPbxTransfer(pbxTransferNumber)"
+      >
+        <Input
+          v-model="pbxTransferNumber"
+          size="sm"
+          class="flex-1"
+          :placeholder="t('TELEPHONY.WIDGET.PBX_TRANSFER_NUMBER')"
+        />
+        <NextButton
+          sm
+          solid
+          blue
+          type="submit"
+          icon="i-lucide-phone-forwarded"
+          :disabled="!pbxTransferNumber"
+          :is-loading="isWorking"
+        />
+      </form>
+      <p v-if="transferLoading" class="text-xs text-n-slate-11">
+        {{ t('TELEPHONY.WIDGET.LOADING') }}
+      </p>
+      <template v-else>
+        <template v-for="group in pbxTargetGroups" :key="group.key">
+          <template v-if="pbxTargets[group.key]?.length">
+            <p class="text-xs font-medium text-n-slate-11 mt-1">
+              {{ group.label }}
+            </p>
+            <NextButton
+              v-for="target in pbxTargets[group.key]"
+              :key="`${group.key}-${target.number}`"
+              sm
+              faded
+              slate
+              class="w-full"
+              :label="`${target.name || target.number} (${target.number})`"
+              @click="onPbxTransfer(target.number)"
+            />
+          </template>
+        </template>
+      </template>
+    </div>
+
+    <div
+      v-if="showTransfer && store.isAnswered && !isPbx"
+      class="flex flex-col gap-1"
+    >
       <p class="text-xs text-n-slate-11">
         {{
           pickerMode === 'add'
@@ -506,7 +631,7 @@ onBeforeUnmount(stopTimer);
       />
     </div>
 
-    <div v-if="showKeypad && store.isAnswered" class="grid grid-cols-3 gap-1">
+    <div v-if="showKeypad && canControl" class="grid grid-cols-3 gap-1">
       <NextButton
         v-for="digit in DTMF_KEYS"
         :key="digit"
@@ -579,7 +704,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleMute"
         />
         <NextButton
-          v-if="hasAudioControls && store.isOwner"
+          v-if="canControl"
           sm
           ghost
           slate
@@ -587,7 +712,7 @@ onBeforeUnmount(stopTimer);
           @click="showKeypad = !showKeypad"
         />
         <NextButton
-          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
+          v-if="canControl && !store.isTransferring"
           sm
           ghost
           slate
@@ -596,7 +721,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleHold"
         />
         <NextButton
-          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
+          v-if="canControl && !store.isTransferring"
           v-tooltip="t('TELEPHONY.WIDGET.TRANSFER')"
           sm
           ghost
@@ -605,7 +730,9 @@ onBeforeUnmount(stopTimer);
           @click="openTransfer('transfer')"
         />
         <NextButton
-          v-if="hasAudioControls && store.isOwner && !store.isTransferring"
+          v-if="
+            hasAudioControls && store.isOwner && !isPbx && !store.isTransferring
+          "
           v-tooltip="t('TELEPHONY.WIDGET.ADD_AGENT')"
           sm
           ghost
@@ -625,7 +752,7 @@ onBeforeUnmount(stopTimer);
         />
         <NextButton
           v-if="
-            (store.hasActiveCall || sessionLive) &&
+            (store.hasActiveCall || sessionLive || isPbx) &&
             !store.isIncoming &&
             !store.isParticipant
           "

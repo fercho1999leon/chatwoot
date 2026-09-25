@@ -47,6 +47,10 @@ export const useTelephonyStore = defineStore('telephony', {
     // (participant dropped from the snapshot, lost event…): keep the card so Hang up is reachable.
     orphanAudio: false,
     isMuted: false,
+    // SIP leg that FreePBX sent to this agent's extension (a call it routes: queue, ring group, IVR, transfer).
+    // No X-Chatwoot-Call-Id header: it is controlled over SIP (re-INVITE hold, REFER, RFC 4733 DTMF), not the API.
+    // { remote_number, remote_name, answered, on_hold }
+    pbxSession: null,
     isCreating: false,
     idempotencyKey: null,
   }),
@@ -55,14 +59,19 @@ export const useTelephonyStore = defineStore('telephony', {
     hasActiveCall: state =>
       !!state.activeCall && state.activeCall.state !== TELEPHONY_STATES.ENDED,
     isAnswered: state => state.activeCall?.state === TELEPHONY_STATES.ANSWERED,
-    isOnHold: state => !!state.activeCall?.on_hold,
+    isOnHold: state =>
+      !!state.activeCall?.on_hold || !!state.pbxSession?.on_hold,
+    // This tab's audio is a FreePBX-routed leg: SIP controls instead of the controller API.
+    isPbxCall: state => !!state.pbxSession,
     isTransferring: state => state.activeCall?.transfer_state === 'ringing',
     // Inbound call that ended without this agent (or anyone) answering it
     // Live call but this tab has no SIP leg (page reload / network drop)
+    // Calls routed by FreePBX cannot be re-invited: FreePBX decides who rings.
     needsReinvite() {
       return (
         !!this.activeCall &&
         this.activeCall.state !== TELEPHONY_STATES.ENDED &&
+        this.activeCall.source !== 'pbx' &&
         !this.hasInvitation &&
         !this.audioConnected &&
         !this.isIncoming
@@ -76,7 +85,11 @@ export const useTelephonyStore = defineStore('telephony', {
     // The callee of an internal call is "incoming" from creation (the caller's audio is still connecting).
     isIncoming() {
       const call = this.activeCall;
-      if (!call || call.state === TELEPHONY_STATES.ENDED) return false;
+      // FreePBX rings us before (or without) the controller announcing the call.
+      if (!call || call.state === TELEPHONY_STATES.ENDED)
+        return (
+          !!this.pbxSession && !this.pbxSession.answered && this.hasInvitation
+        );
       if (call.user_id === this.currentUserId) return false;
       if ((call.participants || []).includes(this.currentUserId)) return false;
       if (this.isInternalPeer) return call.state !== TELEPHONY_STATES.ANSWERED;
@@ -90,8 +103,13 @@ export const useTelephonyStore = defineStore('telephony', {
     isOwner: state =>
       !!state.activeCall && state.activeCall.user_id === state.currentUserId,
     // Audio without a call to control it: the widget offers Hang up only.
+    // A FreePBX-routed leg is never orphaned: it keeps its SIP controls until its own BYE.
     hasOrphanAudio() {
-      return this.audioConnected && (!this.hasActiveCall || this.orphanAudio);
+      return (
+        this.audioConnected &&
+        !this.pbxSession &&
+        (!this.hasActiveCall || this.orphanAudio)
+      );
     },
     // Callee of an internal call: a peer (can hang up), not a conference participant
     isInternalPeer: state =>
@@ -102,6 +120,7 @@ export const useTelephonyStore = defineStore('telephony', {
       return (
         this.hasActiveCall ||
         this.hasInvitation ||
+        !!this.pbxSession ||
         this.audioConnected ||
         this.sipStatus === SIP_STATUS.CONNECTING ||
         this.sipStatus === SIP_STATUS.FAILED ||
@@ -395,6 +414,10 @@ export const useTelephonyStore = defineStore('telephony', {
       this.hasInvitation = false;
       this.audioConnected = false;
       this.isMuted = false;
+    },
+
+    setPbxSession(session) {
+      this.pbxSession = session ? { ...this.pbxSession, ...session } : null;
     },
 
     setSipStatus(status, error = null) {

@@ -121,6 +121,11 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
+  // FreePBX extensions, queues and ring groups: targets of a SIP (REFER) transfer.
+  transferTargets() {
+    return axios.get(`${this.url}/transfer_targets`).then(r => r.data);
+  }
+
   agents(conversationId) {
     return axios
       .get(`${this.url}/agents`, {

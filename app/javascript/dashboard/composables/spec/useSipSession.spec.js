@@ -69,12 +69,37 @@ const call = (overrides = {}) => ({
   ...overrides,
 });
 
-const fakeInvitation = state => ({
-  state,
-  bye: vi.fn(() => Promise.resolve()),
-  reject: vi.fn(() => Promise.resolve()),
-  stateChange: { addListener: vi.fn() },
-});
+// Controller legs carry X-Chatwoot-Call-Id; FreePBX's own INVITEs (calls it routes) do not.
+const fakeInvitation = (state, { fromPbx = false } = {}) => {
+  const listeners = [];
+  const sender = { track: { enabled: true } };
+  return {
+    state,
+    request: {
+      getHeader: name =>
+        !fromPbx && name === 'X-Chatwoot-Call-Id' ? 'call-1' : undefined,
+    },
+    remoteIdentity: { uri: { user: '0987654321' }, displayName: 'Ana' },
+    bye: vi.fn(() => Promise.resolve()),
+    reject: vi.fn(() => Promise.resolve()),
+    accept: vi.fn(() => Promise.resolve()),
+    invite: vi.fn(options => {
+      options?.requestDelegate?.onAccept?.();
+      return Promise.resolve();
+    }),
+    refer: vi.fn(() => Promise.resolve()),
+    sessionDescriptionHandler: {
+      sendDtmf: vi.fn(() => true),
+      peerConnection: { getSenders: () => [sender], getReceivers: () => [] },
+    },
+    sender,
+    stateChange: { addListener: vi.fn(cb => listeners.push(cb)) },
+    emit(next) {
+      this.state = next;
+      listeners.forEach(cb => cb(next));
+    },
+  };
+};
 
 // The composable is a module singleton bound to the first store it sees: one pinia for the file.
 setActivePinia(createPinia());
@@ -102,8 +127,8 @@ describe('useSipSession', () => {
     vi.useRealTimers();
   });
 
-  const ring = state => {
-    const inv = fakeInvitation(state);
+  const ring = (state, opts) => {
+    const inv = fakeInvitation(state, opts);
     lastUserAgentOptions.delegate.onInvite(inv);
     if (state === 'Established') store.audioConnected = true;
     return inv;
@@ -181,5 +206,75 @@ describe('useSipSession', () => {
     expect(store.hasOrphanAudio).toBe(true);
     expect(inv.bye).not.toHaveBeenCalled();
     expect(store.audioConnected).toBe(true);
+  });
+
+  describe('legs sent by FreePBX (calls it routes)', () => {
+    // jsdom has no WebRTC: attachRemoteStream only needs a track container.
+    beforeEach(() => {
+      vi.stubGlobal(
+        'MediaStream',
+        vi.fn(() => ({ addTrack: vi.fn() }))
+      );
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('shows a card with the caller and never auto-accepts it', async () => {
+      store.autoAcceptInvitation = true;
+      const inv = ring('Initial', { fromPbx: true });
+
+      expect(inv.accept).not.toHaveBeenCalled();
+      expect(store.pbxSession).toMatchObject({
+        remote_number: '0987654321',
+        remote_name: 'Ana',
+        answered: false,
+      });
+      expect(store.isIncoming).toBe(true);
+      expect(store.showWidget).toBe(true);
+    });
+
+    it('holds by re-INVITE, sends RFC 4733 DTMF and transfers by REFER', async () => {
+      const inv = ring('Initial', { fromPbx: true });
+      inv.emit('Established');
+      expect(store.pbxSession.answered).toBe(true);
+      expect(store.isIncoming).toBe(false);
+
+      await sip.setHold(true);
+      expect(inv.sessionDescriptionHandlerOptionsReInvite).toEqual({
+        hold: true,
+      });
+      expect(inv.invite).toHaveBeenCalledTimes(1);
+      expect(store.isOnHold).toBe(true);
+      expect(inv.sender.track.enabled).toBe(false);
+      await sip.setHold(false);
+      expect(store.isOnHold).toBe(false);
+      expect(inv.sender.track.enabled).toBe(true);
+
+      expect(sip.sendDtmf('5')).toBe(true);
+      expect(inv.sessionDescriptionHandler.sendDtmf).toHaveBeenCalledWith('5');
+
+      await sip.transfer('700');
+      expect(inv.refer).toHaveBeenCalledWith('sip:700@pbx');
+    });
+
+    it('clears the card when FreePBX hangs up the leg', async () => {
+      const inv = ring('Initial', { fromPbx: true });
+      inv.emit('Established');
+      inv.emit('Terminated');
+
+      expect(store.pbxSession).toBeNull();
+      expect(store.audioConnected).toBe(false);
+    });
+
+    it('does not use SIP controls on legs originated by the controller', async () => {
+      store.applyCall(call(), ME);
+      const inv = ring('Initial');
+      inv.emit('Established');
+
+      expect(store.pbxSession).toBeNull();
+      expect(await sip.setHold(true)).toBe(false);
+      expect(sip.sendDtmf('1')).toBe(false);
+      expect(await sip.transfer('700')).toBe(false);
+      expect(inv.invite).not.toHaveBeenCalled();
+    });
   });
 });

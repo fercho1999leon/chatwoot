@@ -82,7 +82,11 @@
       "ORPHAN_AUDIO": "El audio sigue conectado",
       "LEFT_CALL": "Saliste de la llamada",
       "PEER_ON_HOLD": "El cliente puso la llamada en espera",
-      "ROUTED_BY_BOT": "Derivada por el bot de voz"
+      "ROUTED_BY_BOT": "Derivada por el bot de voz",
+      "PBX_QUEUES": "Colas",
+      "PBX_RING_GROUPS": "Grupos de timbrado",
+      "PBX_EXTENSIONS": "Extensiones",
+      "PBX_TRANSFER_NUMBER": "Extensión o número"
     },
     "ERROR": {
       "REGISTER": "No se pudo registrar el softphone: {reason}",
@@ -108,7 +112,9 @@
       "ALREADY_IN_CALL": "Ese agente ya está en esta llamada",
       "SAME_USER": "No puedes llamarte a ti mismo",
       "TARGET_NO_ENDPOINT": "Ese agente no tiene extensión SIP",
-      "REGISTRATION": "Se perdió el registro del softphone"
+      "REGISTRATION": "Se perdió el registro del softphone",
+      "TRANSFER_FAILED": "La central no aceptó la transferencia",
+      "PBX_ROUTED": "Esta llamada la enruta la central: usa los controles del teléfono"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "Sin Chatwoot abierto: softphone no conectado"

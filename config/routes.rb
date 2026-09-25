@@ -240,6 +240,7 @@ Rails.application.routes.draw do
               delete :bot_token, action: :revoke_bot_token, as: :revoke_bot_token
             end
             resources :agents, only: [:index]
+            resources :transfer_targets, only: [:index]
             resources :endpoints, only: [:index, :update, :destroy], param: :user_id
             resources :extensions, only: [:index] do
               collection do

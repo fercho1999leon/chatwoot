@@ -1,8 +1,11 @@
 // SIP.js session for Chatwoot telephony (CE). One UserAgent per tab, created on
-// demand with credentials from POST /telephony/browser_session. The agent's leg is
-// an INVITE originated by the telephony-controller via ARI; we never auto-accept:
-// the agent must click "Connect audio". Mute is local (track.enabled). DTMF goes
-// through the controller (single path), not from the browser.
+// demand with credentials from POST /telephony/browser_session. Two kinds of INVITE:
+// - legs originated by the telephony-controller via ARI (X-Chatwoot-Call-Id header): hold,
+//   transfer and DTMF go through the controller API (single path);
+// - legs FreePBX sends to the agent's extension when it routes a call (queue, ring group,
+//   IVR, transfer): the phone controls them over SIP — hold by re-INVITE (FreePBX plays its
+//   music), blind transfer by REFER, RFC 4733 DTMF, local hang up.
+// We never auto-accept a ringing call: the agent must click Answer. Mute is local (track.enabled).
 import { watch } from 'vue';
 import { Registerer, RegistererState, SessionState, UserAgent } from 'sip.js';
 import TelephonyAPI from 'dashboard/api/telephony';
@@ -15,6 +18,7 @@ let userAgent = null;
 let registerer = null;
 let invitation = null;
 let remoteAudio = null;
+let sipDomain = null; // host of the agent's SIP URI: REFER targets live in the same domain
 let refreshTimer = null;
 let unloadHooked = false;
 let hangupWatchHooked = false;
@@ -80,6 +84,11 @@ const hookUnload = disconnect => {
 };
 
 const QUIET_REGISTER_ERRORS = ['no_endpoint', 'feature_disabled'];
+// Present on every leg the controller originates towards an agent; absent on FreePBX's own INVITEs.
+const CONTROLLER_CALL_HEADER = 'X-Chatwoot-Call-Id';
+
+const isControllerLeg = inv =>
+  !!inv.request?.getHeader?.(CONTROLLER_CALL_HEADER);
 
 const ensureAudioElement = () => {
   if (remoteAudio) return remoteAudio;
@@ -120,6 +129,7 @@ export const useSipSession = () => {
     store.hasInvitation = false;
     store.audioConnected = false;
     store.isMuted = false;
+    store.setPbxSession(null);
   };
 
   // The controller closed the call for this tab (ended, transferred, answered elsewhere)
@@ -139,7 +149,16 @@ export const useSipSession = () => {
     }
     invitation = inv;
     store.hasInvitation = true;
-    if (store.autoAcceptInvitation) {
+    const fromPbx = !isControllerLeg(inv);
+    if (fromPbx) {
+      // Card right away, even before (or without) the controller announcing the call.
+      store.setPbxSession({
+        remote_number: inv.remoteIdentity?.uri?.user || '',
+        remote_name: inv.remoteIdentity?.displayName || '',
+        answered: false,
+        on_hold: false,
+      });
+    } else if (store.autoAcceptInvitation) {
       store.autoAcceptInvitation = false;
       // Declared below; only invoked at runtime once the composable is built.
       // eslint-disable-next-line no-use-before-define
@@ -150,12 +169,15 @@ export const useSipSession = () => {
         attachRemoteStream(inv);
         store.audioConnected = true;
         store.hasInvitation = false;
+        if (fromPbx) store.setPbxSession({ answered: true });
       }
       if (state === SessionState.Terminated) {
-        if (invitation === inv) invitation = null;
+        if (invitation && invitation !== inv) return; // an older leg: the current one keeps the card
+        invitation = null;
         store.hasInvitation = false;
         store.audioConnected = false;
         store.isMuted = false;
+        if (fromPbx) store.setPbxSession(null);
         store.dropOrphanAudio(); // BYE on audio the controller no longer tracks: close the card
       }
     });
@@ -297,6 +319,7 @@ export const useSipSession = () => {
     try {
       const session = await TelephonyAPI.browserSession();
       await disconnect(); // leaves the status IDLE
+      sipDomain = session.sip.realm || session.sip.uri.split('@')[1];
       store.setSipStatus(SIP_STATUS.CONNECTING);
       const ua = new UserAgent({
         uri: UserAgent.makeURI(session.sip.uri),
@@ -391,5 +414,54 @@ export const useSipSession = () => {
 
   const hangupLocal = () => teardownSession();
 
-  return { connect, disconnect, acceptInvitation, setMuted, hangupLocal };
+  // ── FreePBX-routed legs: SIP controls ──
+  const establishedPbxLeg = () =>
+    store.pbxSession && invitation?.state === SessionState.Established
+      ? invitation
+      : null;
+
+  // Hold by re-INVITE (a=sendonly): FreePBX plays its music on hold to the caller.
+  const setHold = async hold => {
+    const session = establishedPbxLeg();
+    if (!session) return false;
+    session.sessionDescriptionHandlerOptionsReInvite = { hold };
+    await session.invite({
+      requestDelegate: {
+        onAccept: () => {
+          const pc = session.sessionDescriptionHandler?.peerConnection;
+          pc?.getSenders().forEach(sender => {
+            if (sender.track) sender.track.enabled = !hold && !store.isMuted;
+          });
+          store.setPbxSession({ on_hold: hold });
+        },
+      },
+    });
+    return true;
+  };
+
+  // RFC 4733 (RTP events) through the WebRTC DTMF sender.
+  const sendDtmf = digit => {
+    const session = establishedPbxLeg();
+    return !!session?.sessionDescriptionHandler?.sendDtmf(digit);
+  };
+
+  // Blind transfer: FreePBX takes the call to the extension, queue or ring group and hangs up our leg.
+  const transfer = async target => {
+    const session = establishedPbxLeg();
+    const number = String(target).replace(/[^0-9*#+]/g, '');
+    if (!session || !number || !sipDomain) return false;
+    await session.refer(UserAgent.makeURI(`sip:${number}@${sipDomain}`));
+    return true;
+  };
+
+  return {
+    connect,
+    disconnect,
+    acceptInvitation,
+    setMuted,
+    hangupLocal,
+    setHold,
+    sendDtmf,
+    transfer,
+  };
 };
