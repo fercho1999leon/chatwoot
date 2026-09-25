@@ -48,7 +48,11 @@ class Channel::Telephony < ApplicationRecord
   DTMF_MODES = %w[rfc4733 inband info auto].freeze
   MASKED_PASSWORD = '********'.freeze
 
+  # Una troncal por cuenta: el controlador guarda una sola (trunk-<account_id>). Varios carriers → modo routes.
+  validates :account_id, uniqueness: true
   validates :trunk_mode, inclusion: { in: TRUNK_MODES }
+  # Usuario y contraseña terminan en pjsip.conf: un salto de línea permitiría inyectar secciones.
+  validates :username, :password, format: { without: /[[:cntrl:]]/ }
   validates :trunk_name, format: { with: /\A[A-Za-z0-9_-]*\z/ }
   validates :transport, inclusion: { in: TRANSPORTS }
   validates :auth_mode, inclusion: { in: AUTH_MODES }
@@ -60,9 +64,11 @@ class Channel::Telephony < ApplicationRecord
   validates :dids, format: { with: /\A[\d+,\s]*\z/ }
   validate :codecs_are_known
   validate :carrier_ips_are_ips
+  validate :dids_not_claimed_elsewhere
 
   before_validation :normalize
   after_commit :sync_to_controller, on: [:create, :update]
+  after_destroy_commit :remove_from_controller
 
   def name
     'Telephony'
@@ -85,6 +91,11 @@ class Channel::Telephony < ApplicationRecord
     end
   end
 
+  # DIDs como los entrega el operador: solo dígitos, sin duplicados ("+593 22 000 000" → "59322000000").
+  def did_list
+    dids.to_s.split(',').map { |did| did.gsub(/\D/, '') }.compact_blank.uniq
+  end
+
   # Un inbox puede llamar si la lista está vacía (todos) o lo incluye.
   def allows_inbox?(inbox_id)
     allowed_inbox_ids.blank? || allowed_inbox_ids.map(&:to_i).include?(inbox_id.to_i)
@@ -103,6 +114,7 @@ class Channel::Telephony < ApplicationRecord
 
   def normalize
     normalize_lists
+    self.dids = did_list.join(', ')
     self.caller_id = caller_id.to_s.gsub(/[^0-9+]/, '')
     # La UI manda '********' para conservar la contraseña guardada.
     self.password = password_was.to_s if password == MASKED_PASSWORD
@@ -123,9 +135,26 @@ class Channel::Telephony < ApplicationRecord
     errors.add(:carrier_ips, "invalid: #{bad.join(', ')}") if bad.any?
   end
 
+  # Un DID tiene un solo dueño: si otra cuenta lo declara, la entrante iría a la cuenta más antigua.
+  # Se compara por la forma E.164 (así 022000000 con EC choca con 59322000000). El controlador
+  # repite la comprobación contra los números de WhatsApp de otras cuentas.
+  def dids_not_claimed_elsewhere
+    mine = did_list.index_by { |did| Telephony::Did.key(did, default_country) }
+    return if mine.empty?
+
+    self.class.where.not(account_id: account_id).find_each do |other|
+      taken = other.did_list.filter_map { |did| mine[Telephony::Did.key(did, other.default_country)] }
+      errors.add(:dids, "already used by another account: #{taken.join(', ')}") if taken.any?
+    end
+  end
+
   def sync_to_controller
     return unless configured?
 
     Telephony::TrunkSyncJob.perform_later(id)
+  end
+
+  def remove_from_controller
+    Telephony::TrunkRemoveJob.perform_later(account_id)
   end
 end

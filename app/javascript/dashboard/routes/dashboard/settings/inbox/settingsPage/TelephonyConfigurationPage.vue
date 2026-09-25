@@ -322,6 +322,19 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
             · {{ status.trunk.registration }}</template
           >
         </span>
+        <span
+          v-for="(state, name) in status?.trunk?.registrations || {}"
+          :key="name"
+          class="px-2 py-0.5 rounded-full"
+          :class="
+            state === 'Registered'
+              ? 'bg-n-teal-3 text-n-teal-11'
+              : 'bg-n-ruby-3 text-n-ruby-11'
+          "
+          :title="t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.STATUS.REGISTRATIONS')"
+        >
+          {{ name }} · {{ state }}
+        </span>
         <span v-if="status?.trunk?.provision_error" class="text-n-ruby-11">{{
           status.trunk.provision_error
         }}</span>

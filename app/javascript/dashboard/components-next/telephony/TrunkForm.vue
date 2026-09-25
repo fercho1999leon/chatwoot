@@ -165,17 +165,6 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
           {{ t('INBOX_MGMT.ADD.TELEPHONY.REGISTER.LABEL') }}
         </label>
       </div>
-      <label>
-        {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.LABEL') }}
-        <input
-          v-model="carrierIpsText"
-          type="text"
-          :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.PLACEHOLDER')"
-        />
-        <p class="help-text">
-          {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.HELP') }}
-        </p>
-      </label>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label>
           {{ t('INBOX_MGMT.ADD.TELEPHONY.DTMF.LABEL') }}
@@ -205,7 +194,18 @@ const isCustom = computed(() => !isGui.value && !isRoutes.value);
       </div>
     </template>
 
-    <!-- Común a todos los modos: entrantes (DIDs) y Caller ID saliente -->
+    <!-- Común a todos los modos: IPs del carrier (firewall de la PBX), entrantes (DIDs) y Caller ID saliente -->
+    <label>
+      {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.LABEL') }}
+      <input
+        v-model="carrierIpsText"
+        type="text"
+        :placeholder="t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.PLACEHOLDER')"
+      />
+      <p class="help-text">
+        {{ t('INBOX_MGMT.ADD.TELEPHONY.CARRIER_IPS.HELP') }}
+      </p>
+    </label>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label>
         {{ t('INBOX_MGMT.ADD.TELEPHONY.DIDS.LABEL') }}

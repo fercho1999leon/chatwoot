@@ -707,7 +707,7 @@
         },
         "CARRIER_IPS": {
           "LABEL": "Carrier IP addresses",
-          "HELP": "Comma-separated. Used to identify incoming SIP traffic from the carrier and to open the firewall.",
+          "HELP": "Comma-separated IPs or ranges the carrier sends SIP from. Chatwoot opens port 5060 on the PBX firewall only to them (in every trunk mode); with \"Configure here\" they also identify the carrier's incoming calls.",
           "PLACEHOLDER": "203.0.113.10, 203.0.113.11"
         },
         "CALLER_ID": {
@@ -820,7 +820,7 @@
         "DIDS": {
           "LABEL": "Your numbers (DIDs) for incoming calls",
           "PLACEHOLDER": "593000000000, 593000000001",
-          "HELP": "Numbers the carrier delivers to this PBX for this account. In FreePBX, point each DID's Inbound Route to the Custom Destination \"Chatwoot\"; Chatwoot then decides who rings using the routing rules below."
+          "HELP": "Numbers the carrier delivers to this PBX, written the way the carrier sends them (+ and spaces are removed). Chatwoot creates the FreePBX Inbound Route of each one towards \"Chatwoot\" and removes it when you delete the number here. A number can only belong to one account."
         }
       }
     },
@@ -1493,7 +1493,8 @@
           "PBX": "PBX",
           "NOT_CONFIGURED": "not configured",
           "TEST_MODE": "Test mode (echo)",
-          "PROVISIONING": "Applying on the PBX…"
+          "PROVISIONING": "Applying on the PBX…",
+          "REGISTRATIONS": "FreePBX trunks"
         },
         "HEALTH": {
           "TITLE": "Health",

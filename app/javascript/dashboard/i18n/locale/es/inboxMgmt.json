@@ -704,7 +704,7 @@
         },
         "CARRIER_IPS": {
           "LABEL": "Direcciones IP del operador",
-          "HELP": "Separadas por comas. Se usan para identificar el tráfico SIP entrante del operador y para abrir el cortafuegos.",
+          "HELP": "IPs o rangos desde los que el operador envía SIP, separados por comas. Chatwoot abre el puerto 5060 del cortafuegos de la PBX solo a ellas (en cualquier modo de troncal); con «Configurar aquí» además identifican las llamadas entrantes del operador.",
           "PLACEHOLDER": "203.0.113.10, 203.0.113.11"
         },
         "CALLER_ID": {
@@ -817,7 +817,7 @@
         "DIDS": {
           "LABEL": "Tus números (DID) para llamadas entrantes",
           "PLACEHOLDER": "593000000000, 593000000001",
-          "HELP": "Números que el operador entrega a esta PBX para esta cuenta. En FreePBX, apunta la Inbound Route de cada DID al Custom Destination \"Chatwoot\"; Chatwoot decide entonces a quién timbrar con las reglas de enrutamiento de abajo."
+          "HELP": "Números que el operador entrega a esta PBX, escritos como los envía el operador (se quitan el + y los espacios). Chatwoot crea la Inbound Route de FreePBX de cada uno hacia «Chatwoot» y la borra cuando quitas el número de aquí. Un número solo puede pertenecer a una cuenta."
         }
       }
     },
@@ -1337,7 +1337,8 @@
           "PBX": "PBX",
           "NOT_CONFIGURED": "sin configurar",
           "TEST_MODE": "Modo de prueba (eco)",
-          "PROVISIONING": "Aplicando en la PBX…"
+          "PROVISIONING": "Aplicando en la PBX…",
+          "REGISTRATIONS": "Troncales de FreePBX"
         },
         "HEALTH": {
           "TITLE": "Salud",

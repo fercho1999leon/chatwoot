@@ -119,6 +119,10 @@ class Telephony::ControllerClient
     request(:delete, '/internal/pbx', query: { account_id: account_id })
   end
 
+  def delete_trunk(account_id:)
+    request(:delete, '/internal/trunk', query: { account_id: account_id })
+  end
+
   def upsert_trunk(payload)
     request(:put, '/internal/trunk', body: payload)
   end
