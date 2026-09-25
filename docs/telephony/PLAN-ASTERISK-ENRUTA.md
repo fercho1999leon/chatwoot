@@ -83,7 +83,25 @@ force) y 701 (`*43`), Inbound Routes DID `999000700`/`999000701`; troncal de pru
 para volcar `trunks`/`pjsip`; comprobar módulos (`core`, `queues`, `callrecording`, `cdr`), `cdr show status`
 y `allow_transfer` de 1001. Luego: simular entrantes con el observador y validar hold/REFER desde el navegador.
 
-## Estado de los repositorios al traspaso
+## Estado de la implementación (2026-09-26)
+
+Fases 1–5 implementadas en código, con tests, en las tres ramas de trabajo. **Nada desplegado ni etiquetado**; falta la
+fase 0 en la VM (checklist en `ISP-K8s-Platform/docs/telephony/RUNBOOK-telephony.md` → «Fase 0»).
+
+| Fase | Fork `codex/isp-image` | telephony-controller `main` | ISP-K8s-Platform `master` |
+|---|---|---|---|
+| 1 Troncal nativa | `8adfc940` modos native/existing (migración de datos), fuera dial_format/dial_prefix/allowed_prefixes (su migración T2 nunca desplegada se retiró) | `70cae71` modos, migración 011, salida `Local/<n>@from-internal` con CID de la extensión | `2b5c9d4` `freepbx_trunk_rows` + `sync_native_trunks`, sin rutas de DIDs del carrier |
+| 2 Observador | `c6850751` `ObservedCallResolver` (inbox por DID), `source` en la proyección | `016793d` `src/calls/observer.ts`, migración 012 | — |
+| 3 Softphone | `9f229c58` INVITE de FreePBX → tarjeta; hold re-INVITE, REFER, DTMF RFC 4733; `transfer_targets` | `0c6cfec` cabecera `X-Chatwoot-Call-Id`, `/internal/transfer_targets` | `6257449` `/provision/queues` |
+| 4 Grabación | `68ad4492` formato del adjunto | `4023711` anuncio en `ended`, servir/barrer por provisioner | `18a701a` `/provision/recordings/<linkedid>` |
+| 5 Docs/UI | texto del destino opcional «Chatwoot» en las reglas | (D4 hecho en la fase 1) | `a27922e` TRONCAL-SIP.md, runbook, dialplan |
+
+Pendiente de decidir/validar en la fase 0: mapeo exacto de `trunks`/`pjsip` (y cómo guarda FreePBX un `;` en la
+contraseña), `channelvars` en `ari.conf`, que el canal de la extensión nazca en `Down` → `Ringing`, que el CDR escriba
+`linkedid`/`recordingfile`, hold/REFER desde el navegador, y los patrones de la Outbound Route del carrier. Llamadas que
+no tocan ninguna extensión (IVR → buzón, abandono en cola) siguen sin registrarse (opcional: desde el CDR, tras un flag).
+
+## Estado de los repositorios al traspaso (anterior a la implementación)
 
 - Fork Chatwoot `codex/isp-image`: T1+T2+T3 de la auditoría de la troncal (commits `ff3c352453`,
   `6df113f4d0`); etiqueta `v4.17.1-isp.10` = T1 + merge de develop + dataset exports (CI completo verde).

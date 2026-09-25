@@ -1554,7 +1554,8 @@
         },
         "ROUTING": {
           "TITLE": "Incoming call routing",
-          "HELP": "Rules are evaluated top to bottom for every incoming call. Each matching rule adds a step (who rings, for how long); an IVR, voicemail or hang-up rule ends the list. If no agent picks up, the next step runs.",
+          "OPTIONAL_DESTINATION": "FreePBX decides who rings: set the destination of each DID in its Inbound Routes (IVR, queue, ring group, voice agent, business hours…). Chatwoot shows the call card, conversation, history and recording whenever it rings an agent's extension. These rules only apply to calls that FreePBX sends to the optional Custom Destination \"Chatwoot\" (or \"chatwoot-hint,<hint>,1\" from an IVR).",
+            "HELP": "Rules are evaluated top to bottom for every incoming call. Each matching rule adds a step (who rings, for how long); an IVR, voicemail or hang-up rule ends the list. If no agent picks up, the next step runs.",
           "ADD": "Add rule",
           "NAME": "Name",
           "SAVE": "Save",
@@ -1567,7 +1568,7 @@
           "TIMEOUT": "Ring for (s)",
           "MAX_SECONDS": "Bot decides within (s)",
           "MAX_SECONDS_HELP": "For a voice bot on this extension: if it answers and does not route the call within this time, the call continues with the next rule. Empty = no limit.",
-          "EMPTY": "No rules yet: incoming calls are hung up. Add at least one rule.",
+          "EMPTY": "No rules yet: calls that FreePBX sends to the \"Chatwoot\" destination are hung up. Calls FreePBX routes to its IVRs, queues or extensions are not affected.",
           "SAVED": "Rule saved",
           "ERROR": "Could not save the rule",
           "COND": {

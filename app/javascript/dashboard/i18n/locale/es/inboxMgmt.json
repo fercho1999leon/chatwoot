@@ -1398,7 +1398,8 @@
         },
         "ROUTING": {
           "TITLE": "Enrutamiento de llamadas entrantes",
-          "HELP": "Las reglas se evalúan de arriba abajo en cada llamada entrante. Cada regla que coincide añade un paso (quién timbra y cuánto tiempo); una regla de IVR, buzón de voz o colgar termina la lista. Si ningún agente contesta, sigue el siguiente paso.",
+          "OPTIONAL_DESTINATION": "FreePBX decide a quién suena: el destino de cada DID se elige en sus Inbound Routes (IVR, cola, ring group, agente de voz, horario…). Chatwoot muestra la tarjeta, la conversación, el historial y la grabación siempre que suene la extensión de un agente. Estas reglas solo se aplican a las llamadas que FreePBX envía al Custom Destination opcional «Chatwoot» (o «chatwoot-hint,<pista>,1» desde un IVR).",
+            "HELP": "Las reglas se evalúan de arriba abajo en cada llamada entrante. Cada regla que coincide añade un paso (quién timbra y cuánto tiempo); una regla de IVR, buzón de voz o colgar termina la lista. Si ningún agente contesta, sigue el siguiente paso.",
           "ADD": "Añadir regla",
           "NAME": "Nombre",
           "SAVE": "Guardar",
@@ -1411,7 +1412,7 @@
           "TIMEOUT": "Timbrar durante (s)",
           "MAX_SECONDS": "El bot decide en (s)",
           "MAX_SECONDS_HELP": "Para un bot de voz en esta extensión: si contesta y no deriva la llamada en este tiempo, la llamada sigue con la siguiente regla. Vacío = sin límite.",
-          "EMPTY": "Aún no hay reglas: las llamadas entrantes se cuelgan. Añade al menos una regla.",
+          "EMPTY": "Aún no hay reglas: las llamadas que FreePBX envía al destino «Chatwoot» se cuelgan. Las que FreePBX enruta a sus IVR, colas o extensiones no se ven afectadas.",
           "SAVED": "Regla guardada",
           "ERROR": "No se pudo guardar la regla",
           "COND": {

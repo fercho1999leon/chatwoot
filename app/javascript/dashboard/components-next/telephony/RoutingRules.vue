@@ -160,6 +160,11 @@ onMounted(async () => {
 
 <template>
   <div class="flex flex-col gap-3">
+    <p class="text-sm text-n-slate-12 rounded-lg bg-n-alpha-2 p-3">
+      {{
+        t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.OPTIONAL_DESTINATION')
+      }}
+    </p>
     <p class="help-text">
       {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.ROUTING.HELP') }}
     </p>
