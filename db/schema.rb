@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_26_100000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_26_110000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1583,6 +1583,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_26_100000) do
     t.boolean "peer_on_hold", default: false, null: false
     t.string "routed_by"
     t.string "hint"
+    t.string "source", default: "controller", null: false
     t.index ["account_id", "created_at"], name: "index_telephony_call_projections_on_account_id_and_created_at"
     t.index ["account_id", "external_call_id"], name: "idx_on_account_id_external_call_id_4b1d657f68", unique: true
     t.index ["account_id", "user_id", "state"], name: "idx_on_account_id_user_id_state_e4b12003b6"

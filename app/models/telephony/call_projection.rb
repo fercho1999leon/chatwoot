@@ -21,6 +21,7 @@
 #  requested_at        :datetime
 #  ringing_user_ids    :jsonb            not null
 #  routed_by           :string
+#  source              :string           default("controller"), not null
 #  state               :string           default("requested"), not null
 #  state_version       :integer          default(0), not null
 #  transfer_state      :string
@@ -122,7 +123,7 @@ class Telephony::CallProjection < ApplicationRecord
 
   PUSH_ATTRIBUTES = %i[state state_version end_reason inbox_id requested_at answered_at ended_at duration_seconds message_id
                        user_id previous_user_id on_hold transfer_to_user_id transfer_state direction did ringing_user_ids
-                       answered_by contact_name to_user_id participants peer_on_hold routed_by hint].freeze
+                       answered_by contact_name to_user_id participants peer_on_hold routed_by hint source].freeze
 
   def push_event_data
     PUSH_ATTRIBUTES.index_with { |attr| public_send(attr) }.merge(

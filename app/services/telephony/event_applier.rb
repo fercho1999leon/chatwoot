@@ -68,7 +68,7 @@ class Telephony::EventApplier
   end
 
   COPIED_KEYS = %w[state end_reason answered_at ended_at duration_seconds transfer_to_user_id transfer_state previous_user_id
-                   answered_by routed_by hint].freeze
+                   answered_by routed_by hint source].freeze
 
   def projection_attrs(data)
     attrs = data.slice(*COPIED_KEYS).symbolize_keys.merge(
@@ -95,8 +95,9 @@ class Telephony::EventApplier
   end
 
   # Entrante que pasa de `requested` a sonar: desde aquí POST bot/calls/:id/route ya puede aplicarse.
+  # Las que enruta FreePBX (source = pbx) no admiten reroute: no se avisa al bot.
   def routable_now?(projection, attrs)
-    projection.inbound? && projection.state == 'requested' && attrs[:state] == 'agent_connecting'
+    projection.inbound? && projection.source != 'pbx' && projection.state == 'requested' && attrs[:state] == 'agent_connecting'
   end
 
   # Webhook opcional del bot de voz (n8n, etc.): se avisa cuando el controlador ya confirmó el plan y la llamada

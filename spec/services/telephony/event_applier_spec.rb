@@ -87,6 +87,15 @@ RSpec.describe Telephony::EventApplier do
         .not_to have_enqueued_job(Telephony::BotWebhookJob)
     end
 
+    it 'does not notify the bot webhook for calls routed by FreePBX (they cannot be rerouted)' do
+      create(:telephony_pbx, account: account, bot_webhook_url: 'https://n8n.test/webhook/calls')
+      projection.update!(direction: 'inbound', user: nil, source: 'pbx')
+
+      expect { applier.apply_event(event(state: 'agent_connecting', user_id: nil, ringing_user_ids: [agent.id], source: 'pbx')) }
+        .not_to have_enqueued_job(Telephony::BotWebhookJob)
+      expect(projection.reload).to have_attributes(source: 'pbx', ringing_user_ids: [agent.id])
+    end
+
     it 'does not notify the bot webhook for outbound calls or when the PBX has none' do
       create(:telephony_pbx, account: account)
       projection.update!(direction: 'inbound', user: nil)
