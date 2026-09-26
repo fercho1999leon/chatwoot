@@ -81,20 +81,22 @@ class Telephony::EventApplier
 
   def update_projection(projection, data)
     attrs = projection_attrs(data)
-    # Transferencia completada o entrante contestada: la llamada cambia de dueño.
-    # También cuando queda sin dueño (llamada de FreePBX transferida o devuelta a la cola): si no, el agente que la
-    # soltó seguía viéndola como suya hasta que otro contestaba.
-    new_owner = data['user_id'].presence&.to_i
-    owner_changed = data.key?('user_id') && new_owner != projection.user_id
-    attrs[:user_id] = new_owner if owner_changed
+    owner_changed = owner_changed?(projection, data)
+    attrs[:user_id] = data['user_id'].presence&.to_i if owner_changed
     # Los agentes que sonaban y no contestaron deben cerrar su widget: se les avisa una última vez.
     @previously_ringing = projection.ringing_user_ids + projection.participants
     became_routable = routable_now?(projection, attrs)
     projection.update!(attrs)
-    hand_over_conversation(projection) if owner_changed && new_owner && projection.conversation
+    hand_over_conversation(projection) if owner_changed && projection.user_id && projection.conversation
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.conversation
     fetch_recording(projection, data)
     notify_bot(projection) if became_routable
+  end
+
+  # Transferencia completada o entrante contestada: la llamada cambia de dueño. También cuando queda sin dueño
+  # (llamada de FreePBX transferida o devuelta a la cola): si no, el agente que la soltó seguía viéndola como suya.
+  def owner_changed?(projection, data)
+    data.key?('user_id') && data['user_id'].presence&.to_i != projection.user_id
   end
 
   # Entrante que pasa de `requested` a sonar: desde aquí POST bot/calls/:id/route ya puede aplicarse.
