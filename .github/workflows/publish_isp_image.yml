@@ -245,15 +245,23 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # PR de despliegue en ISP-K8s-Platform (ver su .github/workflows/bump-platform-image-pr.yml).
+  # PR de despliegue en ISP-K8s-Platform: se pide con un repository_dispatch (ver su
+  # .github/workflows/bump-platform-image-pr.yml). Sin el secret GITOPS_TOKEN, aviso y bump manual.
   bump-pr:
     needs: build
     if: github.ref_type == 'tag'
-    uses: fercho1999leon/ISP-K8s-Platform/.github/workflows/bump-platform-image-pr.yml@master
-    with:
-      target: chatwoot
-      tag: ${{ github.ref_name }}
-      digest: ${{ needs.build.outputs.digest }}
-      revision: ${{ github.sha }}
-    secrets:
-      gitops_token: ${{ secrets.GITOPS_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir el PR de despliegue
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::Sin GITOPS_TOKEN: bump manual con scripts/bump-platform-image.sh chatwoot $GITHUB_REF_NAME $DIGEST $GITHUB_SHA"
+            exit 0
+          fi
+          gh api repos/fercho1999leon/ISP-K8s-Platform/dispatches -f event_type=bump-platform-image \
+            -f 'client_payload[target]=chatwoot' -f "client_payload[tag]=$GITHUB_REF_NAME" \
+            -f "client_payload[digest]=$DIGEST" -f "client_payload[revision]=$GITHUB_SHA"
+          echo "## PR de despliegue pedido a ISP-K8s-Platform (chatwoot $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
