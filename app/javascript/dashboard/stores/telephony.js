@@ -51,6 +51,10 @@ export const useTelephonyStore = defineStore('telephony', {
     // No X-Chatwoot-Call-Id header: it is controlled over SIP (re-INVITE hold, REFER, RFC 4733 DTMF), not the API.
     // { remote_number, remote_name, answered, on_hold }
     pbxSession: null,
+    // Attended transfer in progress on that leg: the agent's call to the target. { number, answered, cancelled }
+    consult: null,
+    // Bumped when the target rejects or hangs up the consult: the call comes back to the agent.
+    consultDropped: 0,
     isCreating: false,
     idempotencyKey: null,
   }),
@@ -426,6 +430,10 @@ export const useTelephonyStore = defineStore('telephony', {
 
     setPbxSession(session) {
       this.pbxSession = session ? { ...this.pbxSession, ...session } : null;
+    },
+
+    setConsult(consult) {
+      this.consult = consult ? { ...this.consult, ...consult } : null;
     },
 
     setSipStatus(status, error = null) {

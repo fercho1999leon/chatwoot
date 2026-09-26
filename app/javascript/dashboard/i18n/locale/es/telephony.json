@@ -87,7 +87,12 @@
       "PBX_RING_GROUPS": "Grupos de timbrado",
       "PBX_EXTENSIONS": "Extensiones",
       "PBX_TRANSFER_NUMBER": "Extensión o número",
-      "PBX_OFFLINE": "No conectado: no le sonaría"
+      "PBX_OFFLINE": "No conectado: no le sonaría",
+      "PBX_CONSULT": "Hablar primero y luego transferir",
+      "CONSULT_RINGING": "Llamando a {target}… El cliente está en espera",
+      "CONSULT_TALKING": "Hablando con {target} · El cliente está en espera",
+      "CONSULT_COMPLETE": "Transferir",
+      "CONSULT_CANCEL": "Volver al cliente"
     },
     "ERROR": {
       "REGISTER": "No se pudo registrar el softphone: {reason}",
@@ -117,7 +122,9 @@
       "TRANSFER_FAILED": "La central no aceptó la transferencia",
       "PBX_ROUTED": "Esta llamada la enruta la central: usa los controles del teléfono",
       "DTMF_FAILED": "No se pudo enviar el dígito",
-      "TARGET_OFFLINE": "Ese destino no está conectado: la llamada sigue contigo"
+      "TARGET_OFFLINE": "Ese destino no está conectado: la llamada sigue contigo",
+      "CONSULT_FAILED": "No se pudo llamar a ese destino: la llamada sigue contigo",
+      "CONSULT_ENDED": "La consulta terminó: la llamada vuelve contigo"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "Sin Chatwoot abierto: softphone no conectado"

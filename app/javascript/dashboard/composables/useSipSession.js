@@ -4,10 +4,17 @@
 //   transfer and DTMF go through the controller API (single path);
 // - legs FreePBX sends to the agent's extension when it routes a call (queue, ring group,
 //   IVR, transfer): the phone controls them over SIP — hold by re-INVITE (FreePBX plays its
-//   music), blind transfer by REFER, RFC 4733 DTMF, local hang up.
+//   music), blind transfer by REFER, attended transfer (consult call, then REFER with Replaces),
+//   RFC 4733 DTMF, local hang up.
 // We never auto-accept a ringing call: the agent must click Answer. Mute is local (track.enabled).
 import { watch } from 'vue';
-import { Registerer, RegistererState, SessionState, UserAgent } from 'sip.js';
+import {
+  Inviter,
+  Registerer,
+  RegistererState,
+  SessionState,
+  UserAgent,
+} from 'sip.js';
 import TelephonyAPI from 'dashboard/api/telephony';
 import { useTelephonyStore, SIP_STATUS } from 'dashboard/stores/telephony';
 import { useCallsStore } from 'dashboard/stores/calls';
@@ -17,6 +24,9 @@ import { requestCallNotificationPermission } from 'dashboard/composables/useCall
 let userAgent = null;
 let registerer = null;
 let invitation = null;
+// Attended transfer: the agent's own call to the target while the customer waits on hold.
+let consultSession = null;
+let consultCompleting = false; // REFER with Replaces sent: FreePBX hangs up both legs, nothing to resume
 let remoteAudio = null;
 let sipDomain = null; // host of the agent's SIP URI: REFER targets live in the same domain
 let refreshTimer = null;
@@ -107,11 +117,28 @@ const attachRemoteStream = session => {
   ensureAudioElement().srcObject = stream;
 };
 
+const liveSession = session =>
+  !!session &&
+  ![SessionState.Terminated, SessionState.Terminating].includes(session.state);
+
+// Cancel (still ringing) or hang up (answered) the consult call; its state listener does the rest.
+const dropConsult = () => {
+  const session = consultSession;
+  if (!liveSession(session)) return;
+  try {
+    if (session.state === SessionState.Established) session.bye();
+    else session.cancel();
+  } catch (e) {
+    // already gone
+  }
+};
+
 export const useSipSession = () => {
   const store = useTelephonyStore();
   const callsStore = useCallsStore();
 
   const teardownSession = () => {
+    dropConsult();
     if (
       invitation &&
       ![SessionState.Terminated, SessionState.Terminating].includes(
@@ -173,6 +200,7 @@ export const useSipSession = () => {
       }
       if (state === SessionState.Terminated) {
         if (invitation && invitation !== inv) return; // an older leg: the current one keeps the card
+        dropConsult(); // the customer is gone (or the transfer completed): the consult has nothing to return to
         invitation = null;
         store.hasInvitation = false;
         store.audioConnected = false;
@@ -404,7 +432,9 @@ export const useSipSession = () => {
   };
 
   const setMuted = muted => {
-    const pc = invitation?.sessionDescriptionHandler?.peerConnection;
+    // During a consult the customer's leg stays silent (on hold): mute acts on the consult call.
+    const session = liveSession(consultSession) ? consultSession : invitation;
+    const pc = session?.sessionDescriptionHandler?.peerConnection;
     if (!pc) return;
     pc.getSenders().forEach(s => {
       if (s.track) s.track.enabled = !muted;
@@ -454,6 +484,85 @@ export const useSipSession = () => {
     return true;
   };
 
+  // ── Attended transfer of a FreePBX-routed leg ──
+  // 1. startConsult: the customer goes on hold (FreePBX music) and the agent calls the target from the phone;
+  // 2. completeConsult: REFER with Replaces — FreePBX bridges the customer with the target and hangs up both of
+  //    our legs; the controller hands the call over to the target's agent;
+  // 3. cancelConsult (or the target rejects / hangs up): the consult ends and the customer comes back off hold.
+  const startConsult = async target => {
+    const session = establishedPbxLeg();
+    const number = String(target).replace(/[^0-9*#+]/g, '');
+    if (!session || !number || !sipDomain || !userAgent) return false;
+    if (liveSession(consultSession)) return false;
+    if (!store.pbxSession?.on_hold) await setHold(true);
+    const inviter = new Inviter(
+      userAgent,
+      UserAgent.makeURI(`sip:${number}@${sipDomain}`),
+      {
+        sessionDescriptionHandlerOptions: {
+          constraints: { audio: true, video: false },
+        },
+      }
+    );
+    consultSession = inviter;
+    consultCompleting = false;
+    store.setConsult({ number, answered: false });
+    inviter.stateChange.addListener(async state => {
+      if (consultSession !== inviter) return;
+      if (state === SessionState.Established) {
+        attachRemoteStream(inviter);
+        store.setConsult({ answered: true });
+      }
+      if (state !== SessionState.Terminated) return;
+      consultSession = null;
+      const cancelled = store.consult?.cancelled;
+      store.setConsult(null);
+      if (consultCompleting) return;
+      if (!cancelled) store.consultDropped += 1; // rejected, busy or hung up by the target
+      // Back to the customer: their audio, off hold.
+      if (establishedPbxLeg()) {
+        attachRemoteStream(invitation);
+        await setHold(false).catch(() => {});
+      }
+    });
+    try {
+      await inviter.invite();
+    } catch (error) {
+      if (consultSession === inviter) {
+        consultSession = null;
+        store.setConsult(null);
+        await setHold(false).catch(() => {});
+      }
+      throw error;
+    }
+    return true;
+  };
+
+  const cancelConsult = () => {
+    if (!liveSession(consultSession)) return;
+    store.setConsult({ cancelled: true });
+    dropConsult();
+  };
+
+  const completeConsult = () =>
+    new Promise(resolve => {
+      const session = establishedPbxLeg();
+      if (!session || consultSession?.state !== SessionState.Established) {
+        resolve(false);
+        return;
+      }
+      consultCompleting = true;
+      const failed = () => {
+        consultCompleting = false;
+        resolve(false);
+      };
+      session
+        .refer(consultSession, {
+          requestDelegate: { onAccept: () => resolve(true), onReject: failed },
+        })
+        .catch(failed);
+    });
+
   return {
     connect,
     disconnect,
@@ -463,5 +572,8 @@ export const useSipSession = () => {
     setHold,
     sendDtmf,
     transfer,
+    startConsult,
+    cancelConsult,
+    completeConsult,
   };
 };

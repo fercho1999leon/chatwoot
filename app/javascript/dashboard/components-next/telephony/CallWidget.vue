@@ -30,6 +30,9 @@ const {
   setHold,
   sendDtmf,
   transfer: referTo,
+  startConsult,
+  cancelConsult,
+  completeConsult,
 } = useSipSession();
 const ringtone = useRingtone();
 const callNotification = useCallNotification();
@@ -388,19 +391,23 @@ const findPbxTarget = (targets, number) =>
     .flatMap(group => targets[group.key] || [])
     .find(target => String(target.number) === String(number));
 
-// Blind transfer of a FreePBX-routed call: FreePBX takes it to the target and hangs up our leg. The target is
-// checked again right before the REFER: nobody connected there means the call would be lost, so it stays here.
-// A number that is not an extension, queue or ring group (an outside number) goes to FreePBX as typed.
+// The target of a FreePBX transfer is checked again right before acting: nobody connected there means the
+// call would be lost, so it stays here. A number that is not an extension, queue or ring group (an outside
+// number) goes to FreePBX as typed.
+const pbxTargetOffline = async number => {
+  pbxTargets.value = await TelephonyAPI.transferTargets();
+  const target = findPbxTarget(pbxTargets.value, number);
+  if (!target || target.available) return false;
+  useAlert(t('TELEPHONY.ERROR.TARGET_OFFLINE'));
+  return true;
+};
+
+// Blind transfer of a FreePBX-routed call: FreePBX takes it to the target and hangs up our leg.
 const onPbxTransfer = async number => {
   if (!number) return;
   isWorking.value = true;
   try {
-    pbxTargets.value = await TelephonyAPI.transferTargets();
-    const target = findPbxTarget(pbxTargets.value, number);
-    if (target && !target.available) {
-      useAlert(t('TELEPHONY.ERROR.TARGET_OFFLINE'));
-      return;
-    }
+    if (await pbxTargetOffline(number)) return;
     await referTo(number);
     showTransfer.value = false;
     pbxTransferNumber.value = '';
@@ -410,6 +417,48 @@ const onPbxTransfer = async number => {
     isWorking.value = false;
   }
 };
+
+// Attended transfer: the customer waits on hold while the agent talks to the target, then Transfer
+// (REFER with Replaces) or Back to the customer. A target that does not answer gives the call back.
+const onPbxConsult = async number => {
+  if (!number) return;
+  isWorking.value = true;
+  try {
+    if (await pbxTargetOffline(number)) return;
+    await startConsult(number);
+    showTransfer.value = false;
+    pbxTransferNumber.value = '';
+  } catch (error) {
+    useAlert(t('TELEPHONY.ERROR.CONSULT_FAILED'));
+  } finally {
+    isWorking.value = false;
+  }
+};
+
+const onCompleteConsult = async () => {
+  isWorking.value = true;
+  try {
+    if (!(await completeConsult()))
+      useAlert(t('TELEPHONY.ERROR.TRANSFER_FAILED'));
+  } finally {
+    isWorking.value = false;
+  }
+};
+
+watch(
+  () => store.consultDropped,
+  () => useAlert(t('TELEPHONY.ERROR.CONSULT_ENDED'))
+);
+
+const consultText = computed(() =>
+  store.consult?.answered
+    ? t('TELEPHONY.WIDGET.CONSULT_TALKING', { target: store.consult.number })
+    : t('TELEPHONY.WIDGET.CONSULT_RINGING', {
+        target: store.consult?.number,
+      })
+);
+// Hold, keypad and transfer act on the customer's leg: not while the agent is on the consult call.
+const canControlCustomer = computed(() => canControl.value && !store.consult);
 
 const onPick = userId =>
   pickerMode.value === 'add' ? onAddAgent(userId) : onTransfer(userId);
@@ -553,6 +602,16 @@ onBeforeUnmount(stopTimer);
           :disabled="!pbxTransferNumber"
           :is-loading="isWorking"
         />
+        <NextButton
+          v-tooltip="t('TELEPHONY.WIDGET.PBX_CONSULT')"
+          sm
+          faded
+          blue
+          type="button"
+          icon="i-lucide-phone-call"
+          :disabled="!pbxTransferNumber || isWorking"
+          @click="onPbxConsult(pbxTransferNumber)"
+        />
       </form>
       <p v-if="transferLoading" class="text-xs text-n-slate-11">
         {{ t('TELEPHONY.WIDGET.LOADING') }}
@@ -583,6 +642,15 @@ onBeforeUnmount(stopTimer);
                 :disabled="!target.available || isWorking"
                 :label="`${target.name || target.number} (${target.number})${target.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}`"
                 @click="onPbxTransfer(target.number)"
+              />
+              <NextButton
+                v-tooltip="t('TELEPHONY.WIDGET.PBX_CONSULT')"
+                sm
+                ghost
+                blue
+                icon="i-lucide-phone-call"
+                :disabled="!target.available || isWorking"
+                @click="onPbxConsult(target.number)"
               />
             </span>
           </template>
@@ -652,6 +720,30 @@ onBeforeUnmount(stopTimer);
       </div>
     </div>
 
+    <div v-if="store.consult" class="flex flex-col gap-2">
+      <span class="text-xs text-n-slate-11">{{ consultText }}</span>
+      <div class="flex items-center justify-end gap-2">
+        <NextButton
+          sm
+          faded
+          slate
+          icon="i-lucide-undo-2"
+          :label="t('TELEPHONY.WIDGET.CONSULT_CANCEL')"
+          @click="cancelConsult"
+        />
+        <NextButton
+          sm
+          solid
+          blue
+          icon="i-lucide-phone-forwarded"
+          :label="t('TELEPHONY.WIDGET.CONSULT_COMPLETE')"
+          :disabled="!store.consult.answered"
+          :is-loading="isWorking"
+          @click="onCompleteConsult"
+        />
+      </div>
+    </div>
+
     <div
       v-if="store.isTransferring"
       class="flex items-center justify-between gap-2"
@@ -669,12 +761,12 @@ onBeforeUnmount(stopTimer);
     </div>
 
     <p
-      v-if="showKeypad && canControl && dtmfSent"
+      v-if="showKeypad && canControlCustomer && dtmfSent"
       class="text-sm text-center tabular-nums tracking-widest text-n-slate-12"
     >
       {{ dtmfSent }}
     </p>
-    <div v-if="showKeypad && canControl" class="grid grid-cols-3 gap-1">
+    <div v-if="showKeypad && canControlCustomer" class="grid grid-cols-3 gap-1">
       <NextButton
         v-for="digit in DTMF_KEYS"
         :key="digit"
@@ -747,7 +839,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleMute"
         />
         <NextButton
-          v-if="canControl"
+          v-if="canControlCustomer"
           sm
           ghost
           slate
@@ -755,7 +847,7 @@ onBeforeUnmount(stopTimer);
           @click="showKeypad = !showKeypad"
         />
         <NextButton
-          v-if="canControl && !store.isTransferring"
+          v-if="canControlCustomer && !store.isTransferring"
           sm
           ghost
           slate
@@ -764,7 +856,7 @@ onBeforeUnmount(stopTimer);
           @click="onToggleHold"
         />
         <NextButton
-          v-if="canControl && !store.isTransferring"
+          v-if="canControlCustomer && !store.isTransferring"
           v-tooltip="t('TELEPHONY.WIDGET.TRANSFER')"
           sm
           ghost
@@ -797,7 +889,8 @@ onBeforeUnmount(stopTimer);
           v-if="
             (store.hasActiveCall || sessionLive || isPbx) &&
             !store.isIncoming &&
-            !store.isParticipant
+            !store.isParticipant &&
+            !store.consult
           "
           sm
           solid
