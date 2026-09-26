@@ -87,7 +87,7 @@ class Telephony::EventApplier
     @previously_ringing = projection.ringing_user_ids + projection.participants
     became_routable = routable_now?(projection, attrs)
     projection.update!(attrs)
-    hand_over_conversation(projection) if owner_changed && projection.user_id && projection.conversation
+    hand_over_conversation(projection) if owner_changed
     Telephony::NoteProjector.new(projection: projection).upsert! if projection.conversation
     fetch_recording(projection, data)
     notify_bot(projection) if became_routable
