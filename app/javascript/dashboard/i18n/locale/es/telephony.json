@@ -86,7 +86,8 @@
       "PBX_QUEUES": "Colas",
       "PBX_RING_GROUPS": "Grupos de timbrado",
       "PBX_EXTENSIONS": "Extensiones",
-      "PBX_TRANSFER_NUMBER": "Extensión o número"
+      "PBX_TRANSFER_NUMBER": "Extensión o número",
+      "PBX_OFFLINE": "No conectado: no le sonaría"
     },
     "ERROR": {
       "REGISTER": "No se pudo registrar el softphone: {reason}",
@@ -115,7 +116,8 @@
       "REGISTRATION": "Se perdió el registro del softphone",
       "TRANSFER_FAILED": "La central no aceptó la transferencia",
       "PBX_ROUTED": "Esta llamada la enruta la central: usa los controles del teléfono",
-      "DTMF_FAILED": "No se pudo enviar el dígito"
+      "DTMF_FAILED": "No se pudo enviar el dígito",
+      "TARGET_OFFLINE": "Ese destino no está conectado: la llamada sigue contigo"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "Sin Chatwoot abierto: softphone no conectado"

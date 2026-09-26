@@ -366,4 +366,50 @@ describe('telephony store', () => {
       expect(store.hasOrphanAudio).toBe(true);
     });
   });
+
+  describe('FreePBX call handed over by this agent (REFER)', () => {
+    const pbx = (overrides = {}) =>
+      joinedCall({
+        source: 'pbx',
+        user_id: ME,
+        participants: [],
+        ...overrides,
+      });
+
+    beforeEach(() => {
+      store.activeCall = pbx();
+      store.audioConnected = false;
+    });
+
+    it('closes the card as transferred while the call has no owner yet', () => {
+      store.applyCall(
+        pbx({
+          state: TELEPHONY_STATES.AGENT_CONNECTING,
+          state_version: 4,
+          user_id: null,
+          previous_user_id: ME,
+          ringing_user_ids: [OWNER],
+        }),
+        ME
+      );
+
+      expect(store.activeCall).toBeNull();
+      expect(store.lastEndedCall).toMatchObject({ end_reason: 'transferred' });
+    });
+
+    it('shows the real end when the caller hung up before anyone else answered', () => {
+      store.applyCall(
+        pbx({
+          state: TELEPHONY_STATES.ENDED,
+          state_version: 4,
+          user_id: null,
+          previous_user_id: ME,
+          end_reason: 'completed',
+        }),
+        ME
+      );
+
+      expect(store.lastEndedCall).toMatchObject({ end_reason: 'completed' });
+    });
+  });
 });

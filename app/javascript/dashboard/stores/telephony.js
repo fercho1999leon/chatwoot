@@ -174,9 +174,13 @@ export const useTelephonyStore = defineStore('telephony', {
           call.direction === 'internal' && call.to_user_id === me;
         involved =
           mine || ringingMe || participant || transferTarget || internalPeer;
+        // A FreePBX-routed call this agent handed over (REFER / FreePBX transfer): same closing card as a
+        // completed API transfer, even before the next agent answers (the call has no owner meanwhile).
+        const handedOver =
+          call.source === 'pbx' && call.previous_user_id === me && !mine;
         // Someone else answered / I left the conference / this step stopped ringing me: drop it silently.
         if (!involved && wasMine && call.state !== TELEPHONY_STATES.ENDED) {
-          if (call.transfer_state !== 'completed') {
+          if (call.transfer_state !== 'completed' && !handedOver) {
             // The SIP leg is still up in this tab: never leave audio without a Hang up button.
             if (this.audioConnected) {
               this.orphanAudio = true;
@@ -193,13 +197,17 @@ export const useTelephonyStore = defineStore('telephony', {
         if (!involved && !wasMine) return; // not for this agent
         if (call.state === TELEPHONY_STATES.ENDED && !wasMine) return;
       }
-      if (
-        currentUserId &&
+      // Completed API transfer (as before), or a FreePBX-routed call this agent handed over and that goes on.
+      const apiTransfer =
         call.user_id &&
-        call.user_id !== currentUserId &&
-        call.transfer_state === 'completed' &&
-        wasMine
-      ) {
+        call.user_id !== me &&
+        call.transfer_state === 'completed';
+      const pbxHandover =
+        call.source === 'pbx' &&
+        call.previous_user_id === me &&
+        call.user_id !== me &&
+        call.state !== TELEPHONY_STATES.ENDED;
+      if (me && wasMine && (apiTransfer || pbxHandover)) {
         this.lastEndedCall = {
           ...call,
           state: TELEPHONY_STATES.ENDED,

@@ -383,11 +383,24 @@ const onTransfer = async userId => {
   }
 };
 
-// Blind transfer of a FreePBX-routed call: FreePBX takes it to the target and hangs up our leg.
+const findPbxTarget = (targets, number) =>
+  pbxTargetGroups.value
+    .flatMap(group => targets[group.key] || [])
+    .find(target => String(target.number) === String(number));
+
+// Blind transfer of a FreePBX-routed call: FreePBX takes it to the target and hangs up our leg. The target is
+// checked again right before the REFER: nobody connected there means the call would be lost, so it stays here.
+// A number that is not an extension, queue or ring group (an outside number) goes to FreePBX as typed.
 const onPbxTransfer = async number => {
   if (!number) return;
   isWorking.value = true;
   try {
+    pbxTargets.value = await TelephonyAPI.transferTargets();
+    const target = findPbxTarget(pbxTargets.value, number);
+    if (target && !target.available) {
+      useAlert(t('TELEPHONY.ERROR.TARGET_OFFLINE'));
+      return;
+    }
     await referTo(number);
     showTransfer.value = false;
     pbxTransferNumber.value = '';
@@ -550,16 +563,28 @@ onBeforeUnmount(stopTimer);
             <p class="text-xs font-medium text-n-slate-11 mt-1">
               {{ group.label }}
             </p>
-            <NextButton
+            <span
               v-for="target in pbxTargets[group.key]"
               :key="`${group.key}-${target.number}`"
-              sm
-              faded
-              slate
-              class="w-full"
-              :label="`${target.name || target.number} (${target.number})`"
-              @click="onPbxTransfer(target.number)"
-            />
+              v-tooltip="
+                target.available ? null : t('TELEPHONY.WIDGET.PBX_OFFLINE')
+              "
+              class="flex items-center gap-1.5"
+            >
+              <span
+                class="size-2 rounded-full shrink-0"
+                :class="target.available ? 'bg-n-teal-9' : 'bg-n-slate-8'"
+              />
+              <NextButton
+                sm
+                faded
+                slate
+                class="flex-1 min-w-0"
+                :disabled="!target.available || isWorking"
+                :label="`${target.name || target.number} (${target.number})${target.busy ? ' · ' + t('TELEPHONY.WIDGET.BUSY') : ''}`"
+                @click="onPbxTransfer(target.number)"
+              />
+            </span>
           </template>
         </template>
       </template>

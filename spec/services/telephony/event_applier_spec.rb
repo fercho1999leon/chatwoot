@@ -87,6 +87,22 @@ RSpec.describe Telephony::EventApplier do
         .not_to have_enqueued_job(Telephony::BotWebhookJob)
     end
 
+    it 'drops the owner of a FreePBX call the agent transferred, so the agent card closes before someone else answers' do
+      projection.update!(direction: 'inbound', source: 'pbx', state: 'answered', state_version: 2)
+
+      applier.apply_event(event(state: 'agent_connecting', state_version: 3, user_id: nil, previous_user_id: agent.id,
+                                ringing_user_ids: [receiver.id], source: 'pbx'))
+
+      projection.reload
+      expect(projection).to have_attributes(user_id: nil, previous_user_id: agent.id, ringing_user_ids: [receiver.id])
+      expect(projection.involved_user_ids).to include(agent.id, receiver.id) # el que la soltó recibe el aviso
+      expect(projection.push_event_data).to include(user_id: nil, previous_user_id: agent.id)
+
+      applier.apply_event(event(state: 'answered', state_version: 4, user_id: receiver.id, previous_user_id: agent.id, source: 'pbx'))
+      expect(projection.reload.user_id).to eq(receiver.id)
+      expect(conversation.reload.assignee).to eq(receiver)
+    end
+
     it 'does not notify the bot webhook for calls routed by FreePBX (they cannot be rerouted)' do
       create(:telephony_pbx, account: account, bot_webhook_url: 'https://n8n.test/webhook/calls')
       projection.update!(direction: 'inbound', user: nil, source: 'pbx')
