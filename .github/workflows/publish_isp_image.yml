@@ -7,8 +7,10 @@
 #   - solo linux/amd64 (el clúster es amd64; arm64 duplica el tiempo sin uso);
 #   - el digest queda en el resumen del job para copiarlo al PR de GitOps;
 #   - caché de capas en GHCR (`:buildcache`), compartida entre ramas y tags.
-# No hace bump automático en ISP-K8s-Platform: la imagen de Chatwoot se cambia
-# a mano en platform/apps/chatwoot/values.yaml y producción exige autorización.
+# En los tags abre un PR en ISP-K8s-Platform que cambia la imagen en
+# platform/apps/chatwoot/values.yaml (job `bump-pr`, secret GITOPS_TOKEN). No
+# despliega solo: producción exige backup y autorización, y fusionar el PR es
+# lo que despliega (ArgoCD).
 #
 # GATE DE TESTS (mismo patrón que el resto de repos del ISP: test → release):
 # `build` sólo corre si pasan rubocop, eslint, vitest y la suite rspec CE
@@ -167,6 +169,8 @@ jobs:
     # (codex/telephony-backend and codex/isp-image usually point at the same commit).
     if: github.ref_type == 'tag' || github.ref_name == 'codex/isp-image' || startsWith(github.ref_name, 'isp/')
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -240,3 +244,16 @@ jobs:
             echo "  tag: sha-${{ steps.tags.outputs.short_sha }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # PR de despliegue en ISP-K8s-Platform (ver su .github/workflows/bump-platform-image-pr.yml).
+  bump-pr:
+    needs: build
+    if: github.ref_type == 'tag'
+    uses: fercho1999leon/ISP-K8s-Platform/.github/workflows/bump-platform-image-pr.yml@master
+    with:
+      target: chatwoot
+      tag: ${{ github.ref_name }}
+      digest: ${{ needs.build.outputs.digest }}
+      revision: ${{ github.sha }}
+    secrets:
+      gitops_token: ${{ secrets.GITOPS_TOKEN }}
