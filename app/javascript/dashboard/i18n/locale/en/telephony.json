@@ -114,7 +114,8 @@
       "TARGET_NO_ENDPOINT": "That agent has no SIP extension",
       "REGISTRATION": "Softphone registration was lost",
       "TRANSFER_FAILED": "The PBX did not accept the transfer",
-      "PBX_ROUTED": "This call is routed by the PBX: use the phone controls"
+      "PBX_ROUTED": "This call is routed by the PBX: use the phone controls",
+      "DTMF_FAILED": "The digit could not be sent"
     },
     "TRANSFER": {
       "NOT_REGISTERED": "No Chatwoot open: softphone not connected"

@@ -410,12 +410,24 @@ const onCancelTransfer = async () => {
   }
 };
 
+// Digits sent in this call: the agent sees what reached the line (RFC 4733 gives no audible feedback).
+const dtmfSent = ref('');
+const DTMF_ECHO_MAX = 24;
+watch(
+  () => call.value?.id,
+  () => {
+    dtmfSent.value = '';
+  }
+);
+
 const onDtmf = async digit => {
   try {
-    if (isPbx.value) sendDtmf(digit);
-    else await store.sendDtmf(digit);
+    if (isPbx.value) {
+      if (!sendDtmf(digit)) throw new Error('dtmf_not_sent');
+    } else await store.sendDtmf(digit);
+    dtmfSent.value = (dtmfSent.value + digit).slice(-DTMF_ECHO_MAX);
   } catch (e) {
-    // 409 when not answered: keypad is only shown in answered state
+    useAlert(t('TELEPHONY.ERROR.DTMF_FAILED'));
   }
 };
 
@@ -631,6 +643,12 @@ onBeforeUnmount(stopTimer);
       />
     </div>
 
+    <p
+      v-if="showKeypad && canControl && dtmfSent"
+      class="text-sm text-center tabular-nums tracking-widest text-n-slate-12"
+    >
+      {{ dtmfSent }}
+    </p>
     <div v-if="showKeypad && canControl" class="grid grid-cols-3 gap-1">
       <NextButton
         v-for="digit in DTMF_KEYS"
