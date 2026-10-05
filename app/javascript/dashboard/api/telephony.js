@@ -201,9 +201,9 @@ class TelephonyAPI extends ApiClient {
     return axios.get(`${this.url}/endpoints`).then(r => r.data);
   }
 
-  assignExtension(userId, extension, rotate = false) {
+  assignExtension(userId, extension, rotate = false, webrtc = true) {
     return axios
-      .put(`${this.url}/endpoints/${userId}`, { extension, rotate })
+      .put(`${this.url}/endpoints/${userId}`, { extension, rotate, webrtc })
       .then(r => r.data);
   }
 

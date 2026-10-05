@@ -1,5 +1,6 @@
-# Administración: vincular extensiones de FreePBX a usuarios. El provisioner deja la
-# extensión registrable por WebRTC; el secreto vive en el controlador, nunca aquí.
+# Administración: vincular extensiones de FreePBX a usuarios. Con webrtc (por defecto) el provisioner deja la
+# extensión registrable por el navegador; el secreto vive en el controlador, nunca aquí. Con webrtc: false (agente
+# de voz IA, teléfono físico) la extensión no se toca: solo se vincula para observar sus llamadas.
 class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Telephony::BaseController
   before_action :check_authorization
 
@@ -8,7 +9,7 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
     render json: endpoints.map { |e| serialize(e) }
   end
 
-  # PUT telephony/endpoints/:user_id { extension: "1001", rotate: false }
+  # PUT telephony/endpoints/:user_id { extension: "1001", rotate: false, webrtc: true }
   def update
     user = Current.account.users.find(params[:user_id])
     extension = params.require(:extension).to_s
@@ -35,14 +36,19 @@ class Api::V1::Accounts::Telephony::EndpointsController < Api::V1::Accounts::Tel
   private
 
   def link_extension(user, extension)
-    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension,
-                                     display_name: user.name, rotate: ActiveModel::Type::Boolean.new.cast(params[:rotate]) || false)
+    webrtc = webrtc_param
+    telephony_client.upsert_endpoint(account_id: Current.account.id, user_id: user.id, extension: extension, display_name: user.name,
+                                     rotate: webrtc && (ActiveModel::Type::Boolean.new.cast(params[:rotate]) || false), webrtc: webrtc)
     record = Telephony::Endpoint.find_or_initialize_by(account_id: Current.account.id, user_id: user.id)
-    record.update!(endpoint: extension, enabled: true)
+    record.update!(endpoint: extension, enabled: true, webrtc: webrtc)
+  end
+
+  def webrtc_param
+    params.key?(:webrtc) ? ActiveModel::Type::Boolean.new.cast(params[:webrtc]) != false : true
   end
 
   def serialize(record)
-    { user_id: record.user_id, name: record.user&.name, extension: record.endpoint, enabled: record.enabled }
+    { user_id: record.user_id, name: record.user&.name, extension: record.endpoint, enabled: record.enabled, webrtc: record.webrtc }
   end
 
   def check_authorization

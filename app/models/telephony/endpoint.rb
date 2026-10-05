@@ -5,6 +5,7 @@
 #  id         :bigint           not null, primary key
 #  enabled    :boolean          default(TRUE), not null
 #  endpoint   :string           not null
+#  webrtc     :boolean          default(TRUE), not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #  account_id :bigint           not null
@@ -21,7 +22,8 @@ class Telephony::Endpoint < ApplicationRecord
   belongs_to :account
   belongs_to :user
 
-  # Número de extensión de FreePBX vinculada al usuario (única en la PBX).
+  # Número de extensión de FreePBX vinculada al usuario (única en la PBX). webrtc = false: la registra otro
+  # equipo (agente de voz IA, teléfono físico); se observa igual pero el navegador no tiene softphone.
   validates :endpoint, presence: true, uniqueness: true, format: { with: /\A\d{2,8}\z/ }
   validates :user_id, uniqueness: { scope: :account_id }
 end

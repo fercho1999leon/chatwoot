@@ -1534,7 +1534,7 @@
         },
         "AGENTS": {
           "TITLE": "Agents and extensions",
-          "HELP": "Link a FreePBX extension to each agent. Chatwoot enables WebRTC on the extension so the browser can register; a desk phone can stay registered too.",
+          "HELP": "Link a FreePBX extension to each agent. Chatwoot enables WebRTC on the extension so the browser can register; a desk phone can stay registered too. Untick «Browser» for an extension used by an AI voice agent or a desk phone only: it is observed the same way but left untouched.",
           "AGENT": "Agent",
           "EXTENSION": "Extension",
           "REGISTERED": "Registered",
@@ -1542,6 +1542,8 @@
           "NO": "no",
           "LINK": "Link",
           "ROTATE": "Regenerate SIP secret",
+          "WEBRTC": "Browser",
+          "WEBRTC_HELP": "Ticked: Chatwoot enables WebRTC on the extension and the agent answers from the browser. Unticked: another device registers it (AI voice agent, desk phone); its calls are still tracked but the extension is not modified.",
           "NO_EXTENSIONS": "No PJSIP extensions found in FreePBX (create them in FreePBX → Applications → Extensions)."
         },
         "GROUPS": {

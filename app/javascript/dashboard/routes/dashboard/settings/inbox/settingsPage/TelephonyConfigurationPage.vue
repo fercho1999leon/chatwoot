@@ -109,6 +109,7 @@ const extensions = ref([]);
 const endpoints = ref([]);
 const ringGroups = ref([]);
 const selection = ref({}); // user_id → extension elegida en el select
+const webrtcSelection = ref({}); // user_id → la extensión se usa desde el navegador (false: agente IA / teléfono)
 const busyUser = ref(null);
 
 const inboxes = computed(() =>
@@ -189,6 +190,7 @@ const loadDirectory = async () => {
   }
   endpoints.value.forEach(e => {
     selection.value[e.user_id] = e.extension;
+    webrtcSelection.value[e.user_id] = e.webrtc !== false;
   });
 };
 
@@ -214,7 +216,12 @@ const assign = async (userId, rotate = false) => {
   if (!extension) return;
   busyUser.value = userId;
   try {
-    await TelephonyAPI.assignExtension(userId, extension, rotate);
+    await TelephonyAPI.assignExtension(
+      userId,
+      extension,
+      rotate,
+      webrtcSelection.value[userId] !== false
+    );
     await loadDirectory();
     await loadStatus();
     useAlert(
@@ -238,6 +245,7 @@ const unassign = async userId => {
   try {
     await TelephonyAPI.unassignExtension(userId);
     delete selection.value[userId];
+    delete webrtcSelection.value[userId];
     await loadDirectory();
   } catch (e) {
     useAlert(t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.EXTENSION_ERROR.UNKNOWN'));
@@ -584,6 +592,14 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
             <th class="py-1">
               {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.EXTENSION') }}
             </th>
+            <th
+              v-tooltip="
+                t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.WEBRTC_HELP')
+              "
+              class="py-1"
+            >
+              {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.WEBRTC') }}
+            </th>
             <th class="py-1">
               {{ t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.REGISTERED') }}
             </th>
@@ -611,6 +627,17 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
                   {{ extensionLabel(ext) }}
                 </option>
               </select>
+            </td>
+            <td class="py-2">
+              <input
+                type="checkbox"
+                class="!mb-0"
+                :checked="webrtcSelection[agent.id] !== false"
+                :aria-label="
+                  t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.WEBRTC')
+                "
+                @change="webrtcSelection[agent.id] = $event.target.checked"
+              />
             </td>
             <td class="py-2">
               <template v-if="endpointByUser[agent.id]">
@@ -641,7 +668,10 @@ watch(() => props.inbox.telephony, loadTrunk, { deep: true });
                 @click="assign(agent.id)"
               />
               <NextButton
-                v-if="endpointByUser[agent.id]"
+                v-if="
+                  endpointByUser[agent.id] &&
+                  endpointByUser[agent.id].webrtc !== false
+                "
                 v-tooltip="
                   t('INBOX_MGMT.SETTINGS_POPUP.TELEPHONY.AGENTS.ROTATE')
                 "
