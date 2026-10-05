@@ -1378,7 +1378,7 @@
         },
         "AGENTS": {
           "TITLE": "Agentes y extensiones",
-          "HELP": "Vincula una extensión de FreePBX a cada agente. Chatwoot activa WebRTC en la extensión para que el navegador pueda registrarse; un teléfono de escritorio puede seguir registrado también.",
+          "HELP": "Vincula una extensión de FreePBX a cada agente. Chatwoot activa WebRTC en la extensión para que el navegador pueda registrarse; un teléfono de escritorio puede seguir registrado también. Desmarca «Navegador» en una extensión que usa solo un agente de voz IA o un teléfono físico: se observa igual, pero no se modifica.",
           "AGENT": "Agente",
           "EXTENSION": "Extensión",
           "REGISTERED": "Registrado",
@@ -1386,6 +1386,8 @@
           "NO": "no",
           "LINK": "Vincular",
           "ROTATE": "Regenerar secreto SIP",
+          "WEBRTC": "Navegador",
+          "WEBRTC_HELP": "Marcado: Chatwoot activa WebRTC en la extensión y el agente atiende desde el navegador. Desmarcado: la registra otro equipo (agente de voz IA, teléfono físico); sus llamadas se registran igual, pero la extensión no se modifica.",
           "NO_EXTENSIONS": "No hay extensiones PJSIP en FreePBX (créalas en FreePBX → Applications → Extensions)."
         },
         "GROUPS": {
