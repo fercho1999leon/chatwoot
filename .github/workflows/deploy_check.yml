@@ -17,6 +17,8 @@ permissions:
 jobs:
   deployment_check:
     name: Check Deployment
+    # Review apps only exist for the upstream repository.
+    if: github.repository == 'chatwoot/chatwoot'
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
