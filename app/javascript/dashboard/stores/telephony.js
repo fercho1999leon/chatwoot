@@ -319,6 +319,25 @@ export const useTelephonyStore = defineStore('telephony', {
       }
     },
 
+    // Outbound call to a contact or a dialed number: the server finds (or creates) the
+    // contact and its conversation. Returns the call (with conversation_display_id).
+    async callContact(target) {
+      this.autoAcceptInvitation = true;
+      this.idempotencyKey = this.idempotencyKey || uuid();
+      try {
+        const call = await TelephonyAPI.contactCall(
+          target,
+          this.idempotencyKey
+        );
+        this.applyCall(call, this.currentUserId);
+        return call;
+      } catch (error) {
+        this.autoAcceptInvitation = false;
+        this.idempotencyKey = null;
+        throw error;
+      }
+    },
+
     // Owner adds a colleague to the call (conference); admins can also join themselves.
     async addAgent(userId) {
       if (!this.activeCall) return;

@@ -104,6 +104,7 @@
       "PBX_UNREACHABLE": "Phone system unreachable",
       "NOT_CONFIGURED": "Telephony is not configured",
       "NO_PHONE": "The contact has no valid phone number",
+      "INVALID_PHONE": "That number is not valid: use a local number (0987654321) or +country code",
       "NO_ENDPOINT": "You don't have a SIP extension assigned",
       "INBOX_NOT_ENABLED": "Telephony is not enabled for this inbox",
       "FEATURE_DISABLED": "Telephony is not enabled for this account",

@@ -7,6 +7,7 @@ vi.mock('dashboard/api/telephony', () => ({
     activeCall: vi.fn(),
     show: vi.fn(),
     leave: vi.fn(),
+    contactCall: vi.fn(),
   },
 }));
 
@@ -34,6 +35,51 @@ describe('telephony store', () => {
     store.currentUserId = ME;
     store.activeCall = joinedCall();
     store.audioConnected = true;
+  });
+
+  describe('callContact', () => {
+    beforeEach(() => {
+      store.activeCall = null;
+      store.audioConnected = false;
+    });
+
+    it('dials a number, auto-accepts the agent leg and tracks the call', async () => {
+      const call = {
+        id: 'call-9',
+        state: TELEPHONY_STATES.REQUESTED,
+        state_version: 0,
+        user_id: ME,
+        conversation_display_id: 42,
+      };
+      TelephonyAPI.contactCall.mockResolvedValue(call);
+
+      await expect(
+        store.callContact({ phone_number: '0987654321' })
+      ).resolves.toEqual(call);
+
+      expect(TelephonyAPI.contactCall).toHaveBeenCalledWith(
+        { phone_number: '0987654321' },
+        expect.any(String)
+      );
+      expect(store.autoAcceptInvitation).toBe(true);
+      expect(store.activeCall.id).toBe('call-9');
+    });
+
+    it('reuses the idempotency key on retry and resets it on failure', async () => {
+      store.idempotencyKey = 'retry-key';
+      TelephonyAPI.contactCall.mockRejectedValue(new Error('invalid_phone'));
+
+      await expect(store.callContact({ phone_number: '123' })).rejects.toThrow(
+        'invalid_phone'
+      );
+
+      expect(TelephonyAPI.contactCall).toHaveBeenCalledWith(
+        { phone_number: '123' },
+        'retry-key'
+      );
+      expect(store.autoAcceptInvitation).toBe(false);
+      expect(store.idempotencyKey).toBeNull();
+    });
   });
 
   describe('refreshActive', () => {

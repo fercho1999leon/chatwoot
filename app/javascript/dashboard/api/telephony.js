@@ -58,13 +58,12 @@ class TelephonyAPI extends ApiClient {
       .then(r => r.data);
   }
 
-  contactCall(contactId, idempotencyKey) {
+  // target: { contact_id } (contact panel) or { phone_number } (dialpad, national or +E.164).
+  contactCall(target, idempotencyKey) {
     return axios
-      .post(
-        `${this.url}/contact_calls`,
-        { contact_id: contactId },
-        { headers: { 'Idempotency-Key': idempotencyKey } }
-      )
+      .post(`${this.url}/contact_calls`, target, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      })
       .then(r => r.data);
   }
 

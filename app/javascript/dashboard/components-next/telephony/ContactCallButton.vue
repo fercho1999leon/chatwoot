@@ -11,7 +11,6 @@ import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { useTelephonyStore } from 'dashboard/stores/telephony';
 import { useSipSession } from 'dashboard/composables/useSipSession';
-import TelephonyAPI from 'dashboard/api/telephony';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
 const props = defineProps({
@@ -45,13 +44,7 @@ const startCall = async () => {
       useAlert(t('TELEPHONY.ERROR.REGISTER', { reason: store.sipError || '' }));
       return;
     }
-    store.autoAcceptInvitation = true;
-    store.idempotencyKey = store.idempotencyKey || crypto.randomUUID();
-    const call = await TelephonyAPI.contactCall(
-      props.contactId,
-      store.idempotencyKey
-    );
-    store.applyCall(call, store.currentUserId);
+    const call = await store.callContact({ contact_id: props.contactId });
     if (call.conversation_display_id) {
       router.push({
         name: 'inbox_conversation',
@@ -62,8 +55,6 @@ const startCall = async () => {
       });
     }
   } catch (error) {
-    store.autoAcceptInvitation = false;
-    store.idempotencyKey = null;
     const code = error?.response?.data?.code || 'unknown';
     useAlert(
       t(`TELEPHONY.ERROR.${code.toUpperCase()}`, t('TELEPHONY.ERROR.UNKNOWN'))

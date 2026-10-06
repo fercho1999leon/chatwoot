@@ -15,4 +15,17 @@ module Telephony::Did
 
     digits
   end
+
+  # Número marcado → E.164 con la misma regla que `toE164` del controlador (src/phone.ts); nil si no es válido.
+  def e164(raw, default_country = '')
+    number = raw.to_s.gsub(/[\s().-]/, '')
+    return number if number.match?(/\A\+[1-9]\d{6,14}\z/)
+    return "+#{number[2..]}" if number.match?(/\A00[1-9]\d{6,14}\z/)
+
+    cc = COUNTRY_CODES[default_country.to_s.upcase]
+    return nil unless cc
+    return "+#{cc}#{number[1..]}" if number.match?(/\A0\d{8,9}\z/)
+
+    "+#{number}" if number.match?(/\A#{cc}\d{8,9}\z/)
+  end
 end

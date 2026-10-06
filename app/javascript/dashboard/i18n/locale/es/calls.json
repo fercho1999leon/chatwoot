@@ -54,6 +54,14 @@
     "CALL_AGENT": {
       "PLACEHOLDER": "Llamar a un agente…",
       "BUTTON": "Llamar"
+    },
+    "DIALPAD": {
+      "BUTTON": "Marcar",
+      "PLACEHOLDER": "Número o nombre del contacto",
+      "DELETE": "Borrar",
+      "CALL": "Llamar",
+      "CALL_NUMBER": "Llamar al {number}",
+      "HINT": "Los números locales usan el país de la troncal (p. ej. 0987654321); los internacionales empiezan con + o 00."
     }
   }
 }
