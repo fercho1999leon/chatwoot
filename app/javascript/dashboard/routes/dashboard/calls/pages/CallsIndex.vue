@@ -12,6 +12,7 @@ import { useCallHistoryStore } from 'dashboard/stores/callHistory';
 import { useTelephonyStore } from 'dashboard/stores/telephony';
 import TelephonyAPI from 'dashboard/api/telephony';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import Dialpad from 'dashboard/components-next/telephony/Dialpad.vue';
 
 import CallListItem from 'dashboard/components-next/Calls/CallListItem.vue';
 import CallsEmptyState from 'dashboard/components-next/Calls/CallsEmptyState.vue';
@@ -184,8 +185,12 @@ onMounted(async () => {
         <h1 class="text-xl font-medium text-n-slate-12">
           {{ t('CALLS_PAGE.HEADER') }}
         </h1>
-        <div v-if="telephonyAgents.length" class="flex items-center gap-2">
-          <select v-model="callAgentId" class="!mb-0 !w-56">
+        <div v-if="telephonyInboxes.length" class="flex items-center gap-2">
+          <select
+            v-if="telephonyAgents.length"
+            v-model="callAgentId"
+            class="!mb-0 !w-56"
+          >
             <option :value="null">
               {{ t('CALLS_PAGE.CALL_AGENT.PLACEHOLDER') }}
             </option>
@@ -199,8 +204,9 @@ onMounted(async () => {
             </option>
           </select>
           <NextButton
+            v-if="telephonyAgents.length"
             sm
-            solid
+            faded
             blue
             icon="i-lucide-phone"
             :label="t('CALLS_PAGE.CALL_AGENT.BUTTON')"
@@ -208,6 +214,7 @@ onMounted(async () => {
             :is-loading="isCallingAgent"
             @click="onCallAgent"
           />
+          <Dialpad />
         </div>
       </div>
       <CallsFilterBar

@@ -54,6 +54,14 @@
     "CALL_AGENT": {
       "PLACEHOLDER": "Call an agent…",
       "BUTTON": "Call"
+    },
+    "DIALPAD": {
+      "BUTTON": "Dial",
+      "PLACEHOLDER": "Number or contact name",
+      "DELETE": "Delete",
+      "CALL": "Call",
+      "CALL_NUMBER": "Call {number}",
+      "HINT": "Local numbers use the trunk's country (e.g. 0987654321); international ones start with + or 00."
     }
   }
 }
